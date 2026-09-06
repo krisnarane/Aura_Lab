@@ -1,0 +1,85 @@
+/* Estilos específicos para os cards de recomendações da Consultora Aura. */
+.chat-recommendations {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* Layout padrão em uma coluna para contêineres pequenos. */
+.chat-recommendations {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+/* Em telas maiores, mantém a grade em duas colunas para melhor aproveitamento do espaço. */
+@media (min-width: 520px) {
+  .chat-recommendations {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Cartões de recomendação dentro do painel de conversa. */
+.chat-recommendations .chat-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Área visual do produto exibida no topo do card. */
+.chat-recommendations .product-art {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.03));
+  overflow: hidden;
+}
+
+.chat-recommendations .product-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Conteúdo textual e informações do produto no card. */
+.chat-recommendations .card-body {
+  padding: 10px;
+}
+
+.chat-recommendations .card-body b {
+  display: block;
+  margin-top: 6px;
+}
+
+.chat-recommendations .card-body small {
+  color: var(--muted);
+}
+
+/* Ajustes de visual para os botões dentro dos cards de recomendação. */
+.chat-recommendations .btn {
+  font-size: 0.9rem;
+  padding: 6px 10px;
+}
+
+/* Fallback para o item ativo da navegação principal quando ajustes extras não são carregados. */
+.nav-main > li > a.active {
+  border-bottom: 2px solid var(--rose);
+  color: var(--rose);
+  font-weight: 700;
+  padding-bottom: 8px;
+}
+
+/* Marca administrativa: força o texto 'aura' em branco e remove o comportamento de hover. */
+.admin-side .brand {
+  color: #fff !important;
+}
+.admin-side .brand:hover {
+  background: transparent !important;
+  color: #fff !important;
+}
+.admin-side .brand i {
+  color: var(--gold) !important;
+}

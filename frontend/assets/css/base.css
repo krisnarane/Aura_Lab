@@ -1,0 +1,751 @@
+/* Base global da interface: reset, tipografia, layout principal e responsividade. */
+* {
+  box-sizing: border-box;
+}
+
+/* Corpo da aplicação com paleta, tipografia e largura mínima da viewport. */
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  min-width: 320px;
+}
+
+/* Container centralizado para manter o conteúdo alinhado com a grade do projeto. */
+.aura-container {
+  width: min(1120px, calc(100% - clamp(32px, 7vw, 144px)));
+}
+
+/* Aviso institucional localizado no topo da página. */
+.notice {
+  background: var(--deep);
+  color: #fff5f7;
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  padding: 10px;
+  text-align: center;
+}
+.notice span {
+  color: #e8bd70;
+  padding: 0 6px;
+}
+
+/* Cabeçalho fixo com efeito de vidro e borda inferior suave. */
+.site-header {
+  background: #fffafaf0;
+  border-bottom: 1px solid #f0e4e7;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(15px);
+}
+
+/* Altura mínima da navbar para manter a composição visual consistente. */
+.navbar {
+  min-height: 74px;
+}
+
+/* Marca do projeto com estilo editorial e destaque no nome LAB. */
+.brand {
+  color: var(--ink);
+  font:
+    700 1.75rem Georgia,
+    serif;
+  letter-spacing: -0.08em;
+  text-decoration: none;
+}
+.brand i {
+  color: var(--gold);
+  font-size: 0.58em;
+  font-style: normal;
+  letter-spacing: 0.16em;
+}
+
+/* Ícone do menu em tamanhos pequenos. */
+.navbar-toggler {
+  color: var(--ink);
+  font-size: 1.25rem;
+}
+
+/* Menu principal de navegação do site. */
+.nav-main {
+  align-items: center;
+  gap: 8px;
+}
+.nav-main > li > a,
+.nav-main button {
+  background: transparent;
+  border: 0;
+  color: #5e4851;
+  font-size: 0.86rem;
+  padding: 9px 11px;
+  text-decoration: none;
+}
+.nav-main > li > a:hover,
+.nav-main button:hover {
+  color: var(--rose);
+}
+.nav-main small {
+  color: inherit;
+  font-size: 0.8rem;
+}
+
+/* Menu dropdown com borda leve e sombra discreta. */
+.aura-menu {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  box-shadow: var(--shadow);
+  padding: 7px;
+}
+.aura-menu a {
+  color: #604a53;
+  display: block;
+  font-size: 0.82rem;
+  padding: 8px 13px;
+  text-decoration: none;
+}
+.aura-menu a:hover {
+  background: var(--pink);
+  border-radius: 8px;
+  color: var(--rose);
+}
+
+/* Ações de navegação do lado direito: carrinho, conta e acessos rápidos. */
+.nav-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+.nav-actions a {
+  color: #543e47;
+  font-size: 0.82rem;
+  position: relative;
+  text-decoration: none;
+}
+.nav-actions a:hover {
+  color: var(--rose);
+}
+.nav-actions b {
+  background: var(--rose);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.6rem;
+  line-height: 17px;
+  position: absolute;
+  right: -12px;
+  text-align: center;
+  top: -9px;
+  width: 17px;
+}
+
+/* Espaçamento base das páginas principais. */
+.page {
+  padding: 0 0 82px;
+}
+
+/* Hierarquia tipográfica principal da marca. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -0.045em;
+}
+
+/* Labels curtos em caps para destaques, legendas e subtítulos. */
+.eyebrow,
+.card-body small,
+.admin-side small {
+  color: var(--gold);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Texto secundário reutilizável. */
+.muted {
+  color: var(--muted);
+}
+
+/* Hero da vitrine com gradiente suave e foco em apresentação de catálogo. */
+.catalog-intro {
+  background:
+    radial-gradient(circle at 80% 15%, #f3d4dc, transparent 28%),
+    radial-gradient(circle at 60% 100%, #f4e9d5, transparent 35%),
+    linear-gradient(115deg, #fff1f4, #fffdfb 58%, #f8f0e4);
+  padding: 66px 0 54px;
+}
+.catalog-intro h1 {
+  font-size: clamp(2.8rem, 5vw, 5rem);
+  line-height: 0.94;
+  margin: 12px 0;
+}
+.catalog-intro h1 em {
+  color: var(--rose);
+  font-weight: normal;
+}
+.catalog-intro p {
+  color: #765f67;
+  font-size: 1.04rem;
+  line-height: 1.7;
+  max-width: 490px;
+}
+
+/* Conteúdo principal do catálogo e cabeçalho de seção. */
+.catalog-content {
+  padding-top: 42px;
+}
+.catalog-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 13px;
+}
+.catalog-heading span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Painel genérico para blocos com borda e fundo branco. */
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 21px;
+}
+
+/* Filtros laterais do catálogo fixados durante a rolagem. */
+.filters {
+  position: sticky;
+  top: 106px;
+}
+.filters label {
+  color: #69545c;
+  display: block;
+  font-size: 0.85rem;
+  margin: 13px 0;
+}
+.filters input[type="radio"] {
+  accent-color: var(--rose);
+}
+.filters a,
+.back {
+  color: var(--rose);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.filters .form-control {
+  border-color: #ebdde1;
+  border-radius: 10px;
+}
+
+/* Card de produto da vitrine com hover leve. */
+.aura-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  height: 100%;
+  overflow: hidden;
+  transition:
+    transform 0.22s,
+    box-shadow 0.22s;
+}
+.aura-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-5px);
+}
+
+/* Área visual do produto e da página de detalhe. */
+.product-art,
+.detail-art {
+  align-items: center;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--art) 15%, #fff),
+    #f8f0ec
+  );
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+.product-art {
+  height: 225px;
+}
+.detail-art {
+  border-radius: 25px;
+  height: 440px;
+}
+.product-art:before,
+.detail-art:before {
+  background: var(--art);
+  border-radius: 42px 42px 13px 13px;
+  box-shadow: 18px 22px 28px #36202a25;
+  content: "";
+  height: 136px;
+  transform: rotate(-9deg);
+  width: 88px;
+}
+.detail-art:before {
+  height: 290px;
+  width: 190px;
+}
+.product-art:after,
+.detail-art:after {
+  background: #bd904e;
+  border-radius: 8px 8px 2px 2px;
+  content: "";
+  height: 31px;
+  position: absolute;
+  top: 35px;
+  width: 38px;
+}
+.detail-art:after {
+  height: 54px;
+  top: 63px;
+  width: 78px;
+}
+.product-art img,
+.detail-art img {
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+  z-index: 4;
+}
+
+/* Marca visual da embalagem em arte de produto. */
+.product-mark {
+  color: #fff8fa;
+  font:
+    700 0.72rem Georgia,
+    serif;
+  left: 50%;
+  letter-spacing: 0.1em;
+  position: absolute;
+  text-transform: uppercase;
+  top: 54%;
+  transform: translate(-50%, -50%) rotate(-9deg);
+  z-index: 2;
+}
+.detail-art .product-mark {
+  font-size: 1.2rem;
+}
+
+/* Conteúdo textual interno dos cards. */
+.card-body {
+  padding: 18px;
+}
+
+/* Link de produto com aparência de título em cards. */
+.product-link {
+  background: none;
+  border: 0;
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 750;
+  line-height: 1.4;
+  min-height: 50px;
+  padding: 8px 0;
+  text-align: left;
+  width: 100%;
+}
+
+/* Status de disponibilidade do produto. */
+.availability {
+  color: #4d8060;
+  font-size: 0.76rem;
+  margin: 0 0 12px;
+}
+.availability.sold-out {
+  color: #a34f64;
+}
+
+/* Botão redondo para ações rápidas de quantidade ou favoritos. */
+.round {
+  background: var(--pink);
+  border: 0;
+  border-radius: 50%;
+  color: var(--rose);
+  font-size: 1.25rem;
+  height: 35px;
+  line-height: 1;
+  width: 35px;
+}
+.round:disabled {
+  opacity: 0.45;
+}
+
+/* Link de retorno para páginas internas. */
+.back {
+  display: inline-block;
+  margin-top: 36px;
+}
+
+/* Chips de categorias ou tags. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.chips span {
+  background: var(--pink);
+  border-radius: 99px;
+  color: #805365;
+  font-size: 0.76rem;
+  padding: 7px 11px;
+}
+
+/* Blocos de informações complementares, como ingredientes e reservas. */
+.ingredients,
+.reservation {
+  background: #fff8ec;
+  border: 1px solid #f1e2c8;
+  border-radius: 12px;
+  color: #755a29;
+  margin: 19px 0;
+  padding: 14px;
+}
+.ingredients p {
+  margin: 5px 0 0;
+}
+
+/* Botão primário da marca Aura. */
+.aura-btn {
+  background: var(--deep);
+  border: 0;
+  border-radius: 99px;
+  color: #fff;
+  font-weight: 750;
+  padding: 11px 18px;
+}
+.aura-btn:hover {
+  background: var(--rose);
+  color: #fff;
+}
+
+/* Linhas de item no carrinho, pedidos e listas administrativas. */
+.cart-row,
+.order,
+.admin-row {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 15px 0;
+}
+.cart-row > div:first-child,
+.order span,
+.admin-row span {
+  display: grid;
+  flex: 1;
+}
+.cart-row small {
+  font-size: 0.64rem;
+}
+
+/* Controles de quantidade em carrinho e pedidos. */
+.quantity {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  display: flex;
+  overflow: hidden;
+}
+.quantity button {
+  background: #fff;
+  border: 0;
+  color: var(--rose);
+  font-size: 1rem;
+  width: 31px;
+}
+.quantity span {
+  padding: 5px 11px;
+}
+
+/* Resumo lateral de compras e pedidos. */
+.summary {
+  position: sticky;
+  top: 108px;
+}
+
+/* Status de pedido ou processo com cores semânticas. */
+.status {
+  background: #f8e8ed;
+  border-radius: 99px;
+  color: #9b4b65;
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+.status.ok {
+  background: #e9f4ea;
+  color: #39734c;
+}
+
+/* Botões de ações em listas e gerenciamento. */
+.order button,
+.admin-row button {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: #814e60;
+  font-size: 0.75rem;
+  padding: 7px 10px;
+}
+
+/* Bloco do consultor Aura com gradiente e destaque visual. */
+.advisor {
+  background:
+    radial-gradient(circle at 75% 30%, #c87691, transparent 35%),
+    linear-gradient(135deg, #3e2630, #88506a);
+  border-radius: 24px;
+  color: #fff;
+  padding: clamp(30px, 6vw, 65px);
+}
+.advisor h1 {
+  color: #fff;
+  font-size: clamp(2.5rem, 5vw, 4.4rem);
+  max-width: 620px;
+}
+.advisor .form-control {
+  border: 0;
+  max-width: 650px;
+}
+
+/* Rodapé do site com fundo escuro e links em tom claro. */
+.site-footer {
+  background: var(--deep);
+  color: #dbc6cc;
+  padding: 52px 0 22px;
+}
+.site-footer .brand {
+  color: #fff7f9;
+}
+.site-footer h4 {
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+}
+.site-footer p {
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+.site-footer a:not(.brand) {
+  color: #dbc6cc;
+  display: block;
+  font-size: 0.82rem;
+  margin: 10px 0;
+  text-decoration: none;
+}
+.site-footer a:hover {
+  color: #f2c77d;
+}
+.site-footer small {
+  color: #a98f98;
+  font-size: 0.68rem;
+}
+.footer-bottom {
+  border-top: 1px solid #ffffff20;
+  font-size: 0.72rem;
+  margin-top: 30px;
+  padding-top: 18px;
+}
+
+/* Toasts utilitários de feedback para ações e alertas. */
+.aura-toast {
+  background: #3e2630;
+  color: #fff;
+}
+
+/* Estilo base da área administrativa. */
+.admin {
+  background: #f7f4f4;
+  min-height: 100vh;
+}
+.admin > div {
+  display: flex;
+}
+.admin-side {
+  background: #38242d;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100vh;
+  padding: 31px 18px;
+  width: 238px;
+}
+.admin-side > a:not(.brand) {
+  border-radius: 9px;
+  color: #e8d2d9;
+  font-size: 0.85rem;
+  padding: 10px;
+  text-decoration: none;
+}
+.admin-side > a.active,
+.admin-side > a:hover {
+  background: #ffffff1c;
+  color: #fff;
+}
+.admin-side > .admin-store-link {
+  border-top: 1px solid #ffffff24;
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+/* Conteúdo principal da administração. */
+.admin-main {
+  padding: 42px clamp(20px, 5vw, 64px);
+  width: 100%;
+}
+
+/* Cards de métricas para dashboard administrativo. */
+.metrics {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 20px 0;
+}
+.metrics div {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 18px;
+}
+.metrics b {
+  display: block;
+  font-size: 1.4rem;
+}
+.metrics small {
+  display: block;
+  color: #a14e64;
+  margin-top: 4px;
+}
+
+/* Barra de ferramentas de ações de painel. */
+.toolbar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+/* Gráficos SVG da área analítica. */
+svg {
+  max-width: 560px;
+  width: 100%;
+}
+polyline {
+  fill: none;
+  stroke: var(--rose);
+  stroke-linecap: round;
+  stroke-width: 5;
+}
+
+/* Responsividade para tablets e notebooks menores. */
+@media (max-width: 991px) {
+  .navbar-collapse {
+    padding: 12px 0;
+  }
+  .nav-main {
+    align-items: flex-start;
+  }
+  .nav-main > li > a,
+  .nav-main button {
+    padding-left: 0;
+  }
+  .nav-actions {
+    margin-top: 12px;
+  }
+  .filters {
+    position: static;
+  }
+  .detail-art {
+    height: 330px;
+  }
+  .admin > div {
+    display: block;
+  }
+  .admin-side {
+    min-height: auto;
+    width: auto;
+  }
+  .admin-side {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .admin-side .brand {
+    grid-column: span 3;
+  }
+  .admin-side > .admin-store-link {
+    grid-column: span 3;
+    margin-top: 8px;
+  }
+  .admin-main {
+    padding: 28px 20px;
+  }
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Responsividade para celulares. */
+@media (max-width: 575px) {
+  .aura-container {
+    width: calc(100% - 28px);
+  }
+  .notice {
+    font-size: 0.61rem;
+  }
+  .catalog-intro {
+    padding: 47px 0;
+  }
+  .catalog-intro h1 {
+    font-size: 3rem;
+  }
+  .catalog-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .page {
+    padding-bottom: 55px;
+  }
+  .product-art {
+    height: 210px;
+  }
+  .cart-row,
+  .order,
+  .admin-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .summary {
+    position: static;
+  }
+  .admin-side {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-side .brand {
+    grid-column: span 2;
+  }
+  .admin-side > .admin-store-link {
+    grid-column: span 2;
+  }
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+  .nav-actions span {
+    display: none;
+  }
+}

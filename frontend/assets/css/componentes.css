@@ -1,0 +1,318 @@
+/* Componentes e refinamentos visuais compartilhados entre as telas do projeto. */
+
+/* Alertas de itens expirados ou com atenção especial. */
+.expired-items {
+  background: #fff0f2;
+  border: 1px solid #e5a8b6;
+  border-radius: 12px;
+  color: #7f3349;
+  margin: 18px 0;
+  padding: 14px;
+}
+
+/* Busca do catálogo com rótulo e estilo de campo consistente. */
+.catalog-search {
+  margin-bottom: 18px;
+}
+.catalog-search label {
+  color: var(--muted);
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.catalog-search .input-group-text {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--rose);
+}
+.catalog-search .form-control {
+  border-color: var(--line);
+  padding: 11px;
+}
+
+/* Ícone de perfil em botões e navegação. */
+.profile-icon {
+  fill: none;
+  height: 19px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+  vertical-align: -5px;
+  width: 19px;
+}
+
+/* Abas internas de perfil e configurações com destaque de item ativo. */
+.profile-tabs {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 24px;
+  margin: 22px 0 26px;
+}
+.profile-tabs a {
+  color: var(--muted);
+  font-size: 0.86rem;
+  padding: 0 0 12px;
+  text-decoration: none;
+}
+.profile-tabs a.active {
+  border-bottom: 2px solid var(--rose);
+  color: var(--rose);
+  font-weight: 700;
+}
+.profile-content {
+  max-width: 900px;
+}
+.profile-settings label {
+  color: #69545c;
+  display: block;
+  font-size: 0.82rem;
+}
+.profile-settings label .form-control {
+  margin-top: 6px;
+}
+
+/* Card de itens salvos com visual leve e alinhamento horizontal. */
+.saved-card {
+  align-items: center;
+  background: #fff8fa;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex !important;
+  gap: 10px;
+  margin-top: 9px;
+  padding: 12px;
+}
+.saved-card span {
+  flex: 1;
+  font-weight: 650;
+}
+.saved-card small {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* Bloco de conversa do consultor Aura. */
+.chat-advisor {
+  padding: clamp(28px, 5vw, 55px);
+}
+.aura-chat {
+  background: #ffffff12;
+  border: 1px solid #ffffff2d;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 26px 0 14px;
+  max-height: 1400px;
+  overflow-y: auto;
+  padding: 16px;
+}
+.chat-message {
+  border-radius: 12px;
+  line-height: 1.45;
+  max-width: 82%;
+  padding: 11px 13px;
+}
+.chat-message b {
+  font-size: 0.69rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.chat-message p {
+  font-size: 0.88rem;
+  margin: 4px 0 0;
+}
+.aura-message {
+  align-self: flex-start;
+  background: #fff;
+  color: var(--ink);
+}
+.user-message {
+  align-self: flex-end;
+  background: #c77491;
+  color: #fff;
+}
+
+/* Campo de composição da mensagem do chat. */
+.chat-composer {
+  display: flex;
+  gap: 9px;
+  max-width: 720px;
+}
+.chat-composer .form-control {
+  border: 0;
+}
+.chat-note {
+  color: #f1d7df;
+  display: block;
+  margin-top: 12px;
+}
+
+/* Altura mínima da área administrativa para manter layout consistente. */
+.admin > div {
+  min-height: 100vh;
+}
+.admin-side {
+  align-content: start;
+  flex: 0 0 238px;
+  overflow: hidden;
+}
+.admin-side .brand:hover {
+  background: transparent !important;
+  color: #f2c77d !important;
+}
+.admin-side > a:not(.brand) {
+  white-space: nowrap;
+}
+
+/* Painel para gráficos de vendas e métricas visuais. */
+.chart-panel {
+  margin-top: 20px;
+  position: relative;
+}
+.sales-chart {
+  display: block;
+  margin: 20px 0 10px;
+  max-width: 600px;
+}
+.sales-chart line {
+  stroke: #eadde0;
+}
+.sales-chart circle {
+  cursor: pointer;
+  fill: var(--rose);
+  stroke: #fff;
+  stroke-width: 3;
+}
+.sales-chart circle:focus {
+  outline: none;
+  stroke: var(--gold);
+  stroke-width: 5;
+}
+.sales-chart text {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+/* Tooltip flutuante para pontos do gráfico. */
+.chart-tooltip {
+  background: var(--deep);
+  border-radius: 7px;
+  color: #fff;
+  font-size: 0.75rem;
+  opacity: 0;
+  padding: 7px 9px;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, -100%);
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+.chart-tooltip.is-visible {
+  opacity: 1;
+}
+
+/* Legenda do gráfico com marcação de cor por categoria. */
+.chart-legend {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.76rem;
+  gap: 18px;
+}
+
+/* Controles de filtros analíticos e seleção de período. */
+.analytics-control {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.75rem;
+  gap: 4px;
+}
+.analytics-control select {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  padding: 7px 9px;
+}
+.analytics-filter {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+.analytics-filter > label {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.78rem;
+  gap: 5px;
+}
+.analytics-filter fieldset,
+.analytics-actions,
+.analytics-filter #analytics-filter-feedback {
+  grid-column: 1 / -1;
+}
+.analytics-filter fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.analytics-filter legend {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 8px;
+}
+.analytics-category-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.analytics-category-selector label {
+  background: #fff8fa;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 7px 10px;
+}
+.analytics-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.chart-legend span {
+  color: var(--legend-color, var(--muted));
+}
+
+/* Ajustes responsivos para telas médias. */
+@media (max-width: 991px) {
+  .admin-side {
+    flex: auto;
+    overflow: visible;
+  }
+  .chat-composer {
+    flex-direction: column;
+  }
+  .chat-composer .btn {
+    width: 100%;
+  }
+  .analytics-filter {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Ajustes responsivos para dispositivos menores. */
+@media (max-width: 575px) {
+  .profile-tabs {
+    gap: 15px;
+  }
+  .profile-tabs a {
+    font-size: 0.77rem;
+  }
+  .chat-message {
+    max-width: 94%;
+  }
+}

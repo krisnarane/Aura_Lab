@@ -1,0 +1,521 @@
+/* Estilos específicos para fluxos de cadastro, checkout, perfil e administração. */
+
+/* Pré-visualização da imagem do produto em formulários de cadastro e edição. */
+.product-image-preview {
+  align-items: center;
+  background: #fffafa;
+  border: 1px dashed #dfcbd1;
+  border-radius: 14px;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  min-height: 170px;
+  overflow: hidden;
+}
+.product-image-preview img {
+  height: 220px;
+  object-fit: contain;
+  width: 100%;
+}
+
+/* Campo de cor em formulários de administração. */
+#admin-product-form .form-control-color {
+  height: 38px;
+  width: 100%;
+}
+
+/* Espaçamento superior padrão para páginas de conteúdo. */
+.page-top {
+  padding-top: 48px;
+}
+
+/* Conteúdo de largura reduzida para telas mais enxutas. */
+.narrow {
+  max-width: 760px;
+}
+
+/* Conteúdo ampliado para perfis e áreas com maior densidade de informação. */
+.profile-content.wide {
+  max-width: 1100px;
+}
+
+/* Empilha campos do formulário com espaçamento consistente. */
+.form-stack {
+  display: grid;
+  gap: 18px;
+}
+.form-stack label,
+.new-address-fields label {
+  color: #69545c;
+  display: grid;
+  font-size: 0.82rem;
+  gap: 6px;
+}
+.form-stack .form-check {
+  display: flex;
+  gap: 8px;
+}
+.form-stack .form-check-input {
+  margin-top: 0.15rem;
+}
+
+/* Bloco de compra do produto com quantidade e ação principal. */
+.product-buy {
+  align-items: end;
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+.product-buy label {
+  display: grid;
+  font-size: 0.8rem;
+  gap: 5px;
+}
+.product-buy input {
+  max-width: 100px;
+}
+
+/* Link de ação destrutiva, como remoção ou exclusão. */
+.link-danger {
+  background: none;
+  border: 0;
+  color: #a33f58;
+  font-size: 0.75rem;
+}
+
+/* Indicadores de etapas do checkout. */
+.checkout-steps {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  list-style: none;
+  margin: 24px 0 30px;
+  padding: 0;
+}
+.checkout-steps li {
+  align-items: center;
+  border-bottom: 2px solid var(--line);
+  color: var(--muted);
+  display: flex;
+  font-size: 0.82rem;
+  gap: 8px;
+  padding: 11px;
+}
+.checkout-steps li span {
+  align-items: center;
+  background: var(--pink);
+  border-radius: 50%;
+  display: flex;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+.checkout-steps li.active {
+  border-color: var(--rose);
+  color: var(--rose);
+  font-weight: 700;
+}
+.checkout-steps li.active span {
+  background: var(--rose);
+  color: #fff;
+}
+
+/* Grade de opções de seleção para métodos e modalidades. */
+.choice-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.choice-card {
+  align-items: center;
+  background: #fff8fa;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex !important;
+  gap: 12px;
+  padding: 14px;
+}
+.choice-card input {
+  accent-color: var(--rose);
+}
+.choice-card span {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+.choice-card small {
+  color: var(--muted);
+}
+.choice-card em {
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* Bloco para cadastro de novo endereço em checkout ou perfil. */
+.new-address-fields {
+  background: #fffafa;
+  border: 1px dashed #dfcbd1;
+  border-radius: 12px;
+  margin: 2px 0;
+  padding: 14px;
+}
+
+/* Cartão de dados de pagamento e resumo do método escolhido. */
+.payment-card {
+  align-items: center;
+  background: #fff8fa;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex !important;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 14px;
+}
+.payment-card span {
+  display: grid;
+}
+.payment-card input {
+  max-width: 150px;
+}
+.payment-summary p,
+.payment-line {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+/* Texto de destaque para ações ou avisos de risco. */
+.text-destructive {
+  color: #a33f58;
+}
+
+/* Cabeçalho de seção com título e ação auxiliar. */
+.section-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+/* Seções ocultas por lógica de interface. */
+.hidden-section {
+  display: none !important;
+}
+
+/* Bloco de revisão final de dados antes da confirmação. */
+.review-block {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+.review-block p {
+  margin: 5px 0;
+}
+.review-block a {
+  color: var(--rose);
+  font-size: 0.8rem;
+}
+
+/* Alerta leve para mensagens informativas ou de atenção. */
+.alert-soft {
+  background: #fff8ec;
+  border: 1px solid #f1e2c8;
+  border-radius: 12px;
+  color: #755a29;
+  margin: 18px 0;
+  padding: 14px;
+}
+
+/* Página de confirmação final após conclusão de fluxo. */
+.confirmation {
+  margin: 30px auto;
+  max-width: 720px;
+  padding: 50px;
+  text-align: center;
+}
+.confirmation-mark {
+  align-items: center;
+  background: #e9f4ea;
+  border-radius: 50%;
+  color: #39734c;
+  display: flex;
+  font-size: 1.8rem;
+  height: 58px;
+  justify-content: center;
+  margin: 0 auto 18px;
+  width: 58px;
+}
+
+/* Cartão de gerenciamento em áreas administrativas ou de conta. */
+.management-card {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  padding: 16px 0;
+}
+.management-card h3 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+.management-card h3 small {
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0;
+}
+.management-card p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  margin: 5px 0 0;
+}
+.management-card.is-inactive {
+  opacity: 0.6;
+}
+.management-actions {
+  display: flex;
+  gap: 8px;
+}
+.management-actions button,
+.management-actions a,
+.row-action {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #814e60;
+  font-size: 0.75rem;
+  padding: 7px 10px;
+  text-decoration: none;
+}
+
+/* Painel mais estreito para formulários e blocos de ação específicos. */
+.narrow-panel {
+  max-width: 560px;
+}
+
+/* Linha do tempo para acompanhamento de status e histórico. */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.timeline li {
+  display: flex;
+  gap: 12px;
+  min-height: 56px;
+  position: relative;
+}
+.timeline li > span {
+  background: var(--rose);
+  border: 4px solid var(--pink);
+  border-radius: 50%;
+  height: 15px;
+  margin-top: 4px;
+  width: 15px;
+}
+.timeline li:not(:last-child):before {
+  background: var(--line);
+  content: "";
+  height: 100%;
+  left: 7px;
+  position: absolute;
+  top: 15px;
+  width: 1px;
+}
+.timeline div {
+  display: grid;
+  height: min-content;
+}
+.timeline small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+/* Item de pedido em listas de histórico e detalhes de compra. */
+.order-item {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+  padding: 15px 0;
+}
+.order-item > div {
+  display: grid;
+}
+
+/* Formulários relacionados a trocas e devoluções. */
+.exchange-request-form,
+.exchange-dispatch-form,
+.receive-exchange-form {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+}
+.exchange-request-form .form-control,
+.exchange-dispatch-form .form-control {
+  max-width: 190px;
+}
+
+/* Card promocional de cupom ou benefício aplicado. */
+.coupon-card {
+  background: linear-gradient(135deg, #fff8fa, #fff);
+  border: 1px dashed #d9b5c1;
+  border-radius: 14px;
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 16px;
+}
+.coupon-card b {
+  color: var(--rose);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+}
+.coupon-card span {
+  font-weight: 750;
+}
+.coupon-card small {
+  color: var(--muted);
+}
+
+/* Barra de filtros para tabelas e listagens. */
+.filter-bar {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(120px, 1fr)) auto;
+}
+
+/* Estilo base para tabelas responsivas em administração e relatórios. */
+.table-responsive table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.table-responsive th {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.table-responsive td,
+.table-responsive th {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+.table-responsive td small {
+  color: var(--muted);
+  display: block;
+}
+.table-responsive td a {
+  color: var(--rose);
+}
+.table-responsive td button,
+.table-actions button,
+.table-actions a,
+.receive-exchange-form button {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: #814e60;
+  font-size: 0.75rem;
+  padding: 7px 9px;
+}
+.table-actions {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+.table-actions a {
+  text-decoration: none;
+}
+
+/* Toast de erro da interface Aura. */
+.aura-toast.is-error {
+  background: #8b324b;
+}
+
+/* Abas de navegação internas do perfil e administração. */
+.profile-tabs {
+  overflow-x: auto;
+}
+
+/* Ajuste de altura para barras laterais administrativas. */
+.admin-side {
+  grid-auto-rows: min-content;
+}
+
+.row-action {
+  white-space: nowrap;
+}
+
+/* Responsividade para tablets. */
+@media (max-width: 991px) {
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
+  .filter-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .order-item,
+  .management-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .exchange-request-form,
+  .exchange-dispatch-form {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+  .exchange-request-form .form-control,
+  .exchange-dispatch-form .form-control {
+    max-width: none;
+  }
+}
+
+/* Responsividade para celulares. */
+@media (max-width: 575px) {
+  .page-top {
+    padding-top: 30px;
+  }
+  .checkout-steps li {
+    align-items: center;
+    flex-direction: column;
+    font-size: 0.7rem;
+    text-align: center;
+  }
+  .payment-card,
+  .section-heading,
+  .review-block {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .payment-card input {
+    max-width: none;
+    width: 100%;
+  }
+  .filter-bar {
+    grid-template-columns: 1fr;
+  }
+  .product-buy {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .confirmation {
+    padding: 30px 20px;
+  }
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
+}

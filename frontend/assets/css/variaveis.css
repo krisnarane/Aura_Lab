@@ -1,0 +1,16 @@
+/*
+ * Tokens visuais compartilhados por toda a interface.
+ * Os valores foram centralizados sem alterar a identidade visual existente.
+ */
+:root {
+  --ink: #38242d;
+  --rose: #b65d78;
+  --rose-dark: #8d3f59;
+  --pink: #f9e9ee;
+  --gold: #b48842;
+  --cream: #fffafa;
+  --line: #eee0e4;
+  --muted: #8d7880;
+  --deep: #33212a;
+  --shadow: 0 18px 42px #4a27321a;
+}
