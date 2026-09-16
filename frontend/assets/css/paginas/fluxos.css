@@ -519,3 +519,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+.clientes-admin .admin-main { min-width:0; }
+.clientes-admin .filter-bar { display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem; }
+.clientes-admin label { display:block;width:100%; }
+.clientes-admin input,.clientes-admin select { max-width:100%;min-width:0; }
+.clientes-admin pre { white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem; }
+.clientes-admin summary { cursor:pointer;overflow-wrap:anywhere;padding:.5rem 0; }
+.clientes-admin .table-responsive { overflow-x:auto; }
+.clientes-admin .panel { overflow-wrap:anywhere; }
+@media(max-width:767px){.clientes-admin>div{display:block}.clientes-admin .admin-main{padding:1rem}}

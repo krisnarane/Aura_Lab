@@ -1,1 +1,10 @@
-docs/
+docs/*
+!docs/README.md
+!docs/crud-clientes-implementado.md
+!docs/crud-admin/
+!docs/dvp-uml-2026/
+!docs/ai/
+!docs/ai/**
+!docs/skills/
+!docs/skills/**
+backend/target/

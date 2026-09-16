@@ -1,0 +1,325 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+title Aura Lab — Modelo lógico de dados
+hide circle
+top to bottom direction
+skinparam linetype polyline
+set namespaceSeparator none
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam ClassBackgroundColor #FFFBD5
+skinparam ClassBorderColor #777766
+skinparam PackageBackgroundColor white
+skinparam PackageBorderColor #444444
+skinparam ArrowColor #666666
+skinparam NoteBackgroundColor #FFFBD5
+skinparam NoteBorderColor #777766
+skinparam nodesep 12
+skinparam ranksep 18
+together {
+package "Clientes" as PClientes {
+
+entity "Cliente" as cliente {
+* id_cliente
+--
+codigo [único, imutável]
+senha_hash [BCrypt]
+criado_em
+atualizado_em
+cpf [único]
+nome
+genero
+nascimento
+email [único]
+telefone_tipo
+telefone_ddd
+telefone_numero
+ativo
+/ ranking
+}
+entity "Endereço" as endereco {
+* id_endereco
+--
+apelido
+tipo_residencia
+tipo_logradouro
+logradouro
+numero
+complemento
+bairro
+cep
+cidade
+estado
+pais
+observacoes
+cobranca
+entrega
+preferencial_entrega
+ativo
+}
+entity "Bandeira" as bandeira {
+* id_bandeira
+--
+nome
+}
+entity "Cartão mascarado" as cartao {
+* id_cartao
+--
+titular
+ultimos_quatro
+preferencial
+ativo
+}
+}
+package "Catálogo" as PCatalogo {
+entity "Marca" as marca {
+* id_marca
+--
+nome
+}
+entity "Grupo de precificação" as grupo_precificacao {
+* id_grupo_precificacao
+--
+nome
+percentual
+}
+entity "Categoria" as categoria {
+* id_categoria
+--
+nome
+}
+entity "Produto" as produto {
+* id_produto
+--
+codigo
+nome
+descricao
+tonalidade
+acabamento
+tipo_pele
+volume
+ingredientes
+preco_custo
+preco_venda
+status
+visivel
+motivo_situacao
+justificativa_situacao
+}
+entity "Produto / categoria" as produto_categoria {
+* produto
+* categoria
+--
+
+}
+entity "Imagem do produto" as imagem_produto {
+* id_imagem_produto
+--
+url
+principal
+}
+}
+}
+together {
+package "Carrinho e estoque" as PEstoque {
+entity "Carrinho" as carrinho {
+* id_carrinho
+--
+status
+criado_em
+atualizado_em
+}
+entity "Item do carrinho" as item_carrinho {
+* id_item_carrinho
+--
+quantidade
+}
+entity "Estoque" as estoque {
+* id_estoque
+--
+quantidade_fisica
+/ quantidade_reservada
+/ quantidade_disponivel
+}
+entity "Reserva de estoque" as reserva_estoque {
+* id_reserva_estoque
+--
+quantidade
+status
+criada_em
+expira_em
+}
+entity "Movimentação de estoque" as movimentacao_estoque {
+* id_movimentacao_estoque
+--
+tipo
+quantidade
+data_hora
+justificativa
+}
+}
+package "Vendas e trocas" as PVendas {
+entity "Pedido" as pedido {
+* id_pedido
+--
+codigo
+chave_idempotencia
+requisicao_hash
+status
+realizado_em
+expira_em
+entregue_em
+motivo_cancelamento
+subtotal
+desconto
+frete
+total
+cliente_snapshot
+endereco_snapshot
+}
+entity "Item do pedido" as item_pedido {
+* id_item_pedido
+--
+quantidade
+preco_unitario
+desconto_rateado
+produto_snapshot
+}
+entity "Pagamento simulado" as pagamento {
+* id_pagamento
+--
+total
+status
+referencia_simulada
+processado_em
+}
+entity "Parte do pagamento" as parte_pagamento {
+* id_parte_pagamento
+--
+tipo
+valor
+status
+cartao_snapshot
+}
+entity "Cupom" as cupom {
+* id_cupom
+--
+codigo
+tipo
+modo_desconto
+valor
+inicio_validade
+fim_validade
+compra_minima
+limite_uso
+ativo
+/ saldo_disponivel
+}
+entity "Troca" as troca {
+* id_troca
+--
+quantidade
+motivo
+status
+solicitada_em
+analisada_em
+justificativa_decisao
+transportadora
+rastreio
+enviada_em
+recebida_em
+apto_estoque
+processada_em
+valor_credito
+}
+}
+package "Auditoria" as PAuditoria {
+entity "Registro de auditoria geral (futuro)" as auditoria {
+* id_auditoria
+--
+ator
+operacao
+entidade
+entidade_id
+ocorrida_em
+dados_anteriores
+dados_novos
+}
+}
+
+}
+
+cliente |o-[norank]-o{ auditoria : contexto
+
+note bottom of auditoria
+ Referência entidade + entidade_id não é FK genérica.
+ Migrar auditoria_cliente preservando seus snapshots.
+end note
+
+cliente ||-[norank]-|{ endereco
+cliente ||-[norank]-o{ cartao
+bandeira ||-[norank]-o{ cartao
+cliente ||-[norank]-o{ carrinho
+cliente ||-[norank]-o{ pedido
+marca ||-[norank]-o{ produto
+grupo_precificacao ||-[norank]-o{ produto
+produto ||-[norank]-|{ produto_categoria
+categoria ||-[norank]-o{ produto_categoria
+produto ||-[norank]-o{ imagem_produto
+produto ||-[norank]-|| estoque
+carrinho ||-[norank]-o{ item_carrinho
+produto ||-[norank]-o{ item_carrinho
+estoque ||-[norank]-o{ reserva_estoque
+item_carrinho |o-[norank]-o{ reserva_estoque
+item_pedido |o-[norank]-o{ reserva_estoque
+estoque ||-[norank]-o{ movimentacao_estoque
+item_pedido |o-[norank]-o| movimentacao_estoque
+troca |o-[norank]-o| movimentacao_estoque
+pedido ||-[norank]-|{ item_pedido
+produto ||-[norank]-o{ item_pedido
+pedido ||-[norank]-|| pagamento
+pagamento ||-[norank]-o{ parte_pagamento
+cartao |o-[norank]-o{ parte_pagamento
+cupom |o-[norank]-o{ parte_pagamento
+cupom |o-[norank]-o{ pedido
+cliente |o-[norank]-o{ cupom
+item_pedido ||-[norank]-o{ troca
+troca |o-[norank]-o| cupom
+
+
+
+
+
+
+
+cliente -[hidden]right-> endereco
+cliente -[hidden]down-> cartao
+cartao -[hidden]right-> bandeira
+marca -[hidden]right-> grupo_precificacao
+grupo_precificacao -[hidden]right-> categoria
+marca -[hidden]down-> produto
+produto -[hidden]right-> imagem_produto
+imagem_produto -[hidden]down-> produto_categoria
+pedido -[hidden]right-> troca
+troca -[hidden]right-> cupom
+pedido -[hidden]down-> item_pedido
+item_pedido -[hidden]right-> pagamento
+pagamento -[hidden]right-> parte_pagamento
+carrinho -[hidden]right-> estoque
+carrinho -[hidden]down-> item_carrinho
+item_carrinho -[hidden]down-> reserva_estoque
+estoque -[hidden]down-> movimentacao_estoque
+cliente -[hidden]right-> marca
+cliente -[hidden]down-> pedido
+marca -[hidden]down-> carrinho
+pedido -[hidden]right-> carrinho
+movimentacao_estoque -[hidden]down-> auditoria
+legend bottom
+  Identificadores destacados; / indica informação calculada.
+  Pé de galinha representa as cardinalidades.
+endlegend
+@enduml

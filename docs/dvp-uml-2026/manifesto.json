@@ -1,0 +1,127 @@
+[
+  {
+    "arquivo": "01-representacao-arquitetural.puml",
+    "titulo": "Figura 1 — Aura Lab — Representação arquitetural",
+    "svg": "svg/01-representacao-arquitetural.svg"
+  },
+  {
+    "arquivo": "02-caso-uso-realizar-pedido.puml",
+    "titulo": "Figura 2 — Aura Lab — Caso de uso Realizar Pedido",
+    "svg": "svg/02-caso-uso-realizar-pedido.svg"
+  },
+  {
+    "arquivo": "03-caso-uso-gerenciar-pedidos.puml",
+    "titulo": "Figura 3 — Aura Lab — Casos de uso de pedidos e trocas",
+    "svg": "svg/03-caso-uso-gerenciar-pedidos.svg"
+  },
+  {
+    "arquivo": "04-caso-uso-gerenciar-produtos.puml",
+    "titulo": "Figura 4 — Aura Lab — Caso de uso Gerenciar Produtos",
+    "svg": "svg/04-caso-uso-gerenciar-produtos.svg"
+  },
+  {
+    "arquivo": "05-pacotes-camadas.puml",
+    "titulo": "Figura 5 — Pacotes e dependências permitidas",
+    "svg": "svg/05-pacotes-camadas.svg"
+  },
+  {
+    "arquivo": "06-camadas-tecnologias.puml",
+    "titulo": "Figura 6 — Tecnologias e padrões",
+    "svg": "svg/06-camadas-tecnologias.svg"
+  },
+  {
+    "arquivo": "07-camada-apresentacao.puml",
+    "titulo": "Figura 7 — Apresentação atual e evolução",
+    "svg": "svg/07-camada-apresentacao.svg"
+  },
+  {
+    "arquivo": "08-camada-negocio.puml",
+    "titulo": "Figura 8 — Negócio, políticas e integrações",
+    "svg": "svg/08-camada-negocio.svg"
+  },
+  {
+    "arquivo": "09-controllers-services.puml",
+    "titulo": "Figura 9 — Controllers, Services e colaborações",
+    "svg": "svg/09-controllers-services.svg"
+  },
+  {
+    "arquivo": "10-modelo-dominio.puml",
+    "titulo": "Aura Lab — Modelo de domínio",
+    "svg": "svg/10-modelo-dominio.svg"
+  },
+  {
+    "arquivo": "11-camada-persistencia.puml",
+    "titulo": "Figura 11 — Aura Lab — Camada de persistência",
+    "svg": "svg/11-camada-persistencia.svg"
+  },
+  {
+    "arquivo": "12-sequencia-realizar-pedido.puml",
+    "titulo": "Figura 12 — Aura Lab — Sequência de finalização da compra",
+    "svg": "svg/12-sequencia-realizar-pedido.svg"
+  },
+  {
+    "arquivo": "13-sequencia-gerenciar-pedidos.puml",
+    "titulo": "Figura 13 — Aura Lab — Sequência de gerenciamento administrativo do pedido",
+    "svg": "svg/13-sequencia-gerenciar-pedidos.svg"
+  },
+  {
+    "arquivo": "14-sequencia-gerenciar-produtos.puml",
+    "titulo": "Figura 14 — Aura Lab — Sequência de cadastro ou alteração de produto",
+    "svg": "svg/14-sequencia-gerenciar-produtos.svg"
+  },
+  {
+    "arquivo": "15-implantacao.puml",
+    "titulo": "Figura 15 — Implantação local e testes isolados",
+    "svg": "svg/15-implantacao.svg"
+  },
+  {
+    "arquivo": "16-modelo-logico.puml",
+    "titulo": "Aura Lab — Modelo lógico de dados",
+    "svg": "svg/16-modelo-logico.svg"
+  },
+  {
+    "arquivo": "17-modelo-relacional.puml",
+    "titulo": "Aura Lab — Modelo relacional",
+    "svg": "svg/17-modelo-relacional.svg"
+  },
+  {
+    "arquivo": "18-casos-uso-clientes.puml",
+    "titulo": "Figura 18 — Casos de uso do CRUD implementado",
+    "svg": "svg/18-casos-uso-clientes.svg"
+  },
+  {
+    "arquivo": "19-sequencia-crud-auditoria.puml",
+    "titulo": "Figura 19 — Escrita do CRUD e auditoria atômica",
+    "svg": "svg/19-sequencia-crud-auditoria.svg"
+  },
+  {
+    "arquivo": "20-estados-pedido.puml",
+    "titulo": "Figura 20 — Estados do pedido na solução alvo",
+    "svg": "svg/20-estados-pedido.svg"
+  },
+  {
+    "arquivo": "21-estados-troca.puml",
+    "titulo": "Figura 21 — Troca por item e quantidade",
+    "svg": "svg/21-estados-troca.svg"
+  },
+  {
+    "arquivo": "22-responsabilidades-crud.puml",
+    "titulo": "Figura 22 — CRUD simples, sem autenticação",
+    "svg": "svg/22-responsabilidades-crud.svg"
+  },
+  {
+    "arquivo": "23-testes-e-padroes.puml",
+    "titulo": "Figura 23 — Testes, padrões e evidências do CRUD",
+    "svg": "svg/23-testes-e-padroes.svg"
+  },
+  {
+    "arquivo": "24-modelo-atual.puml",
+    "titulo": "Figura 24 — Domínio do CRUD atual",
+    "svg": "svg/24-modelo-atual.svg"
+  },
+  {
+    "arquivo": "25-modelo-relacional-atual.puml",
+    "titulo": "Figura 25 — Banco do CRUD atual V1–V4",
+    "svg": "svg/25-modelo-relacional-atual.svg"
+  }
+]

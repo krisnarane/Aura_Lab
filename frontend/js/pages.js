@@ -1,3 +1,4 @@
+import { criarNavegacaoAdmin } from "./adminLayout.js";
 /**
  * Constrói a marcação das telas sem registrar eventos ou alterar o estado.
  * A camada de aplicação liga os comportamentos depois de cada renderização.
@@ -450,21 +451,6 @@ export const advisorChat = () =>
   );
 
 // Navegação lateral fixa da área administrativa.
-const criarNavegacaoAdmin = (active) =>
-  `<aside class="admin-side"><a href="/admin/dashboard" data-link class="brand light">aura <i>LAB</i></a><small>GESTÃO</small>${[
-    ["Dashboard", "/admin/dashboard", "Dashboard"],
-    ["Clientes", "/admin/clientes", "Clientes"],
-    ["Pedidos", "/admin/pedidos", "Pedidos"],
-    ["Trocas", "/admin/trocas", "Trocas"],
-    ["Produtos", "/admin/produtos", "Produtos"],
-    ["Cupons", "/admin/cupons", "Cupons"],
-    ["Configurações", "/admin/configuracoes", "Configurações"],
-  ]
-    .map(
-      ([label, href, key]) =>
-        `<a data-link href="${href}" class="${active === key ? "active" : ""}">${label}</a>`,
-    )
-    .join("")}<a href="/" data-link class="admin-store-link">← Voltar para a loja</a></aside>`;
 const criarEstruturaAdmin = (active, title, content) =>
   `<main class="admin"><div>${criarNavegacaoAdmin(active)}<section class="admin-main"><span class="eyebrow">ADMIN</span><h1>${title}</h1>${content}</section></div></main>`;
 

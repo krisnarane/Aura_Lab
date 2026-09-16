@@ -1,0 +1,83 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #374151
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 6
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #9CA3AF
+skinparam PackageBackgroundColor #F3F6FA
+skinparam PackageBorderColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #64748B
+skinparam wrapWidth 220
+
+title Figura 12 — Aura Lab — Sequência de finalização da compra
+
+autonumber
+actor Cliente
+boundary Webapp
+control CheckoutController as API
+control CheckoutService as Checkout
+control ReservaEstoqueService as Reserva
+control CupomService as Cupom
+control PagamentoService as Pagamento
+control PedidoService as Pedido
+database "Repositories / PostgreSQL" as DB
+Cliente -> Webapp : confirmarCompra()
+Webapp -> API : POST /checkout\nDTO + chave de idempotência
+API -> API : validar DTO e cliente identificado
+API -> Checkout : finalizar(clienteId, DTO, chave)
+Checkout -> DB : BEGIN; bloquear cliente/carrinho\nconsultar chave já utilizada
+alt chave existente e mesmo conteúdo
+  DB --> Checkout : pedido já criado
+  Checkout -> DB : encerrar transação sem nova escrita
+  Checkout --> API : mesmo pedido
+  API --> Webapp : confirmação original
+else chave existente com conteúdo diferente
+  Checkout -> DB : ROLLBACK
+  Checkout --> API : conflito de idempotência
+  API --> Webapp : 409; revisar requisição
+else nova finalização
+  Checkout -> DB : carregar cliente ativo, itens e endereço\nbloquear recursos em ordem determinística
+  Checkout -> Reserva : validar disponibilidade e reservas vigentes
+  Reserva -> DB : bloquear estoque; validar quantidades e prazo
+  Checkout -> Cupom : validar promoção, créditos e titularidade
+  Cupom -> DB : bloquear cupons; consultar usos e reservas
+  Checkout -> Checkout : recalcular preços, desconto, frete\ne validar soma dos meios = total
+  alt dados, reserva ou composição inválidos
+    Checkout -> DB : ROLLBACK
+    Checkout --> API : erro de negócio
+    API --> Webapp : 400/409; revisar checkout
+  else checkout válido
+    Checkout -> Pedido : criar EM_ABERTO com snapshots
+    Pedido -> DB : inserir pedido, itens e chave única
+    Checkout -> Pagamento : registrar composição PENDENTE
+    Pagamento -> DB : inserir pagamento e partes RESERVADO
+    Checkout -> Cupom : reservar créditos e uso promocional
+    note right of Cupom
+      Reserva financeira representada pelas partes
+      RESERVADO; não debita definitivamente o crédito.
+      Uso promocional pendente deriva do pedido.
+    end note
+    Checkout -> Reserva : transferir donos para itens do pedido
+    Reserva -> DB : manter quantidades; definir expiração alvo
+    Checkout -> DB : marcar carrinho FINALIZADO; registrar auditoria
+    Checkout -> DB : COMMIT
+    Checkout --> API : pedido EM_ABERTO
+    API --> Webapp : 201; código e composição
+    Webapp --> Cliente : exibir confirmação e esvaziar sacola visual
+  end
+end
+note over Checkout, DB
+  Nenhuma baixa definitiva nem chamada ao gateway nesta sequência.
+  Falha em qualquer escrita provoca rollback de toda a finalização.
+  Prazo de expiração configurável; valor ainda a definir no projeto.
+end note
+
+@enduml

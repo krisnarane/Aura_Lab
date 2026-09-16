@@ -1,0 +1,66 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 19 — Escrita do CRUD e auditoria atômica
+footer Implementação atual — 09/09/2026; sem login, ator técnico ADMIN_DEMO
+autonumber
+actor Operador
+boundary "Formulário" as UI
+participant "clientesService.js" as Facade
+participant "clientesApi.js" as Adapter
+control ClienteController as API
+control "Service do caso de uso" as S
+control AuditoriaService as Audit
+database "Repositories / PostgreSQL" as DB
+Operador -> UI : enviar dados
+UI -> UI : bloquear envio duplicado
+UI -> Facade : operação explícita
+Facade -> Adapter : DTO
+Adapter -> API : HTTP / JSON
+API -> API : Bean Validation
+alt entrada inválida
+ API --> Adapter : 400 {codigo, mensagem, campos}
+else entrada válida
+ API -> S : caso de uso
+ S -> DB : BEGIN; carregar estado
+ opt endereço / cartão / preferência
+  S -> DB : bloquear cliente para escrita
+ end
+ S -> S : normalizar; validar associação e invariantes
+ alt conflito ou recurso ausente
+  S -> DB : ROLLBACK
+  S --> API : 409 ou 404
+ else válido
+  S -> DB : persistir / flush; obter IDs
+  S -> Audit : registrar antes/depois permitidos
+  Audit -> DB : INSERT / flush na MESMA transação
+  alt auditoria falha
+   S -> DB : ROLLBACK de todas as escritas
+   S --> API : falha; operação não concluída
+  else auditoria gravada
+   S -> DB : COMMIT
+   S --> API : DTO / sucesso
+  end
+ end
+ API --> Adapter : resposta
+end
+Adapter --> Facade : dados ou erro normalizado
+Facade --> UI : resultado
+UI -> UI : limpar segredos; apresentar resultado\npreservar dados não sensíveis após erro
+note over Audit, DB
+ Senhas, hashes, PAN e CVV não entram na auditoria.
+ Senha: registrar apenas que foi alterada.
+end note
+@enduml

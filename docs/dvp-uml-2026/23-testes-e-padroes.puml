@@ -1,0 +1,41 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 23 — Testes, padrões e evidências do CRUD
+footer Implementação atual — 09/09/2026; sem login, ator técnico ADMIN_DEMO
+component "Maven Wrapper / testar-crud.ps1" as Runner
+component "Selenium + JUnit 5\nClienteCrudIT" as UI
+package "Page Objects" {
+ [ClientesAdminPage] as Page
+ [FormularioComponente / EnderecoComponente\nCartaoComponente / ConfirmacaoComponente] as Components
+}
+component "JUnit / Mockito\nAPI / integridade / migração / reinício" as Tests
+component "PoliticaRankingPorComprasTest\nStrategy sem HTTP ou banco" as Unit
+component "ArquiteturaTest\nControllers / Mapper sem Repository" as Architecture
+component "ConsultaPerformanceTest\n1.000 clientes / 30 execuções por consulta" as Perf
+node "Testcontainers PostgreSQL\nMigrações reais / massa por cenário" as DB
+artifact "HTML / capturas / matriz RF-RN-teste-evidência" as Report
+Runner --> UI
+Runner --> Tests
+Runner --> Unit
+Runner --> Architecture
+Runner --> Perf
+UI --> Page
+Page --> Components
+UI --> DB : aplicação isolada
+Tests --> DB
+Perf --> DB
+Runner --> Report
+@enduml

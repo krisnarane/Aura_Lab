@@ -1,0 +1,49 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 5 — Pacotes e dependências permitidas
+footer Arquitetura alvo — contém componentes futuros; não comprova implementação
+package "Frontend" {
+ [Renderização e componentes] as UI
+ [Eventos e Facades] as Facade
+ [Adapters HTTP] as HTTP
+}
+package "Backend" {
+ [Configuração da aplicação] as Config
+ [API / DTO / erros] as API
+ [Services / transações] as Service
+ [Domain / políticas] as Domain
+ [Repository / Specifications] as Repo
+ [Integrações por interfaces] as Integration
+ [Auditoria transacional] as Audit
+}
+database PostgreSQL as DB
+UI --> Facade
+Facade --> HTTP
+HTTP --> API : REST
+Config ..> API
+API --> Service
+Service --> Domain
+Service --> Repo
+Service --> Integration
+Service --> Audit
+Audit --> Repo
+Repo --> DB
+note bottom of Service
+ Controllers e mappers não acessam repositories.
+ DTOs não expõem entidades ou credenciais.
+ Cliente implementado; demais módulos são evolução.
+end note
+@enduml

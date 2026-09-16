@@ -2,6 +2,8 @@
 
 **Revisão atual: 04/09/2026.** Este front-end é o protótipo navegável vigente do Aura Lab. Ele cobre as jornadas de cliente, checkout, pedidos, trocas, cupons, gestão administrativa, Consultora Aura e Analytics com dados mockados.
 
+> A rota `/admin/clientes` agora é integrada à API Spring Boot e ao PostgreSQL. Execute o sistema pelas instruções do `README.md` na raiz; o servidor Node isolado não oferece essa API.
+
 HTML5, CSS3, Bootstrap 5 e JavaScript ES6 modular, sem frameworks de front-end. A massa inicia com Marina Costa identificada para demonstração; o cadastro, a senha, o pagamento, o frete, o estoque e a administração são fluxos demonstrativos.
 
 O navegador armazena o estado demonstrativo completo em `localStorage`. A massa inicial abre com Marina Costa (`cli-1`) selecionada para facilitar a demonstração; perfil, pedidos e checkout usam o cliente identificado.

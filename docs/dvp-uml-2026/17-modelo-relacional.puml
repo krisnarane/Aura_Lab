@@ -1,0 +1,351 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+title Aura Lab — Modelo relacional
+hide circle
+top to bottom direction
+skinparam linetype polyline
+set namespaceSeparator none
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam ClassBackgroundColor #FFFBD5
+skinparam ClassBorderColor #777766
+skinparam PackageBackgroundColor white
+skinparam PackageBorderColor #444444
+skinparam ArrowColor #666666
+skinparam NoteBackgroundColor #FFFBD5
+skinparam NoteBorderColor #777766
+skinparam nodesep 12
+skinparam ranksep 18
+together {
+package "Clientes" as PClientes {
+
+entity "cliente" as cliente {
+* id : BIGINT <<PK>>
+--
+* codigo : VARCHAR(20) <<UK, imutável>>
+* senha_hash : VARCHAR(100)
+* criado_em : TIMESTAMPTZ
+* atualizado_em : TIMESTAMPTZ
+* cpf : VARCHAR(11) <<UK>>
+* email : VARCHAR(254) <<UK>>
+* nome : VARCHAR(150)
+* genero : VARCHAR(40)
+* nascimento : DATE
+* telefone_tipo : VARCHAR(20)
+* telefone_ddd : VARCHAR(2)
+* telefone_numero : VARCHAR(9)
+* ativo : BOOLEAN
+}
+entity "endereco" as endereco {
+* id : BIGINT <<PK>>
+--
+* cliente_id : BIGINT <<FK>>
+* apelido : VARCHAR(60)
+* tipo_residencia : VARCHAR(40)
+* tipo_logradouro : VARCHAR(40)
+* logradouro : VARCHAR(160)
+* numero : VARCHAR(20)
+complemento : VARCHAR(100)
+* bairro : VARCHAR(100)
+* cep : VARCHAR(8)
+* cidade : VARCHAR(100)
+* estado : VARCHAR(60)
+* pais : VARCHAR(60)
+observacoes : VARCHAR(500)
+* cobranca : BOOLEAN
+* entrega : BOOLEAN
+* preferencial_entrega : BOOLEAN
+* ativo : BOOLEAN
+}
+entity "bandeira" as bandeira {
+* id : BIGINT <<PK>>
+--
+* nome : VARCHAR(40) <<UK>>
+}
+entity "cartao" as cartao {
+* id : BIGINT <<PK>>
+--
+* cliente_id : BIGINT <<FK>>
+* bandeira_id : BIGINT <<FK>>
+* titular : VARCHAR(150)
+* ultimos_quatro : VARCHAR(4)
+* preferencial : BOOLEAN
+* ativo : BOOLEAN
+}
+}
+package "Catálogo" as PCatalogo {
+entity "marca" as marca {
+* id : BIGINT <<PK>>
+--
+* nome : VARCHAR(100) <<UK>>
+}
+entity "grupo_precificacao" as grupo_precificacao {
+* id : BIGINT <<PK>>
+--
+* nome : VARCHAR(100) <<UK>>
+* percentual : NUMERIC(7,2)
+}
+entity "categoria" as categoria {
+* id : BIGINT <<PK>>
+--
+* nome : VARCHAR(100) <<UK>>
+}
+entity "produto" as produto {
+* id : BIGINT <<PK>>
+--
+* marca_id : BIGINT <<FK>>
+* grupo_precificacao_id : BIGINT <<FK>>
+* codigo : VARCHAR(40) <<UK>>
+* nome : VARCHAR(150)
+* descricao : TEXT
+tonalidade : VARCHAR(80)
+acabamento : VARCHAR(80)
+tipo_pele : VARCHAR(80)
+volume : VARCHAR(40)
+ingredientes : TEXT
+* preco_custo : NUMERIC(12,2)
+* preco_venda : NUMERIC(12,2)
+* status : VARCHAR(10)
+* visivel : BOOLEAN
+motivo_situacao : VARCHAR(80)
+justificativa_situacao : TEXT
+}
+entity "produto_categoria" as produto_categoria {
+* produto_id : BIGINT <<PK, FK>>
+* categoria_id : BIGINT <<PK, FK>>
+}
+entity "imagem_produto" as imagem_produto {
+* id : BIGINT <<PK>>
+--
+* produto_id : BIGINT <<FK>>
+* url : TEXT
+* principal : BOOLEAN
+}
+}
+}
+together {
+package "Carrinho e estoque" as PEstoque {
+entity "carrinho" as carrinho {
+* id : BIGINT <<PK>>
+--
+* cliente_id : BIGINT <<FK>>
+* status : VARCHAR(12)
+* criado_em : TIMESTAMPTZ
+* atualizado_em : TIMESTAMPTZ
+}
+entity "item_carrinho" as item_carrinho {
+* id : BIGINT <<PK>>
+--
+* carrinho_id : BIGINT <<FK>>
+* produto_id : BIGINT <<FK>>
+* quantidade : INTEGER
+}
+entity "estoque" as estoque {
+* id : BIGINT <<PK>>
+--
+* produto_id : BIGINT <<FK, UK>>
+* quantidade_fisica : INTEGER
+}
+entity "reserva_estoque" as reserva_estoque {
+* id : BIGINT <<PK>>
+--
+* estoque_id : BIGINT <<FK>>
+item_carrinho_id : BIGINT <<FK>>
+item_pedido_id : BIGINT <<FK>>
+* quantidade : INTEGER
+* status : VARCHAR(12)
+* criada_em : TIMESTAMPTZ
+* expira_em : TIMESTAMPTZ
+}
+entity "movimentacao_estoque" as movimentacao_estoque {
+* id : BIGINT <<PK>>
+--
+* estoque_id : BIGINT <<FK>>
+item_pedido_id : BIGINT <<FK, UK>>
+troca_id : BIGINT <<FK, UK>>
+* tipo : VARCHAR(12)
+* quantidade : INTEGER
+* data_hora : TIMESTAMPTZ
+* justificativa : TEXT
+}
+}
+package "Vendas e trocas" as PVendas {
+entity "pedido" as pedido {
+* id : BIGINT <<PK>>
+--
+* cliente_id : BIGINT <<FK>>
+cupom_promocional_id : BIGINT <<FK>>
+* codigo : VARCHAR(40) <<UK>>
+* chave_idempotencia : VARCHAR(80)
+* requisicao_hash : CHAR(64)
+* status : VARCHAR(25)
+* realizado_em : TIMESTAMPTZ
+* expira_em : TIMESTAMPTZ
+entregue_em : TIMESTAMPTZ
+motivo_cancelamento : VARCHAR(80)
+* cliente_snapshot : JSONB
+* endereco_snapshot : JSONB
+* subtotal : NUMERIC(12,2)
+* desconto : NUMERIC(12,2)
+* frete : NUMERIC(12,2)
+* total : NUMERIC(12,2)
+}
+entity "item_pedido" as item_pedido {
+* id : BIGINT <<PK>>
+--
+* pedido_id : BIGINT <<FK>>
+* produto_id : BIGINT <<FK>>
+* quantidade : INTEGER
+* preco_unitario : NUMERIC(12,2)
+* desconto_rateado : NUMERIC(12,2)
+* produto_snapshot : JSONB
+}
+entity "pagamento_simulado" as pagamento {
+* id : BIGINT <<PK>>
+--
+* pedido_id : BIGINT <<FK, UK>>
+* status : VARCHAR(12)
+* total : NUMERIC(12,2)
+referencia_simulada : VARCHAR(100)
+processado_em : TIMESTAMPTZ
+}
+entity "parte_pagamento" as parte_pagamento {
+* id : BIGINT <<PK>>
+--
+* pagamento_id : BIGINT <<FK>>
+* tipo : VARCHAR(15)
+* valor : NUMERIC(12,2)
+* status : VARCHAR(12)
+cartao_id : BIGINT <<FK>>
+cartao_snapshot : JSONB
+cupom_troca_id : BIGINT <<FK>>
+}
+entity "cupom" as cupom {
+* id : BIGINT <<PK>>
+--
+* codigo : VARCHAR(40) <<UK>>
+* tipo : VARCHAR(12)
+* valor : NUMERIC(12,2)
+* inicio_validade : DATE
+* fim_validade : DATE
+* ativo : BOOLEAN
+modo_desconto : VARCHAR(12)
+compra_minima : NUMERIC(12,2)
+limite_uso : INTEGER
+cliente_id : BIGINT <<FK>>
+troca_origem_id : BIGINT <<FK, UK>>
+}
+entity "troca" as troca {
+* id : BIGINT <<PK>>
+--
+* item_pedido_id : BIGINT <<FK>>
+* quantidade : INTEGER
+* motivo : TEXT
+* status : VARCHAR(20)
+* solicitada_em : TIMESTAMPTZ
+analisada_em : TIMESTAMPTZ
+justificativa_decisao : TEXT
+transportadora : VARCHAR(100)
+rastreio : VARCHAR(100)
+enviada_em : TIMESTAMPTZ
+recebida_em : TIMESTAMPTZ
+apto_estoque : BOOLEAN
+processada_em : TIMESTAMPTZ
+valor_credito : NUMERIC(12,2)
+}
+}
+package "Auditoria" as PAuditoria {
+entity "registro_auditoria" as auditoria {
+* id : BIGINT <<PK>>
+--
+cliente_id : BIGINT <<FK>>
+* ator : VARCHAR(80)
+* operacao : VARCHAR(80)
+* entidade : VARCHAR(80)
+* entidade_id : BIGINT
+* ocorrida_em : TIMESTAMPTZ
+dados_anteriores : JSONB
+dados_novos : JSONB
+}
+}
+
+}
+
+cliente |o-[norank]-o{ auditoria : contexto
+
+note bottom of auditoria
+ Referência entidade + entidade_id não é FK genérica.
+ Migrar auditoria_cliente preservando seus snapshots.
+end note
+
+cliente ||-[norank]-|{ endereco
+cliente ||-[norank]-o{ cartao
+bandeira ||-[norank]-o{ cartao
+cliente ||-[norank]-o{ carrinho
+cliente ||-[norank]-o{ pedido
+marca ||-[norank]-o{ produto
+grupo_precificacao ||-[norank]-o{ produto
+produto ||-[norank]-|{ produto_categoria
+categoria ||-[norank]-o{ produto_categoria
+produto ||-[norank]-o{ imagem_produto
+produto ||-[norank]-|| estoque
+carrinho ||-[norank]-o{ item_carrinho
+produto ||-[norank]-o{ item_carrinho
+estoque ||-[norank]-o{ reserva_estoque
+item_carrinho |o-[norank]-o{ reserva_estoque
+item_pedido |o-[norank]-o{ reserva_estoque
+estoque ||-[norank]-o{ movimentacao_estoque
+item_pedido |o-[norank]-o| movimentacao_estoque
+troca |o-[norank]-o| movimentacao_estoque
+pedido ||-[norank]-|{ item_pedido
+produto ||-[norank]-o{ item_pedido
+pedido ||-[norank]-|| pagamento
+pagamento ||-[norank]-o{ parte_pagamento
+cartao |o-[norank]-o{ parte_pagamento
+cupom |o-[norank]-o{ parte_pagamento
+cupom |o-[norank]-o{ pedido
+cliente |o-[norank]-o{ cupom
+item_pedido ||-[norank]-o{ troca
+troca |o-[norank]-o| cupom
+
+
+
+
+
+
+
+cliente -[hidden]right-> endereco
+cliente -[hidden]down-> cartao
+cartao -[hidden]right-> bandeira
+marca -[hidden]right-> grupo_precificacao
+grupo_precificacao -[hidden]right-> categoria
+marca -[hidden]down-> produto
+produto -[hidden]right-> imagem_produto
+imagem_produto -[hidden]down-> produto_categoria
+pedido -[hidden]right-> troca
+troca -[hidden]right-> cupom
+pedido -[hidden]down-> item_pedido
+item_pedido -[hidden]right-> pagamento
+pagamento -[hidden]right-> parte_pagamento
+carrinho -[hidden]right-> estoque
+carrinho -[hidden]down-> item_carrinho
+item_carrinho -[hidden]down-> reserva_estoque
+estoque -[hidden]down-> movimentacao_estoque
+cliente -[hidden]right-> marca
+cliente -[hidden]down-> pedido
+marca -[hidden]down-> carrinho
+pedido -[hidden]right-> carrinho
+movimentacao_estoque -[hidden]down-> auditoria
+legend bottom
+  * = NOT NULL | PK = chave primária | FK = chave estrangeira | UK = único.
+  IDs BIGINT gerados por IDENTITY, exceto FKs e chave composta.
+  Campos sem * aceitam NULL. Estados: VARCHAR com CHECK.
+  Regras condicionais e transacionais: REGRAS-E-MIGRACAO.md.
+endlegend
+@enduml
+
+

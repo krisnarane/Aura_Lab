@@ -1,0 +1,99 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+
+footer Implementado — sem autenticação; ADMIN_DEMO é ator técnico
+title Figura 24 — Domínio do CRUD atual
+hide methods
+class Cliente {
+ id: Long
+ codigo: String <<unique, immutable>>
+ cpf: String <<unique>>
+ email: String <<unique>>
+ nome: String
+ genero: String
+ nascimento: LocalDate
+ telefoneTipo: String
+ telefoneDdd: String
+ telefoneNumero: String
+ senhaHash: String <<BCrypt>>
+ criadoEm: OffsetDateTime
+ atualizadoEm: OffsetDateTime
+ ativo: boolean
+ /ranking: int
+}
+class Endereco {
+ id: Long
+ apelido: String
+ tipoResidencia: String
+ tipoLogradouro: String
+ logradouro: String
+ numero: String
+ complemento: String [0..1]
+ bairro: String
+ cep: String
+ cidade: String
+ estado: String
+ pais: String
+ observacoes: String [0..1]
+ cobranca: boolean
+ entrega: boolean
+ preferencialEntrega: boolean
+ ativo: boolean
+}
+class Cartao {
+ id: Long
+ titular: String
+ ultimosQuatro: String
+ preferencial: boolean
+ ativo: boolean
+}
+class Bandeira {
+ id: Long
+ nome: String
+}
+class TransacaoCliente <<demonstrativa>> {
+ id: Long
+ clienteId: Long
+ codigo: String
+ tipo: String
+ status: String
+ valor: BigDecimal
+ ocorridaEm: OffsetDateTime
+ detalhes: String
+}
+class AuditoriaCliente {
+ id: Long
+ clienteId: Long
+ ator: String
+ entidade: String
+ entidadeId: Long [0..1]
+ operacao: String
+ ocorridaEm: OffsetDateTime
+ dadosAnteriores: JSONB [0..1]
+ dadosNovos: JSONB [0..1]
+ alteracoes: String <<compatibilidade>>
+}
+Cliente "1" -- "1..*" Endereco
+Cliente "1" -- "0..*" Cartao
+Cartao "0..*" -- "1" Bandeira
+Cliente "1" -- "0..*" TransacaoCliente
+Cliente "1" -- "0..*" AuditoriaCliente
+note bottom of Cliente
+ Sem login nesta entrega: ADMIN_DEMO é ator técnico.
+ Modelo completo de vendas é futuro; sem autenticação.
+ Inativação preserva vínculos; não há exclusão física.
+end note
+@enduml

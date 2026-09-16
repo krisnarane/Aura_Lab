@@ -1,0 +1,59 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #374151
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 6
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #9CA3AF
+skinparam PackageBackgroundColor #F3F6FA
+skinparam PackageBorderColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #64748B
+skinparam wrapWidth 220
+
+title Figura 11 — Aura Lab — Camada de persistência
+
+left to right direction
+package "Aplicação" {
+  [Services transacionais] as Services
+}
+package "Domínio" {
+  [Entidades e objetos de valor\nMapeamento JPA] as Entities
+}
+package "Infraestrutura / persistência" {
+  interface "ClienteRepository / BandeiraRepository\nTransacaoRepository / AuditoriaRepository\nDemais repositories futuros: ProdutoRepository\nPedidoRepository\nTrocaRepository\nCupomRepository\nReservaEstoqueRepository\nDemais repositories" as Repos
+  component "Spring Data JPA / Hibernate" as JPA
+  artifact "db/migration\nEsquema, constraints, índices e seeds" as Migrations
+  component Flyway
+}
+database PostgreSQL as DB
+Services --> Repos
+Repos ..> Entities : persiste / consulta
+JPA ..|> Repos : implementa em execução
+JPA --> DB : JDBC / transações / locks
+Flyway --> Migrations : executa versões
+Flyway --> DB : prepara e evolui esquema
+note bottom of Services
+  Controllers não acessam repositories diretamente.
+  Transações abrangem pedido, reserva, pagamento,
+  estoque, crédito e auditoria quando alterados juntos.
+end note
+note bottom of DB
+  PK / FK / UNIQUE / CHECK e índices.
+  Regras entre múltiplas linhas exigem serviço
+  transacional e, quando indicado, trigger/constraint.
+end note
+
+note top of Repos
+ Atual: V1–V4, CPF/e-mail únicos, código imutável,
+ índice parcial de cartão preferencial e lock do cliente.
+ Sem exclusão automática de órfãos; cascata ALL ainda
+ existe no código e sua restrição é melhoria proposta.
+end note
+@enduml

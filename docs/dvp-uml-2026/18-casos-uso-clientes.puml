@@ -1,0 +1,45 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 18 — Casos de uso do CRUD implementado
+footer Implementação atual — 09/09/2026; sem login, ator técnico ADMIN_DEMO
+left to right direction
+actor "Operador demonstrativo\nADMIN_DEMO, sem autenticação" as Admin
+rectangle "/admin/clientes — RF0021–RF0028" {
+ usecase "Cadastrar cliente\nRF0021" as Create
+ usecase "Consultar e filtrar\nRF0024" as Read
+ usecase "Alterar dados pessoais\nRF0022" as Update
+ usecase "Inativar com confirmação\nRF0023" as Disable
+ usecase "Consultar histórico demonstrativo\nRF0025" as History
+ usecase "Manter endereços\nRF0026" as Address
+ usecase "Manter cartões mascarados\nRF0027" as Card
+ usecase "Alterar senha isoladamente\nRF0028" as Password
+ usecase "Consultar auditoria" as Audit
+}
+Admin --> Create
+Admin --> Read
+Admin --> Update
+Admin --> Disable
+Admin --> History
+Admin --> Address
+Admin --> Card
+Admin --> Password
+Admin --> Audit
+note bottom of Disable
+ Cancelar confirmação não envia requisição.
+ Repetir inativação resulta em conflito 409.
+ Sem exclusão física ou reativação.
+end note
+@enduml

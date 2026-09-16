@@ -1,0 +1,66 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #374151
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 6
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #9CA3AF
+skinparam PackageBackgroundColor #F3F6FA
+skinparam PackageBorderColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #64748B
+skinparam wrapWidth 220
+
+title Figura 1 — Aura Lab — Representação arquitetural
+
+left to right direction
+actor Cliente
+actor Administrador
+node "Navegador" {
+  component "Webapp\nHTML, CSS, Bootstrap 5, JavaScript ES6" as Web
+}
+rectangle "Back-end Aura Lab — Java 21 / Spring Boot" {
+  component "API REST /api/v1\nControllers / DTOs; sem login" as API
+  component "Serviços de aplicação\nRegras e transações" as Services
+  component "Persistência\nRepositories JPA" as Persistence
+  interface BeautyAdvisor
+  component "Adaptador Gemini" as GeminiAdapter
+  component "Recomendação por regras" as Rules
+  interface GatewayPagamento
+  component "Gateway simulado\nDeterminístico e local" as Payment
+}
+database PostgreSQL as DB
+cloud "Gemini API\nProvedor externo opcional" as Gemini
+Cliente --> Web
+Administrador --> Web
+Web --> API : HTTP / JSON
+API --> Services
+Services --> Persistence
+Persistence --> DB : JDBC
+Services --> BeautyAdvisor
+GeminiAdapter ..|> BeautyAdvisor
+Rules ..|> BeautyAdvisor
+GeminiAdapter --> Gemini : HTTPS
+Services --> GatewayPagamento
+Payment ..|> GatewayPagamento
+note bottom of Services
+  O back-end é a autoridade para preço, estoque,
+  cupons, pagamentos, pedidos e trocas.
+  A IA recebe um recorte do catálogo e só recomenda.
+end note
+note bottom of Rules
+  O fallback executa no back-end alvo.
+  O protótipo atual também possui fallback no navegador.
+end note
+
+note bottom of Web
+ Atual: /admin/clientes integrado à API e PostgreSQL.
+ Futuro: integração dos demais módulos.
+end note
+@enduml

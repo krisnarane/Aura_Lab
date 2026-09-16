@@ -1,0 +1,46 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 15 — Implantação local e testes isolados
+footer Arquitetura alvo — contém componentes futuros; não comprova implementação
+node "Computador de demonstração" {
+ node "Navegador / Chrome" {
+  artifact "HTML / CSS / JS" as Web
+ }
+ node "Java 21" {
+  component "Spring Boot — porta 4200\nWebapp estático + API /api/v1" as App
+  component "Flyway V1–V4\n+ novas migrações futuras" as Flyway
+  component "Adapters Gemini / pagamento\nFUTUROS" as Integration
+ }
+ node "Docker Compose" {
+  database "PostgreSQL\nVolume persistente de demonstração" as DB
+ }
+ node "Testes Maven / Testcontainers" {
+  component "JUnit / Selenium\nAplicação em porta aleatória" as Tests
+  database "PostgreSQL exclusivo e descartável" as TestDB
+ }
+}
+cloud "Gemini opcional — futuro" as Gemini
+Web --> App : HTTP / mesma origem
+App --> DB : JDBC
+Flyway --> DB
+App ..> Integration
+Integration ..> Gemini : HTTPS / chave no servidor
+Tests --> TestDB : massa isolada por cenário
+note bottom of Tests
+ Sem H2 nem reinicialização do banco de demonstração.
+ Chrome visível para apresentação ou headless.
+end note
+@enduml

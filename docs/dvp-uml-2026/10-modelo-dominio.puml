@@ -1,0 +1,334 @@
+@startuml
+footer Planejamento do sistema completo — sem autenticação
+set namespaceSeparator none
+' Visão conceitual do sistema completo planejado.
+title Figura 10 — Aura Lab — Modelo de domínio completo
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor #FFFBD5
+skinparam classBorderColor #777766
+skinparam packageBackgroundColor white
+skinparam packageBorderColor #555555
+skinparam ArrowColor #666666
+skinparam nodesep 35
+skinparam ranksep 55
+hide circle
+hide empty methods
+
+package "Domínio alvo — pacotes por módulo" {
+class Cliente {
+  - id: Long
+  - codigo: String <<unique, immutable>>
+  - senhaHash: String <<BCrypt>>
+  - criadoEm: OffsetDateTime
+  - atualizadoEm: OffsetDateTime
+  - cpf: String
+  - nome: String
+  - genero: String
+  - nascimento: LocalDate
+  - email: String <<unique>>
+  - telefoneTipo: String
+  - telefoneDdd: String
+  - telefoneNumero: String
+  - ativo: Boolean
+  / ranking: Integer
+}
+class Endereco {
+  - id: Long
+  - apelido: String
+  - tipoResidencia: String
+  - tipoLogradouro: String
+  - observacoes: String [0..1]
+  - logradouro: String
+  - numero: String
+  - complemento: String [0..1]
+  - bairro: String
+  - cep: String
+  - cidade: String
+  - estado: String
+  - pais: String
+  - cobranca: Boolean
+  - entrega: Boolean
+  - preferencialEntrega: Boolean
+  - ativo: Boolean
+}
+class Cartao {
+  - id: Long
+  - titular: String
+  - ultimosQuatro: String
+  - preferencial: Boolean
+  - ativo: Boolean
+}
+class Bandeira {
+  - id: Long
+  - nome: String
+}
+class Carrinho {
+  - status: StatusCarrinho
+  - id: Long
+  - criadoEm: OffsetDateTime
+  - atualizadoEm: OffsetDateTime
+}
+class ItemCarrinho {
+  - id: Long
+  - quantidade: Integer
+}
+class Produto {
+  - id: Long
+  - codigo: String
+  - nome: String
+  - descricao: String
+  - precoCusto: BigDecimal
+  - precoVenda: BigDecimal
+  - status: StatusProduto
+  - tonalidade: String
+  - acabamento: String
+  - tipoPele: String
+  - volume: String
+  - ingredientes: String
+  - motivoSituacao: String
+  - justificativaSituacao: String
+  - visivel: Boolean
+}
+class Marca {
+  - id: Long
+  - nome: String
+}
+class Categoria {
+  - id: Long
+  - nome: String
+}
+class GrupoPrecificacao {
+  - id: Long
+  - nome: String
+  - percentual: BigDecimal
+}
+class ImagemProduto {
+  - id: Long
+  - url: String
+  - principal: Boolean
+}
+class Estoque {
+  - id: Long
+  - quantidadeFisica: Integer
+  / quantidadeReservada: Integer
+  / quantidadeDisponivel: Integer
+}
+class ReservaEstoque {
+  - id: Long
+  - quantidade: Integer
+  - status: StatusReserva
+  - criadaEm: OffsetDateTime
+  - expiraEm: OffsetDateTime
+}
+class MovimentacaoEstoque {
+  - id: Long
+  - tipo: TipoMovimentacao
+  - quantidade: Integer
+  - dataHora: OffsetDateTime
+  - justificativa: String
+}
+class Pedido {
+  - id: Long
+  - codigo: String
+  - realizadoEm: OffsetDateTime
+  - status: StatusPedido
+  - subtotal: BigDecimal
+  - desconto: BigDecimal
+  - frete: BigDecimal
+  - total: BigDecimal
+  - clienteSnapshot: JSON
+  - enderecoSnapshot: JSON
+  - chaveIdempotencia: String
+  - requisicaoHash: String
+  - expiraEm: OffsetDateTime
+  - entregueEm: OffsetDateTime [0..1]
+  - motivoCancelamento: String [0..1]
+}
+class ItemPedido {
+  - id: Long
+  - quantidade: Integer
+  - precoUnitario: BigDecimal
+  - descontoRateado: BigDecimal
+  - produtoSnapshot: JSON
+  / valorLiquido: BigDecimal
+}
+class PagamentoSimulado {
+  - id: Long
+  - status: StatusPagamento
+  - total: BigDecimal
+  - referenciaSimulada: String [0..1]
+  - processadoEm: OffsetDateTime
+}
+class PartePagamento {
+  - id: Long
+  - tipo: TipoPartePagamento
+  - valor: BigDecimal
+  - status: StatusPartePagamento
+  - cartaoSnapshot: JSON [0..1]
+}
+class Cupom {
+  - id: Long
+  - codigo: String
+  - tipo: TipoCupom
+  - modoDesconto: TipoDesconto [0..1]
+  - valor: BigDecimal
+  / saldoDisponivel: BigDecimal
+  - inicioValidade: LocalDate
+  - fimValidade: LocalDate
+  - compraMinima: BigDecimal [0..1]
+  - limiteUso: Integer [0..1]
+  - ativo: Boolean
+}
+class Troca {
+  - id: Long
+  - quantidade: Integer
+  - motivo: String
+  - status: StatusTroca
+  - solicitadaEm: OffsetDateTime
+  - analisadaEm: OffsetDateTime [0..1]
+  - justificativaDecisao: String [0..1]
+  - enviadaEm: OffsetDateTime [0..1]
+  - recebidaEm: OffsetDateTime [0..1]
+  - processadaEm: OffsetDateTime [0..1]
+  - transportadora: String
+  - rastreio: String
+  - aptoEstoque: Boolean
+  - valorCredito: BigDecimal
+}
+
+
+
+enum StatusCarrinho {
+ ATIVO
+ FINALIZADO
+ EXPIRADO
+}
+class RegistroAuditoria {
+ - id: Long
+ - ator: String
+ - operacao: String
+ - entidade: String
+ - entidadeId: Long
+ - ocorridaEm: OffsetDateTime
+ - dadosAnteriores: JSON [0..1]
+ - dadosNovos: JSON [0..1]
+}
+Carrinho ..> StatusCarrinho
+Cliente "0..1" -- "0..*" RegistroAuditoria : contexto opcional
+
+note bottom of RegistroAuditoria
+ Entidade + entidadeId são referência descritiva,
+ não FK polimórfica. Ator técnico definido pelo servidor.
+ Atende ao RNF0012 em todos os módulos.
+end note
+note bottom of Endereco
+ Ao menos uma cobrança e uma entrega ativas.
+ Preferencial: ativo e entrega; no máximo um.
+ Inativação preserva vínculos e histórico.
+end note
+note bottom of Cartao
+ Exatamente um preferencial quando houver ativos.
+ Nunca persistir número completo ou CVV.
+end note
+
+enum StatusProduto {
+  ATIVO
+  INATIVO
+}
+enum StatusReserva {
+  RESERVADA
+  CONVERTIDA
+  LIBERADA
+  EXPIRADA
+}
+enum TipoMovimentacao {
+  ENTRADA
+  BAIXA
+  REENTRADA
+}
+enum StatusPedido {
+  EM_ABERTO
+  EM_PROCESSAMENTO
+  PAGAMENTO_REALIZADO
+  EM_TRANSITO
+  ENTREGUE
+  CANCELADO
+}
+enum StatusPagamento {
+  PENDENTE
+  APROVADO
+  RECUSADO
+  CANCELADO
+}
+enum TipoPartePagamento {
+  CARTAO
+  CREDITO_TROCA
+}
+enum StatusPartePagamento {
+  RESERVADO
+  CONSUMIDO
+  LIBERADO
+}
+enum TipoCupom {
+  PROMOCIONAL
+  TROCA
+}
+enum TipoDesconto {
+  PERCENTUAL
+  VALOR_FIXO
+}
+enum StatusTroca {
+  TROCA_SOLICITADA
+  TROCA_ACEITA
+  TROCA_NEGADA
+  ITEM_ENVIADO
+  ITEM_RECEBIDO
+  TROCA_PROCESSADA
+}
+
+Cliente "1" -- "1..*" Endereco : possui
+Cliente "1" -- "0..*" Cartao
+Cartao "0..*" -- "1" Bandeira
+Cliente "1" -- "0..*" Carrinho
+Cliente "1" -- "0..*" Pedido : realiza
+Carrinho "1" *-- "0..*" ItemCarrinho
+ItemCarrinho "0..*" -- "1" Produto
+GrupoPrecificacao "1" -- "0..*" Produto
+Categoria "1..*" -- "0..*" Produto
+Marca "1" -- "0..*" Produto
+Produto "1" *-- "0..*" ImagemProduto
+Produto "1" *-- "1" Estoque
+Estoque "1" -- "0..*" ReservaEstoque
+Estoque "1" -- "0..*" MovimentacaoEstoque
+ItemCarrinho "0..1" -- "0..*" ReservaEstoque
+ItemPedido "0..1" -- "0..*" ReservaEstoque
+Pedido "1" *-- "1..*" ItemPedido
+ItemPedido "0..*" -- "1" Produto
+Pedido "1" *-- "1" PagamentoSimulado
+PagamentoSimulado "1" *-- "0..*" PartePagamento
+PartePagamento "0..*" -- "0..1" Cartao : cartão salvo
+PartePagamento "0..*" -- "0..1" Cupom : crédito de troca
+Pedido "0..*" -- "0..1" Cupom : promocional
+Cliente "0..1" -- "0..*" Cupom : titular do crédito
+ItemPedido "1" -- "0..*" Troca
+Troca "0..1" -- "0..1" Cupom : gera
+Troca "0..1" -- "0..1" MovimentacaoEstoque : reentrada
+ItemPedido "0..1" -- "0..1" MovimentacaoEstoque : baixa
+
+Produto ..> StatusProduto
+ReservaEstoque ..> StatusReserva
+MovimentacaoEstoque ..> TipoMovimentacao
+Pedido ..> StatusPedido
+PagamentoSimulado ..> StatusPagamento
+PartePagamento ..> TipoPartePagamento
+PartePagamento ..> StatusPartePagamento
+Cupom ..> TipoCupom
+Cupom ..> TipoDesconto
+Troca ..> StatusTroca
+}
+@enduml
+

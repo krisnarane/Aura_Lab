@@ -1,0 +1,105 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+
+footer Implementado — sem autenticação; ADMIN_DEMO é ator técnico
+title Figura 25 — Banco do CRUD atual V1–V4
+hide circle
+entity cliente {
+ * id : BIGINT <<PK, identity>>
+ * codigo : VARCHAR(20) <<UK, immutable>>
+ * nome : VARCHAR(150)
+ * cpf : VARCHAR(11) <<UK>>
+ * email : VARCHAR(254) <<UK normalizada>>
+ * genero : VARCHAR(40)
+ * nascimento : DATE
+ * telefone_tipo : VARCHAR(20)
+ * telefone_ddd : VARCHAR(2)
+ * telefone_numero : VARCHAR(9)
+ * senha_hash : VARCHAR(100)
+ * ativo : BOOLEAN
+ * criado_em : TIMESTAMPTZ
+ * atualizado_em : TIMESTAMPTZ
+}
+entity endereco {
+ * id : BIGINT <<PK, identity>>
+ * cliente_id : BIGINT <<FK>>
+ * apelido : VARCHAR(60)
+ * tipo_residencia : VARCHAR(40)
+ * tipo_logradouro : VARCHAR(40)
+ * logradouro : VARCHAR(160)
+ * numero : VARCHAR(20)
+ complemento : VARCHAR(100)
+ * bairro : VARCHAR(100)
+ * cep : VARCHAR(8)
+ * cidade : VARCHAR(100)
+ * estado : VARCHAR(60)
+ * pais : VARCHAR(60)
+ observacoes : VARCHAR(500)
+ * cobranca : BOOLEAN
+ * entrega : BOOLEAN
+ * preferencial_entrega : BOOLEAN
+ * ativo : BOOLEAN
+}
+entity bandeira {
+ * id : BIGINT <<PK, identity>>
+ * nome : VARCHAR(40) <<UK>>
+}
+entity cartao {
+ * id : BIGINT <<PK, identity>>
+ * cliente_id : BIGINT <<FK>>
+ * bandeira_id : BIGINT <<FK>>
+ * titular : VARCHAR(150)
+ * ultimos_quatro : VARCHAR(4)
+ * preferencial : BOOLEAN
+ * ativo : BOOLEAN
+}
+entity transacao_cliente {
+ * id : BIGINT <<PK, identity>>
+ * cliente_id : BIGINT <<FK>>
+ * codigo : VARCHAR(40) <<UK>>
+ * tipo : VARCHAR(30)
+ * status : VARCHAR(30)
+ * valor : NUMERIC(12,2)
+ * ocorrida_em : TIMESTAMPTZ
+ detalhes : VARCHAR(500)
+}
+entity auditoria_cliente {
+ * id : BIGINT <<PK, identity>>
+ * cliente_id : BIGINT <<FK>>
+ * ocorrida_em : TIMESTAMPTZ
+ * ator : VARCHAR(80)
+ * operacao : VARCHAR(50)
+ * entidade : VARCHAR(80)
+ entidade_id : BIGINT
+ dados_anteriores : JSONB
+ dados_novos : JSONB
+ * alteracoes : TEXT
+}
+cliente ||--o{ endereco
+cliente ||--o{ cartao
+bandeira ||--o{ cartao
+cliente ||--o{ transacao_cliente
+cliente ||--o{ auditoria_cliente
+note right of cartao
+ Índice único parcial em cliente_id
+ WHERE ativo AND preferencial.
+ PAN e CVV não são persistidos.
+end note
+note bottom of transacao_cliente
+ Estrutura demonstrativa temporária.
+ Não representa o modelo futuro completo de vendas.
+end note
+@enduml

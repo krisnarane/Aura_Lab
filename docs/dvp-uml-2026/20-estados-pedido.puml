@@ -1,0 +1,35 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 20 — Estados do pedido na solução alvo
+footer Arquitetura alvo — contém componentes futuros; não comprova implementação
+[*] --> EM_ABERTO : checkout válido / reservar recursos
+EM_ABERTO --> EM_PROCESSAMENTO : administrador inicia
+EM_PROCESSAMENTO --> PAGAMENTO_REALIZADO : pagamento aprovado\nconverter reservas em baixa
+PAGAMENTO_REALIZADO --> EM_TRANSITO : administrador despacha
+EM_TRANSITO --> ENTREGUE : cliente dono confirma recebimento
+EM_ABERTO --> CANCELADO : cliente cancela / prazo expira
+EM_PROCESSAMENTO --> CANCELADO : recusa / cancelamento antes do pagamento\nou expiração
+ENTREGUE --> [*]
+CANCELADO --> [*]
+note right of CANCELADO
+ Liberar reservas de estoque, créditos e uso promocional.
+ Não efetuar baixa física.
+end note
+note right of ENTREGUE
+ Trocas têm estado próprio por item e quantidade.
+ O pedido original permanece ENTREGUE.
+end note
+@enduml

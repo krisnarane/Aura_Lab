@@ -1,0 +1,92 @@
+@startuml
+title Figura 9 — Aura Lab — Controllers e Services
+left to right direction
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor white
+skinparam packageBorderColor #444444
+skinparam classBackgroundColor #F5F5F5
+skinparam classBorderColor #888888
+skinparam ArrowColor #555555
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 35
+hide empty members
+
+package "Controller" {
+  class AuraController <<RestController>>
+  class AnalyticsController <<RestController>>
+  class CarrinhoController <<RestController>>
+  class TrocaController <<RestController>>
+  class CheckoutController <<RestController>>
+  class ProdutoController <<RestController>>
+  class ClienteController <<RestController>>
+  class CupomController <<RestController>>
+  class PedidoController <<RestController>>
+  class EstoqueController <<RestController>>
+}
+
+package "Service" {
+  class ConsultoraAuraService <<Service>>
+  class AnalyticsService <<Service>>
+  class CarrinhoService <<Service>>
+  class TrocaService <<Service>>
+  class CheckoutService <<Service>>
+  class ProdutoService <<Service>>
+  class ClienteService <<Service>>
+  class CupomService <<Service>>
+  class PedidoService <<Service>>
+  class EstoqueService <<Service>>
+
+  package "Serviços especializados de cliente" {
+    class EnderecoService <<Service>>
+    class CartaoService <<Service>>
+    class TransacaoService <<Service>>
+  }
+
+  package "Serviços internos compartilhados" {
+    class ReservaEstoqueService <<Service>>
+    class PagamentoService <<Service>>
+    class AuditoriaService <<Service>>
+  }
+}
+
+AuraController ..> ConsultoraAuraService : usa
+AnalyticsController ..> AnalyticsService : usa
+CarrinhoController ..> CarrinhoService : usa
+TrocaController ..> TrocaService : usa
+CheckoutController ..> CheckoutService : usa
+ProdutoController ..> ProdutoService : usa
+ClienteController ..> ClienteService : usa
+CupomController ..> CupomService : usa
+PedidoController ..> PedidoService : usa
+EstoqueController ..> EstoqueService : usa
+
+ClienteService ..> EnderecoService
+ClienteService ..> CartaoService
+ClienteService ..> TransacaoService
+
+legend bottom
+  Senha → ClienteService | Bandeiras → CartaoService.
+  ClienteService coordena EnderecoService, CartaoService
+  e TransacaoService.
+  Não há autenticação.
+  Todo service que escreve usa AuditoriaService
+  dentro da mesma transação.
+
+  Colaborações principais:
+  CheckoutService → PedidoService, PagamentoService,
+  CupomService e ReservaEstoqueService.
+  PedidoService → PagamentoService, EstoqueService,
+  CupomService e ReservaEstoqueService.
+  TrocaService → EstoqueService e CupomService.
+  ProdutoService → EstoqueService.
+endlegend
+
+footer Planejamento completo — visão simplificada
+@enduml

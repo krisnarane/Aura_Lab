@@ -1,0 +1,83 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #374151
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 6
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #9CA3AF
+skinparam PackageBackgroundColor #F3F6FA
+skinparam PackageBorderColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #64748B
+skinparam wrapWidth 220
+
+title Figura 13 — Aura Lab — Sequência de gerenciamento administrativo do pedido
+
+autonumber
+actor Administrador as Admin
+boundary Webapp
+control PedidoController as API
+control PedidoService as Pedido
+control PagamentoService as Pagamento
+participant "GatewayPagamento\nsimulado local" as Gateway
+control "ReservaEstoqueService /\nEstoqueService / CupomService" as Recursos
+database "Repositories / PostgreSQL" as DB
+Admin -> Webapp : escolher próxima ação válida
+Webapp -> API : POST /pedidos/{id}/acoes\nINICIAR, CONFIRMAR/RECUSAR ou DESPACHAR
+API -> API : validar DTO; contexto administrativo demonstrativo
+API -> Pedido : executarAcao(id, acao, contexto)
+Pedido -> DB : BEGIN; bloquear pedido e recursos\ncarregar estado e histórico
+alt ação já concluída para este pedido
+  Pedido -> DB : encerrar sem efeitos duplicados
+  Pedido --> API : resultado previamente registrado
+else ação incompatível com estado ou prazo
+  Pedido -> DB : ROLLBACK
+  Pedido --> API : conflito; nenhuma alteração
+else INICIAR e estado EM_ABERTO
+  Pedido -> DB : atualizar para EM_PROCESSAMENTO; auditar
+  Pedido -> DB : COMMIT
+  Pedido --> API : EM_PROCESSAMENTO
+else CONFIRMAR/RECUSAR e estado EM_PROCESSAMENTO
+  Pedido -> Recursos : validar reservas de estoque e créditos
+  Recursos -> DB : verificar disponibilidade sob lock
+  Pedido -> Pagamento : simularResultado(composição, cenário)
+  Pagamento -> Gateway : avaliar todos os componentes fictícios
+  Gateway --> Pagamento : APROVADO ou RECUSADO
+  Pagamento --> Pedido : resultado agregado
+  alt APROVADO
+    Pedido -> Recursos : converter reservas e registrar baixas\nconsumir créditos; efetivar uso promocional
+    Recursos -> DB : atualizar estoque e partes; gravar movimentações
+    Pedido -> DB : pagamento APROVADO; pedido PAGAMENTO_REALIZADO
+  else RECUSADO
+    Pedido -> Recursos : liberar reservas e uso promocional pendente
+    Recursos -> DB : partes LIBERADO; reservas LIBERADA\nestoque físico permanece igual
+    Pedido -> DB : pagamento RECUSADO; pedido CANCELADO
+  end
+  Pedido -> DB : registrar histórico e auditoria; COMMIT
+  Pedido --> API : resultado da ação
+else DESPACHAR e estado PAGAMENTO_REALIZADO
+  Pedido -> DB : atualizar para EM_TRANSITO; auditar; COMMIT
+  Pedido --> API : EM_TRANSITO
+end
+API --> Webapp : estado atual ou erro de negócio
+Webapp --> Admin : atualizar ações permitidas
+note over Pedido, DB
+  Exceção em qualquer escrita: ROLLBACK.
+  Gateway é simulado, determinístico e sem efeito financeiro externo;
+  não se mantém lock de banco aguardando um gateway real.
+  Confirmação e expiração concorrentes usam os mesmos locks.
+end note
+note over Admin, API
+  ENTREGUE só pode ser confirmado pelo cliente dono do pedido.
+  Cancelamento pelo cliente antes do pagamento e expiração automática
+  reutilizam a liberação transacional de reservas/créditos.
+  Fluxo de troca é independente e pertence ao TrocaService.
+end note
+
+@enduml

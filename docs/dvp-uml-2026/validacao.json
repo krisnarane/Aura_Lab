@@ -1,0 +1,260 @@
+{
+  "data": "2026-09-09",
+  "plantuml": "1.2025.10",
+  "quantidade": 25,
+  "escopo": "sem autenticacao; senha em ClienteService; bandeiras em CartaoService",
+  "renderizacao": "fontes sem erros",
+  "galeria_links": "todos existentes",
+  "arquivos": [
+    {
+      "uml": "01-representacao-arquitetural.puml",
+      "svg": "svg/01-representacao-arquitetural.svg",
+      "svg_valido": true,
+      "sha256_uml": "8e071d1df2f3785e0404dc4171d6caa52b1798fa3c916fce5e33397aecfaf237",
+      "dimensoes": [
+        "1503px",
+        "680px"
+      ]
+    },
+    {
+      "uml": "02-caso-uso-realizar-pedido.puml",
+      "svg": "svg/02-caso-uso-realizar-pedido.svg",
+      "svg_valido": true,
+      "sha256_uml": "21f5344b3995ac4f7aafcc3d5b8a3b6fc1b611238afbaaa6c0a0bd436d968802",
+      "dimensoes": [
+        "1386px",
+        "806px"
+      ]
+    },
+    {
+      "uml": "03-caso-uso-gerenciar-pedidos.puml",
+      "svg": "svg/03-caso-uso-gerenciar-pedidos.svg",
+      "svg_valido": true,
+      "sha256_uml": "17381a8d50c99843c10e5ebb993973f204e0bfb04404051aec7e0bf5c85a5ded",
+      "dimensoes": [
+        "1096px",
+        "1279px"
+      ]
+    },
+    {
+      "uml": "04-caso-uso-gerenciar-produtos.puml",
+      "svg": "svg/04-caso-uso-gerenciar-produtos.svg",
+      "svg_valido": true,
+      "sha256_uml": "d7f06b3460e2452a97afdf9d58ec1335ca97766d719e1c15e0a1ca637b0f7858",
+      "dimensoes": [
+        "739px",
+        "1056px"
+      ]
+    },
+    {
+      "uml": "05-pacotes-camadas.puml",
+      "svg": "svg/05-pacotes-camadas.svg",
+      "svg_valido": true,
+      "sha256_uml": "aabcba91b5b453eacb27a3beb1daa03a232affde5d6a295683fbba1b576d1ffb",
+      "dimensoes": [
+        "980px",
+        "792px"
+      ]
+    },
+    {
+      "uml": "06-camadas-tecnologias.puml",
+      "svg": "svg/06-camadas-tecnologias.svg",
+      "svg_valido": true,
+      "sha256_uml": "7583a4aeffb8378ef9beb15eafe789c625deca7a79bf4bf11c28b086ccdfe851",
+      "dimensoes": [
+        "505px",
+        "648px"
+      ]
+    },
+    {
+      "uml": "07-camada-apresentacao.puml",
+      "svg": "svg/07-camada-apresentacao.svg",
+      "svg_valido": true,
+      "sha256_uml": "816471d1867e1dc3c148b6d9b0a71e99fc233a68b90441904e97358eb8980324",
+      "dimensoes": [
+        "945px",
+        "585px"
+      ]
+    },
+    {
+      "uml": "08-camada-negocio.puml",
+      "svg": "svg/08-camada-negocio.svg",
+      "svg_valido": true,
+      "sha256_uml": "d383ba2693a6374674c51cd6c90dbdd8ffde5d50fcac9152cd0d91a756a1e8c5",
+      "dimensoes": [
+        "1959px",
+        "381px"
+      ]
+    },
+    {
+      "uml": "09-controllers-services.puml",
+      "svg": "svg/09-controllers-services.svg",
+      "svg_valido": true,
+      "sha256_uml": "9b75715fe6f0185d182977987bfabed625f1b46b290138e5317e81525ce35dc8",
+      "dimensoes": [
+        "1043px",
+        "872px"
+      ]
+    },
+    {
+      "uml": "10-modelo-dominio.puml",
+      "svg": "svg/10-modelo-dominio.svg",
+      "svg_valido": true,
+      "sha256_uml": "e82d75a9bcb90f71debedb5a3a3dfa08b4159407a218ea16443ac904812949e5",
+      "dimensoes": [
+        "2219px",
+        "1731px"
+      ]
+    },
+    {
+      "uml": "11-camada-persistencia.puml",
+      "svg": "svg/11-camada-persistencia.svg",
+      "svg_valido": true,
+      "sha256_uml": "1b2d584015e6c1ca86ff77e16c63b025f54a3749a1e4d73e32b08b06071d0d60",
+      "dimensoes": [
+        "1066px",
+        "671px"
+      ]
+    },
+    {
+      "uml": "12-sequencia-realizar-pedido.puml",
+      "svg": "svg/12-sequencia-realizar-pedido.svg",
+      "svg_valido": true,
+      "sha256_uml": "5a2f91b300fa383c3ad89f1124db5cc047b58edc601545691643eea843b5f52a",
+      "dimensoes": [
+        "1756px",
+        "1619px"
+      ]
+    },
+    {
+      "uml": "13-sequencia-gerenciar-pedidos.puml",
+      "svg": "svg/13-sequencia-gerenciar-pedidos.svg",
+      "svg_valido": true,
+      "sha256_uml": "b11d8187c2580b09f3ae56ff9a5de3991f951dda9d714dfeaf7a23601e439c78",
+      "dimensoes": [
+        "2054px",
+        "1598px"
+      ]
+    },
+    {
+      "uml": "14-sequencia-gerenciar-produtos.puml",
+      "svg": "svg/14-sequencia-gerenciar-produtos.svg",
+      "svg_valido": true,
+      "sha256_uml": "be832978bb681326424fececeea135560919bd831d92b3538bb791b19fcffa11",
+      "dimensoes": [
+        "1565px",
+        "1132px"
+      ]
+    },
+    {
+      "uml": "15-implantacao.puml",
+      "svg": "svg/15-implantacao.svg",
+      "svg_valido": true,
+      "sha256_uml": "75c346585bfa3a26013effbafee40b575ecf2298b9a766b589c3383ee7b21eb0",
+      "dimensoes": [
+        "1525px",
+        "665px"
+      ]
+    },
+    {
+      "uml": "16-modelo-logico.puml",
+      "svg": "svg/16-modelo-logico.svg",
+      "svg_valido": true,
+      "sha256_uml": "ab7abe485a20dfe30478518b33c18ed7ae7a9c5a2b3742ed9ccea7050c5a37fd",
+      "dimensoes": [
+        "1769px",
+        "1237px"
+      ]
+    },
+    {
+      "uml": "17-modelo-relacional.puml",
+      "svg": "svg/17-modelo-relacional.svg",
+      "svg_valido": true,
+      "sha256_uml": "0f016f286e8ca7f4caaebfad93a6a58f160e096c3201daff0f515db6edeeff51",
+      "dimensoes": [
+        "2528px",
+        "1365px"
+      ]
+    },
+    {
+      "uml": "18-casos-uso-clientes.puml",
+      "svg": "svg/18-casos-uso-clientes.svg",
+      "svg_valido": true,
+      "sha256_uml": "c8718cef6b7d78eccf7b994e01495086b6ac877541b43e64bcecd29c356b408f",
+      "dimensoes": [
+        "558px",
+        "851px"
+      ]
+    },
+    {
+      "uml": "19-sequencia-crud-auditoria.puml",
+      "svg": "svg/19-sequencia-crud-auditoria.svg",
+      "svg_valido": true,
+      "sha256_uml": "59306d0d794c5854ce0b3e63df61ad9db5e2afba1ddfb94d815f738891e9d570",
+      "dimensoes": [
+        "1833px",
+        "1263px"
+      ]
+    },
+    {
+      "uml": "20-estados-pedido.puml",
+      "svg": "svg/20-estados-pedido.svg",
+      "svg_valido": true,
+      "sha256_uml": "5c12e4fcddf936568e174efa57d5b148d2a0f46437a6b578f0f0288703886e3e",
+      "dimensoes": [
+        "814px",
+        "706px"
+      ]
+    },
+    {
+      "uml": "21-estados-troca.puml",
+      "svg": "svg/21-estados-troca.svg",
+      "svg_valido": true,
+      "sha256_uml": "c4ef22ff65463e3e7cebf550575921ef994f84dade18c4348fbb1094e6b6e541",
+      "dimensoes": [
+        "790px",
+        "746px"
+      ]
+    },
+    {
+      "uml": "22-responsabilidades-crud.puml",
+      "svg": "svg/22-responsabilidades-crud.svg",
+      "svg_valido": true,
+      "sha256_uml": "8b6ae7b5e207e42c5e668828f4c06b15b0b3d70334e045476e82887b8e4466ea",
+      "dimensoes": [
+        "882px",
+        "399px"
+      ]
+    },
+    {
+      "uml": "23-testes-e-padroes.puml",
+      "svg": "svg/23-testes-e-padroes.svg",
+      "svg_valido": true,
+      "sha256_uml": "62e0eff67119df447f8d7e0bd28294a09a764f62a8b07b4490508a499b4f6aed",
+      "dimensoes": [
+        "1825px",
+        "444px"
+      ]
+    },
+    {
+      "uml": "24-modelo-atual.puml",
+      "svg": "svg/24-modelo-atual.svg",
+      "svg_valido": true,
+      "sha256_uml": "1cf87283ba6bca11f70c7d626da5dfb1bcd026d7ef1ba910c6dae4697d9e4701",
+      "dimensoes": [
+        "1266px",
+        "810px"
+      ]
+    },
+    {
+      "uml": "25-modelo-relacional-atual.puml",
+      "svg": "svg/25-modelo-relacional-atual.svg",
+      "svg_valido": true,
+      "sha256_uml": "c450e9644b1a82268a7421d9ed6edae483cfa5c3fbb52315d20e701f6691024f",
+      "dimensoes": [
+        "1205px",
+        "790px"
+      ]
+    }
+  ]
+}

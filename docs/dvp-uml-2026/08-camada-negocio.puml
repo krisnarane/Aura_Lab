@@ -1,0 +1,57 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 8 — Negócio, políticas e integrações
+footer Arquitetura alvo — contém componentes futuros; não comprova implementação
+component "Controllers / DTOs" as API
+package "Clientes — implementado" {
+ [ClienteService / EnderecoService\nCartaoService / TransacaoService] as Cliente
+ interface PoliticaRankingCliente as Ranking
+ [PoliticaRankingPorCompras] as Formula
+ [ValidadorCliente / RegistroCliente] as Policy
+ [AuditoriaService] as Audit
+}
+package "Demais casos de uso — futuros" {
+ [Produto / estoque / reserva] as Catalogo
+ [Checkout / pedido / pagamento / cupom / troca] as Venda
+ [AnalyticsService / ConsultoraAuraService] as Consulta
+ interface BeautyAdvisor
+ interface GatewayPagamento
+ [Gemini / recomendação por regras] as AI
+ [Simulador local] as Pay
+ [Auditoria geral] as AuditFuture
+}
+component "Repositories JPA" as Repo
+API --> Cliente
+Cliente --> Policy
+Cliente --> Ranking
+Formula ..|> Ranking
+Cliente --> Audit
+Audit --> Repo
+Cliente --> Repo
+API --> Catalogo
+API --> Venda
+API --> Consulta
+Venda --> GatewayPagamento
+Pay ..|> GatewayPagamento
+Consulta --> BeautyAdvisor
+AI ..|> BeautyAdvisor
+Catalogo --> Repo
+Venda --> Repo
+Consulta --> Repo
+Venda --> AuditFuture
+Catalogo --> AuditFuture
+AuditFuture --> Repo
+@enduml

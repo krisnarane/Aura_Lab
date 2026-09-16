@@ -1,0 +1,43 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+hide empty members
+title Figura 22 — CRUD simples, sem autenticação
+class ClienteController
+class ClienteService {
+ cadastrar()
+ consultar()
+ alterar()
+ inativar()
+ alterarSenha()
+}
+class EnderecoService {
+ manterEnderecos()
+ validarFinalidades()
+}
+class CartaoService {
+ manterCartoes()
+ definirPreferencial()
+ listarBandeiras()
+}
+class TransacaoService {
+ consultarHistorico()
+}
+class AuditoriaService {
+ registrarAlteracao()
+}
+ClienteController --> ClienteService
+ClienteController --> EnderecoService
+ClienteController --> CartaoService
+ClienteController --> TransacaoService
+ClienteController --> AuditoriaService : consultar
+ClienteService --> AuditoriaService
+EnderecoService --> AuditoriaService
+CartaoService --> AuditoriaService
+note bottom of ClienteService
+ Senha é um dado do cliente, armazenado como hash BCrypt.
+ Alteração independente, sem criar login ou sessão.
+end note
+footer ADMIN_DEMO é um ator técnico definido pelo servidor.
+@enduml

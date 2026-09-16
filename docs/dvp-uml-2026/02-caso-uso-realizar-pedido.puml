@@ -1,0 +1,69 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #374151
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 6
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #9CA3AF
+skinparam PackageBackgroundColor #F3F6FA
+skinparam PackageBorderColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #64748B
+skinparam wrapWidth 220
+
+title Figura 2 — Aura Lab — Caso de uso Realizar Pedido
+
+left to right direction
+actor Cliente
+rectangle "Aura Lab" {
+  usecase "Consultar catálogo" as Catalogo
+  usecase "Filtrar produtos" as Filtro
+  usecase "Conversar com Aura" as Aura
+  usecase "Gerenciar carrinho" as Carrinho
+  usecase "Validar disponibilidade\ne gerir reservas" as Reserva
+  usecase "Finalizar compra" as Checkout
+  usecase "Selecionar endereço\nou informar novo" as Endereco
+  usecase "Salvar novo endereço\nno perfil" as SalvarEndereco
+  usecase "Calcular frete" as Frete
+  usecase "Aplicar cupom\npromocional" as Promo
+  usecase "Definir composição\nde pagamento" as Composicao
+  usecase "Usar créditos de troca" as Credito
+  usecase "Distribuir saldo\nentre cartões" as Cartoes
+  usecase "Validar total\nda composição" as Total
+  usecase "Criar pedido EM ABERTO\ne apresentar confirmação" as Pedido
+}
+Cliente -- Catalogo
+Cliente -- Aura
+Cliente -- Carrinho
+Cliente -- Checkout
+Filtro ..> Catalogo : <<extend>>
+Carrinho ..> Reserva : <<include>>
+Checkout ..> Reserva : <<include>>
+Checkout ..> Endereco : <<include>>
+Checkout ..> Frete : <<include>>
+Checkout ..> Composicao : <<include>>
+Checkout ..> Pedido : <<include>>
+Promo ..> Checkout : <<extend>>\n[cupom informado]
+SalvarEndereco ..> Endereco : <<extend>>\n[novo e cliente deseja salvar]
+Credito ..> Composicao : <<extend>>\n[créditos selecionados]
+Cartoes ..> Composicao : <<extend>>\n[saldo restante > 0]
+Composicao ..> Total : <<include>>
+note bottom of Checkout
+  Precondições: cliente ativo identificado e carrinho não vazio.
+  Pós-condição: pedido EM ABERTO, estoque e créditos reservados.
+  A confirmação do pagamento ocorre depois, no processamento.
+end note
+note bottom of Composicao
+  Total = subtotal - desconto promocional + frete.
+  Créditos de troca + valores dos cartões = total.
+  Até um promocional; vários créditos e cartões.
+  Total zero dispensa componentes de pagamento.
+end note
+
+@enduml

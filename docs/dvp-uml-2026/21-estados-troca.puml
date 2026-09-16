@@ -1,0 +1,31 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 21 — Troca por item e quantidade
+footer Arquitetura alvo — contém componentes futuros; não comprova implementação
+[*] --> TROCA_SOLICITADA : cliente / pedido ENTREGUE
+TROCA_SOLICITADA --> TROCA_ACEITA : administrador aceita
+TROCA_SOLICITADA --> TROCA_NEGADA : administrador justifica recusa
+TROCA_ACEITA --> ITEM_ENVIADO : cliente informa despacho
+ITEM_ENVIADO --> ITEM_RECEBIDO : administrador recebe e avalia aptidão
+ITEM_RECEBIDO --> TROCA_PROCESSADA : gerar cupom do cliente\ne reentrada somente se apto
+TROCA_NEGADA --> [*]
+TROCA_PROCESSADA --> [*]
+note right of TROCA_PROCESSADA
+ Cupom, eventual reentrada e auditoria na mesma transação.
+ Idempotência impede duplicar crédito ou estoque.
+ Quantidade acumulada não pode exceder a comprada.
+end note
+@enduml

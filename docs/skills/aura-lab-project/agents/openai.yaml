@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aura Lab Project"
+  short_description: "Contexto e manutencao do projeto Aura Lab"
+  default_prompt: "Use $aura-lab-project para analisar ou alterar este projeto respeitando o DRS, o DVP e o estado implementado."

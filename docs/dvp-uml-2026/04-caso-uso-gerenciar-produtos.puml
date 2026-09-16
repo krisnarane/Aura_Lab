@@ -1,0 +1,72 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #374151
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 6
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #9CA3AF
+skinparam PackageBackgroundColor #F3F6FA
+skinparam PackageBorderColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #64748B
+skinparam wrapWidth 220
+
+title Figura 4 — Aura Lab — Caso de uso Gerenciar Produtos
+
+left to right direction
+actor Administrador as Admin
+rectangle "Aura Lab — Catálogo" {
+  usecase "Consultar produtos\ne disponibilidade" as Consultar
+  usecase "Filtrar produtos" as Filtrar
+  usecase "Cadastrar produto" as Cadastrar
+  usecase "Alterar produto" as Alterar
+  usecase "Validar dados\ne código único" as Validar
+  usecase "Associar marca, categorias\ne grupo de precificação" as Associar
+  usecase "Calcular preço de venda" as Preco
+  usecase "Definir imagens\ne atributos de beleza" as Imagens
+  usecase "Registrar estoque inicial" as Inicial
+  usecase "Ativar produto" as Ativar
+  usecase "Inativar produto" as Inativar
+  usecase "Registrar motivo\ne justificativa" as Motivo
+  usecase "Publicar ou ocultar\nproduto ativo" as Visibilidade
+}
+Admin -- Consultar
+Admin -- Cadastrar
+Admin -- Alterar
+Admin -- Ativar
+Admin -- Inativar
+Admin -- Visibilidade
+Filtrar ..> Consultar : <<extend>>
+Cadastrar ..> Validar : <<include>>
+Alterar ..> Validar : <<include>>
+Cadastrar ..> Associar : <<include>>
+Alterar ..> Associar : <<include>>
+Cadastrar ..> Preco : <<include>>
+Alterar ..> Preco : <<include>>
+Cadastrar ..> Imagens : <<include>>
+Alterar ..> Imagens : <<include>>
+Cadastrar ..> Inicial : <<include>>
+Ativar ..> Motivo : <<include>>
+Inativar ..> Motivo : <<include>>
+note bottom of Associar
+  Seleção entre domínios cadastrados/seeds.
+  Não implica CRUD de marcas e categorias.
+end note
+note bottom of Visibilidade
+  Proposta: INATIVO implica visível = falso.
+  Ativação não publica automaticamente.
+  Histórico e identificadores são preservados.
+end note
+note bottom of Inicial
+  Proposta alvo: saldo inicial não negativo, auditado.
+  Edição de produto não sobrescreve o saldo físico.
+  Ajustes avulsos de estoque dependem de decisão docente.
+end note
+
+@enduml

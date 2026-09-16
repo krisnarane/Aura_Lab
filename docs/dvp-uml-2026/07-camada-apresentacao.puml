@@ -1,0 +1,45 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 7 — Apresentação atual e evolução
+footer Arquitetura alvo — contém componentes futuros; não comprova implementação
+component "app.js / rotas" as App
+package "CRUD integrado — atual" {
+ [admin-clientes.js\nRenderização / navegação] as Admin
+ [clientesComponentes.js\nclientesEventos.js / adminLayout.js] as Components
+ [clientesService.js\nFacade explícita] as Facade
+ [clientesApi.js\nAdapter HTTP e erros] as HTTP
+}
+package "Demais telas — protótipo atual" {
+ [pages.js / store.js\nCadastro público / perfil / vendas] as Mock
+ database localStorage as Local
+}
+cloud "API /api/v1/clientes" as API
+component "Adapters dos demais módulos\nFUTUROS" as Future
+App --> Admin
+Admin --> Components
+Admin --> Facade
+Facade --> HTTP
+HTTP --> API : fetch / JSON / mesma origem
+App --> Mock
+Mock --> Local
+Mock ..> Future : substituir acesso local
+note bottom of HTTP
+ Sem fallback para mocks em falhas HTTP.
+ Erros por campo; dados não sensíveis preservados.
+ Senhas / PAN / CVV limpos após envio.
+ Respostas atrasadas não substituem outra tela.
+end note
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam ArrowColor #63424F
+skinparam ClassBackgroundColor #FFF8E6
+skinparam PackageBackgroundColor #F7F3F5
+skinparam NoteBackgroundColor #EDF5F2
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+title Figura 6 — Tecnologias e padrões
+footer Arquitetura alvo — contém componentes futuros; não comprova implementação
+rectangle "Apresentação\nHTML5 / CSS3 / Bootstrap 5 / JavaScript ES6\nFacade + Adapter HTTP" as UI
+rectangle "API Java 21 / Spring Boot / Spring MVC\nDTOs / Bean Validation / erros centralizados" as API
+rectangle "Service Layer\nTransações / injeção por construtor\nStrategy de ranking / políticas de domínio" as S
+rectangle "Spring Data JPA / Hibernate\nRepository + Specification" as R
+database "PostgreSQL / Flyway\nPK / FK / UNIQUE / locks" as DB
+rectangle "Qualidade\nJUnit 5 / Mockito / ArchUnit\nSelenium + Page Objects / Testcontainers" as Tests
+UI --> API
+API --> S
+S --> R
+R --> DB
+Tests ..> UI
+Tests ..> S
+Tests ..> DB
+@enduml

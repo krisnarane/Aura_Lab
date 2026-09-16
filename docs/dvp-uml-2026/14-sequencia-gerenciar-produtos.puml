@@ -1,0 +1,61 @@
+@startuml
+footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #374151
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam roundcorner 6
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #9CA3AF
+skinparam PackageBackgroundColor #F3F6FA
+skinparam PackageBorderColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #64748B
+skinparam wrapWidth 220
+
+title Figura 14 — Aura Lab — Sequência de cadastro ou alteração de produto
+
+autonumber
+actor Administrador as Admin
+boundary Webapp
+control ProdutoController as API
+control ProdutoService as Produto
+control EstoqueService as Estoque
+database "Repositories / PostgreSQL" as DB
+Admin -> Webapp : cadastrar ou editar produto
+Webapp -> API : POST /produtos ou PUT /produtos/{id}\nDTO comercial
+API -> API : validar DTO; contexto administrativo demonstrativo
+API -> Produto : salvar(id opcional, dados, contexto)
+Produto -> DB : BEGIN; carregar domínios\nbloquear produto existente se alteração
+Produto -> Produto : validar código único, marca, categorias, grupo\ncusto e atributos; preservar identidade
+alt dados inválidos ou código duplicado
+  Produto -> DB : ROLLBACK
+  Produto --> API : erro de validação/conflito
+  API --> Webapp : 400/409 e campos a corrigir
+else dados válidos
+  Produto -> Produto : preço = custo * (1 + percentual / 100)\narredondar para centavos
+  Produto -> Produto : validar situação/publicação\nINATIVO implica visível = falso
+  Produto -> DB : salvar produto, categorias e imagens
+  opt novo produto
+    Produto -> Estoque : inicializar saldo não negativo
+    Estoque -> DB : criar estoque; registrar ENTRADA se saldo > 0
+  end
+  note right of Produto
+    Alteração comercial não sobrescreve estoque físico.
+    Snapshots de pedidos anteriores não são alterados.
+  end note
+  Produto -> DB : gravar auditoria antes/depois; COMMIT
+  Produto --> API : produto salvo
+  API --> Webapp : 201 no cadastro / 200 na alteração
+  Webapp --> Admin : apresentar produto atualizado
+end
+note over Produto, DB
+  Exceção na gravação de produto, estoque ou auditoria: ROLLBACK.
+  A política alvo de precificação/estoque difere da edição livre do mock.
+end note
+
+@enduml

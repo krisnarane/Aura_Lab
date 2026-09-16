@@ -62,6 +62,8 @@ import {
 import { aplicarDetalhesVisuais } from "./interface.js";
 import { inicializarConsultoraAura } from "./consultora-aura.js";
 import { inicializarAnalytics } from "./analytics.js";
+import { ehRotaClientesAdmin, renderizarClientesAdmin } from "./admin-clientes.js";
+import { ehRotaProdutosAdmin, renderizarProdutosAdmin } from "./admin-produtos.js";
 
 const raizAplicacao = document.querySelector("#app");
 
@@ -82,7 +84,7 @@ function exibirToast(message, kind = "info") {
     .querySelector("#toast-area")
     ?.insertAdjacentHTML(
       "beforeend",
-      `<div class="toast show aura-toast ${kind === "error" ? "is-error" : ""}" role="status">${message}</div>`,
+      `<div class="toast show aura-toast ${kind === "error" ? "is-error" : ""}" role="status">${String(message).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}</div>`,
     );
   setTimeout(() => document.querySelector(".aura-toast")?.remove(), 3600);
 }
@@ -130,6 +132,14 @@ function resolverPagina() {
 
 function renderizar() {
   // Toda navegação redesenha o HTML, reaplica detalhes visuais e religa eventos.
+  if (ehRotaClientesAdmin()) {
+    renderizarClientesAdmin(raizAplicacao, navegar, exibirToast);
+    return;
+  }
+  if (ehRotaProdutosAdmin()) {
+    renderizarProdutosAdmin(raizAplicacao, navegar, exibirToast);
+    return;
+  }
   raizAplicacao.innerHTML = resolverPagina();
   aplicarDetalhesVisuais(raizAplicacao);
   registrarEventos();
