@@ -64,6 +64,7 @@ import { inicializarConsultoraAura } from "./consultora-aura.js";
 import { inicializarAnalytics } from "./analytics.js";
 import { ehRotaClientesAdmin, renderizarClientesAdmin } from "./admin-clientes.js";
 import { ehRotaProdutosAdmin, renderizarProdutosAdmin } from "./admin-produtos.js";
+import { ehRotaPerfilApi, renderizarPerfilApi } from "./perfil-api.js";
 
 const raizAplicacao = document.querySelector("#app");
 
@@ -138,6 +139,10 @@ function renderizar() {
   }
   if (ehRotaProdutosAdmin()) {
     renderizarProdutosAdmin(raizAplicacao, navegar, exibirToast);
+    return;
+  }
+  if (ehRotaPerfilApi()) {
+    renderizarPerfilApi(raizAplicacao, navegar, exibirToast);
     return;
   }
   raizAplicacao.innerHTML = resolverPagina();

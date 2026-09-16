@@ -63,7 +63,12 @@ const card = (item) =>
 
 export const header = () => {
   // O cabeçalho decide quais links aparecem a partir do cliente atual.
+  // Quando o perfil da loja está conectado à API, o nome real tem precedência na identificação.
   const owner = currentCustomer();
+  const nomeApi =
+    typeof localStorage !== "undefined"
+      ? localStorage.getItem("aura-lab-perfil-api-nome")
+      : null;
   const path = typeof location !== "undefined" ? location.pathname : "/";
   const isActive = (href) => {
     if (href === "/")
@@ -85,7 +90,7 @@ export const header = () => {
     )
     .join("");
   return `<header class="site-header"><div class="notice">Beleza que acompanha
-o seu ritmo <span>•</span> </div><nav class="navbar navbar-expand-lg container aura-container"><a href="/" data-link class="brand">aura <i>LAB</i></a><button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Abrir menu">☰</button><div id="nav" class="collapse navbar-collapse"><ul class="navbar-nav mx-auto nav-main">${navHtml}</ul><div class="nav-actions"><a href="${owner ? "/perfil/dados" : "/cadastro"}" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.8-4 3.3-6 7.5-6s6.7 2 7.5 6"/></svg><span>${escaparHtml(owner?.name?.split(" ")[0] || "Cadastrar-se")}</span></a><a href="/sacola" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7a3 3 0 016 0v1"/><path d="M6 8h12l-1 13H7L6 8z"/></svg><span>Sacola</span><b>${cart().reduce((sum, item) => sum + item.q, 0)}</b></a></div></div></nav></header>`;
+o seu ritmo <span>•</span> </div><nav class="navbar navbar-expand-lg container aura-container"><a href="/" data-link class="brand">aura <i>LAB</i></a><button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Abrir menu">☰</button><div id="nav" class="collapse navbar-collapse"><ul class="navbar-nav mx-auto nav-main">${navHtml}</ul><div class="nav-actions"><a href="${owner || nomeApi ? "/perfil/dados" : "/cadastro"}" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.8-4 3.3-6 7.5-6s6.7 2 7.5 6"/></svg><span>${escaparHtml(nomeApi?.split(" ")[0] || owner?.name?.split(" ")[0] || "Cadastrar-se")}</span></a><a href="/sacola" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7a3 3 0 016 0v1"/><path d="M6 8h12l-1 13H7L6 8z"/></svg><span>Sacola</span><b>${cart().reduce((sum, item) => sum + item.q, 0)}</b></a></div></div></nav></header>`;
 };
 
 // Rodapé compartilhado pelas telas públicas e de cliente.

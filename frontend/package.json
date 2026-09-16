@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node --check js/clientesEventos.js && node --check js/clientesComponentes.js && node --check js/app.js && node --check js/admin-clientes.js && node --check js/clientesApi.js && node --check js/clientesService.js && node --check js/produtosApi.js && node --check js/produtosService.js && node --check js/admin-produtos.js && node --check js/analytics.js && node --check js/api.js && node --check js/consultora-aura.js && node --check js/dados-mock.js && node --check js/interface.js && node --check js/pages.js && node --check js/store.js && node --check js/utilitarios.js && node tests/store.test.mjs && node tests/clientes-api.test.mjs && node tests/produtos-api.test.mjs"
+    "test": "node --check js/clientesEventos.js && node --check js/clientesComponentes.js && node --check js/app.js && node --check js/admin-clientes.js && node --check js/clientesApi.js && node --check js/clientesService.js && node --check js/produtosApi.js && node --check js/produtosService.js && node --check js/admin-produtos.js && node --check js/perfil-api.js && node --check js/analytics.js && node --check js/api.js && node --check js/consultora-aura.js && node --check js/dados-mock.js && node --check js/interface.js && node --check js/pages.js && node --check js/store.js && node --check js/utilitarios.js && node tests/store.test.mjs && node tests/clientes-api.test.mjs && node tests/produtos-api.test.mjs"
   }
 }
