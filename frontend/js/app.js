@@ -133,6 +133,9 @@ function resolverPagina() {
 
 function renderizar() {
   // Toda navegação redesenha o HTML, reaplica detalhes visuais e religa eventos.
+  if (location.pathname === "/cadastro") {
+    history.replaceState({}, "", "/perfil/dados");
+  }
   if (ehRotaClientesAdmin()) {
     renderizarClientesAdmin(raizAplicacao, navegar, exibirToast);
     return;

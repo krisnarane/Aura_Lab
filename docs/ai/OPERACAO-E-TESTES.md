@@ -38,7 +38,16 @@ cd backend
 .\testar-crud.ps1 -Visivel
 ```
 
-O script executa `clean verify`; portanto, testes unitários/de integração rodam pelo Surefire e `ClienteCrudIT` roda pelo Failsafe. Não substitua PostgreSQL por H2 quando um teste falhar por falta de Docker.
+O script executa `clean verify`; portanto, testes unitários/de integração rodam pelo Surefire e os grupos `ClienteCrudIT`, `ClientePerfilIT` e `ProdutosCrudIT` rodam pelo Failsafe. Não substitua PostgreSQL por H2 quando um teste falhar por falta de Docker.
+
+Para validar somente a jornada do cliente escolhido no perfil:
+
+```powershell
+cd backend
+.\mvnw.cmd clean test-compile failsafe:integration-test failsafe:verify "-Dit.test=ClientePerfilIT" "-Dselenium.headless=true"
+```
+
+`ClientePerfilIT` cobre a seleção de cliente ativo, edição dos dados pessoais, troca isolada de senha, manutenção de endereço e cadastro de cartão mascarado, além das rejeições de dados pessoais, senha, endereço e cartão inválidos. Os oito cenários conferem a resposta visual e a persistência/auditoria no PostgreSQL de Testcontainers.
 
 ## Última verificação conhecida
 

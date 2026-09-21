@@ -49,4 +49,4 @@ Essas decisões melhoram integridade e mensagens de erro, mas não devem receber
 
 ## Evidência Selenium
 
-Os cenários estão em `backend/src/test/java/br/com/auralab/e2e/ClienteCrudIT.java`. Os nomes carregam RF/RN/RNF, e a execução gera `backend/target/evidencias/matriz.html`. SQL é usado para preparar massa e verificar invariantes; as operações avaliadas são acionadas no navegador.
+Os cenários administrativos estão em `backend/src/test/java/br/com/auralab/e2e/ClienteCrudIT.java`; a jornada do cliente escolhido no perfil está em `backend/src/test/java/br/com/auralab/e2e/ClientePerfilIT.java`. Os nomes carregam RF/RN/RNF, e a execução gera `backend/target/evidencias/matriz.html`. SQL é usado para preparar massa e verificar invariantes; as operações avaliadas são acionadas no navegador.

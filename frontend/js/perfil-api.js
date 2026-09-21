@@ -15,6 +15,7 @@ const CHAVE_NOME = "aura-lab-perfil-api-nome";
 
 export const ehRotaPerfilApi = () =>
   [
+    "/perfil",
     "/perfil/dados",
     "/perfil/seguranca",
     "/perfil/enderecos",
@@ -86,7 +87,7 @@ const paginaEscolha = (cadastrados, falha) =>
           )
           .join("") ||
         `<p>Nenhum cliente ativo no banco. Cadastre um cliente pelo <a href="/admin/clientes?new=1" data-api-link>painel administrativo</a>.</p>`
-  }<p class="muted small">O cadastro público em /cadastro ainda segue o protótipo demonstrativo sem persistência.</p></div></div></main>${footer()}`;
+  }</div></div></main>${footer()}`;
 
 const paginaDados = (c) =>
   layoutPerfil(
