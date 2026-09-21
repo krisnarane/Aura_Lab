@@ -9,7 +9,7 @@ Este diretório é o ponto inicial para trabalhar no Aura Lab. Ele evita mistura
 | Corrigir ou evoluir o CRUD de clientes | [ESTADO-ATUAL.md](ESTADO-ATUAL.md), [REQUISITOS-CLIENTES.md](REQUISITOS-CLIENTES.md) e [ARQUITETURA-ATUAL.md](ARQUITETURA-ATUAL.md) |
 | Corrigir ou evoluir situação/cadastro de produtos | [ESTADO-ATUAL.md](ESTADO-ATUAL.md), [REQUISITOS-PRODUTOS.md](REQUISITOS-PRODUTOS.md) e [ARQUITETURA-ATUAL.md](ARQUITETURA-ATUAL.md) |
 | Executar, testar ou preparar apresentação | [OPERACAO-E-TESTES.md](OPERACAO-E-TESTES.md) e [REQUISITOS-CLIENTES.md](REQUISITOS-CLIENTES.md) |
-| Apresentar o CRUD em sala | [Roteiro de apresentação](../crud-admin/ROTEIRO-APRESENTACAO.md) — telas, falas, Selenium e código |
+| Apresentar o CRUD em sala | [Roteiro de apresentação](../crud-admin/ROTEIRO-APRESENTACAO.md) — telas, falas, Selenium e código; [Perguntas e respostas](../crud-admin/PERGUNTAS-E-RESPOSTAS.md) — guia de estudo para as perguntas do professor |
 | Executar ou listar casos de teste | [Casos de teste](../crud-admin/CASOS-DE-TESTE.md) — requisito → cenário → comando por grupo |
 | Alterar classes, relacionamentos ou banco | [ARQUITETURA-ATUAL.md](ARQUITETURA-ATUAL.md) e [../dvp-uml-2026/REGRAS-E-MIGRACAO.md](../dvp-uml-2026/REGRAS-E-MIGRACAO.md) |
 | Alterar diagramas ou discutir o sistema completo | [ESTADO-ATUAL.md](ESTADO-ATUAL.md) e [../dvp-uml-2026/README.md](../dvp-uml-2026/README.md) |
