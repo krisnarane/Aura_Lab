@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.time.*;
 
+/** Entrada do cadastro de cliente (RF0021, RN0026) incluindo senha com confirmação (RNF0032) e o endereço residencial obrigatório. */
 public record ClienteInput(
     @NotBlank @Size(max = 150) String nome,
     @NotBlank @Size(max = 20) String cpf,

@@ -4,6 +4,12 @@ import jakarta.persistence.*;
 import java.math.*;
 import java.time.*;
 
+/**
+ * Transação demonstrativa vinculada ao cliente (massa persistida, somente leitura).
+ *
+ * <p>Requisito: RF0025 (consulta de transações). Será substituída pelo módulo de vendas
+ * do DVP; por isso não há escrita nesta entidade nesta etapa.
+ */
 @Entity
 @Table(name = "transacao_cliente")
 public class TransacaoCliente {

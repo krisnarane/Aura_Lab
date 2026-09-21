@@ -6,6 +6,11 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 
+/**
+ * Service de auditoria de clientes (RNF0012). A propagação MANDATORY garante que o
+ * registro sempre acontece dentro da transação da operação auditada: se a escrita falhar,
+ * a trilha falha junto.
+ */
 @Service
 public class AuditoriaService {
   private final AuditoriaRepository repo;

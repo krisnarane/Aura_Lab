@@ -2,6 +2,12 @@ package br.com.auralab.clientes.service;
 
 import java.util.*;
 
+/**
+ * Exceção de regra de negócio com código estável. O status HTTP é derivado do código —
+ * 400 para entrada inválida, 404 para ausência/associação incorreta, 409 para conflito —
+ * e {@code campos} aponta o campo relacionado quando aplicável (contrato de erros do
+ * módulo).
+ */
 public class RegraNegocioException extends RuntimeException {
   private final String codigo;
   private static final Set<String> AUSENTES =

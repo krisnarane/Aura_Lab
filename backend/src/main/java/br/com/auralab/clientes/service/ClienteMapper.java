@@ -4,6 +4,10 @@ import br.com.auralab.clientes.api.dto.*;
 import br.com.auralab.clientes.domain.*;
 import org.springframework.stereotype.Component;
 
+/**
+ * Converte entidades em DTOs de resposta — único ponto de saída do domínio para a API,
+ * garantindo que senha/hash nunca apareçam nas respostas (RNF0033).
+ */
 @Component
 public class ClienteMapper {
   public ClienteView view(Cliente c, int ranking) {

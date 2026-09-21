@@ -10,6 +10,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service do cadastro de clientes: cadastrar, consultar, alterar, inativar e alterar
+ * senha. Escrita e auditoria acontecem na mesma transação (RNF0012).
+ *
+ * <p>Requisitos: RF0021 (cadastro com endereço inicial), RF0022 (alteração de dados),
+ * RF0023 (inativação lógica), RF0024 (consulta com filtros combináveis), RF0028
+ * (alteração apenas de senha), RN0026 (dados obrigatórios e unicidade), RN0027 (ranking
+ * via Strategy), RNF0031 a RNF0033 (senha forte, confirmada e com BCrypt) e RNF0035
+ * (código único). Por decisão do projeto não existe SenhaService: a senha fica aqui.
+ */
 @Service
 public class ClienteService {
 
@@ -39,6 +49,7 @@ public class ClienteService {
     mapper = m;
   }
 
+  /** RF0028 + RNF0031/RNF0032/RNF0033: valida força e confirmação, grava só o hash BCrypt. */
   @Transactional
   public void alterarSenha(Long id, SenhaInput in) {
     Cliente c = repo.buscarParaAtualizacao(id).orElseThrow(() -> naoEncontrado());
@@ -47,6 +58,11 @@ public class ClienteService {
     auditoria.registrar(id, "ALTERAR_SENHA", "CLIENTE", id, null, Map.of("senhaAlterada", true));
   }
 
+  /**
+   * RF0021 + RN0026 + RNF0035: cria o cliente já com o endereço residencial, que cumpre as
+   * finalidades de cobrança e entrega (RN0021/RN0022). O código CLI- vem do trigger do
+   * banco e é lido via refresh após o flush.
+   */
   @Transactional
   public ClienteView cadastrar(ClienteInput in) {
     validador.senha(in.senha(), in.confirmacaoSenha());
@@ -74,6 +90,7 @@ public class ClienteService {
     return view(c);
   }
 
+  /** RF0024: filtros isolados ou combinados com E; nome/e-mail parciais, demais exatos. */
   @Transactional(readOnly = true)
   public List<ClienteView> listar(
       String codigo,
@@ -118,6 +135,7 @@ public class ClienteService {
     return view(c);
   }
 
+  /** RF0023: inativação lógica idempotente-negada (repetir retorna 409), com auditoria. */
   @Transactional
   public ClienteView inativar(Long id) {
     Cliente c = repo.buscarParaAtualizacao(id).orElseThrow(() -> naoEncontrado());
@@ -133,6 +151,7 @@ public class ClienteService {
     return repo.findById(id).orElseThrow(() -> naoEncontrado());
   }
 
+  // Checagem prévia de duplicidade (RN0026); a restrição única do banco é a última linha.
   private void validarUnicos(String cpf, String email, Long id) {
     boolean dup =
         id == null
@@ -168,6 +187,10 @@ public class ClienteService {
     return views(List.of(c)).getFirst();
   }
 
+  /**
+   * Monta as views em lote (endereços/cartões carregados por id e ranking RN0027 calculado
+   * sobre os totais de compra) para atender RNF0011 evitando N+1 na consulta.
+   */
   private List<ClienteView> views(List<Cliente> cs) {
     if (cs.isEmpty()) return List.of();
     var ids = cs.stream().map(Cliente::getId).toList();

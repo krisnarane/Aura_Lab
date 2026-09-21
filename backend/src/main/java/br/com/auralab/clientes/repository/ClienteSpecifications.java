@@ -4,9 +4,15 @@ import br.com.auralab.clientes.domain.Cliente;
 import java.time.LocalDate;
 import org.springframework.data.jpa.domain.Specification;
 
+/**
+ * Specifications da consulta de clientes (RF0024): filtros combinados com E. Nome e
+ * e-mail usam busca parcial com `%`/`_` tratados como literais; os demais campos usam
+ * igualdade normalizada.
+ */
 public final class ClienteSpecifications {
   private ClienteSpecifications() {}
 
+  /** Compõe os predicados; filtros vazios são ignorados (combináveis livremente). */
   public static Specification<Cliente> filtrar(
       String codigo,
       String nome,
@@ -31,6 +37,7 @@ public final class ClienteSpecifications {
         ativo == null ? null : (r, q, b) -> b.equal(r.get("ativo"), ativo));
   }
 
+  // LIKE case-insensitive com escape de %/_ para busca parcial sem curingas indesejados.
   private static Specification<Cliente> contem(String campo, String valor) {
     return vazio(valor)
         ? null

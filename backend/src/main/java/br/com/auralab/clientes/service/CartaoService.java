@@ -7,6 +7,14 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service de cartões e bandeiras: lista bandeiras, adiciona cartão, define o preferencial
+ * e inativa. Por decisão do projeto não existe BandeiraService: bandeiras ficam aqui.
+ *
+ * <p>Requisitos: RF0027 (múltiplos cartões com um único preferencial ativo), RN0024
+ * (número e CVV validados e descartados; persistem só os últimos quatro dígitos), RN0025
+ * (bandeira cadastrada) e RNF0012 (auditoria na mesma transação).
+ */
 @Service
 public class CartaoService {
 
@@ -33,6 +41,10 @@ public class CartaoService {
     return cliente(clienteId).getCartoes().stream().map(mapper::cartao).toList();
   }
 
+  /**
+   * RN0024/RN0025: valida número (Luhn) e CVV sem persistir nenhum dos dois; o primeiro
+   * cartão ativo do cliente passa a ser preferencial automaticamente (RF0027).
+   */
   @Transactional
   public CartaoView adicionar(Long clienteId, CartaoInput in) {
     Cliente c = bloqueado(clienteId);
@@ -81,6 +93,7 @@ public class CartaoService {
         clienteId, "DEFINIR_CARTAO_PREFERENCIAL", "CARTAO", id, antes, RegistroCliente.cartoes(c));
   }
 
+  /** Se o cartão inativado era o preferencial, outro cartão ativo assume (RF0027). */
   @Transactional
   public void inativar(Long clienteId, Long id) {
     Cliente c = bloqueado(clienteId);
@@ -131,6 +144,7 @@ public class CartaoService {
     return v == null ? "" : v.replaceAll("\\D", "");
   }
 
+  // Verificação de Luhn para números de cartão fictícios em ambiente demonstrativo.
   private boolean luhn(String n) {
     int soma = 0;
     boolean dobro = false;

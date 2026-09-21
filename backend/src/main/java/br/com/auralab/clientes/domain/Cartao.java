@@ -2,6 +2,14 @@ package br.com.auralab.clientes.domain;
 
 import jakarta.persistence.*;
 
+/**
+ * Cartão de crédito do cliente: titular, bandeira persistida, últimos quatro dígitos e
+ * marca de preferencial.
+ *
+ * <p>Requisitos: RF0027 (cadastro de cartões, exatamente um preferencial), RN0024 (o
+ * número completo e o CVV são descartados após a validação; só restam os últimos quatro
+ * dígitos) e RN0025 (bandeira precisa existir no sistema).
+ */
 @Entity
 public class Cartao {
   @Id
@@ -18,6 +26,7 @@ public class Cartao {
 
   private String titular;
 
+  // PAN e CVV jamais são persistidos — apenas os últimos quatro dígitos (RN0024).
   @Column(name = "ultimos_quatro")
   private String ultimosQuatro;
 

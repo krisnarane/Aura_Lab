@@ -4,8 +4,16 @@ import java.time.LocalDate;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
+/**
+ * Normalizações e validações reutilizadas do cadastro: CPF com dígitos verificadores e
+ * senha forte (RN0026, RNF0031, RNF0032), além de DDD, telefone, CEP e nascimento (RN0023
+ * e regras complementares do projeto). Cada método retorna o valor normalizado ou lança
+ * {@link RegraNegocioException} com código de erro.
+ */
 @Component
 public class ValidadorCliente {
+
+  // RNF0031: mínimo de 8 caracteres com maiúscula, minúscula e caractere especial.
   private static final Pattern SENHA =
       Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$");
 
@@ -48,6 +56,7 @@ public class ValidadorCliente {
     return d;
   }
 
+  /** RNF0031/RNF0032: força mínima e confirmação idêntica; o limite de 72 bytes é do BCrypt (RNF0033). */
   public void senha(String senha, String confirmacao) {
     if (senha != null && senha.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
       throw new RegraNegocioException(

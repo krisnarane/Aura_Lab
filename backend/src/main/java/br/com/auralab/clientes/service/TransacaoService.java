@@ -6,6 +6,10 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service somente-leitura das transações demonstrativas (RF0025). O vínculo com o cliente
+ * da URL é sempre validado antes de devolver o detalhe (404 se não pertencer).
+ */
 @Service
 public class TransacaoService {
   private final ClienteRepository clientes;

@@ -4,6 +4,15 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
+/**
+ * Produto da loja (livro no DRS). Situação ({@code ativo}) e visibilidade ({@code
+ * visivel}) são independentes: inativar força {@code visivel = false} e ativar não
+ * republica automaticamente. Guarda o último motivo de ativação e de inativação; o
+ * histórico completo fica em {@code auditoria_produto}.
+ *
+ * <p>Requisitos: RF0011 (cadastro mínimo), RF0012/RN0015 (inativar com motivo), RF0016/
+ * RN0017 (ativar com motivo) e RNF0021 (código PRD- único gerado por trigger no banco).
+ */
 @Entity
 public class Produto {
 
@@ -11,6 +20,7 @@ public class Produto {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  // Código PRD-###### gerado por trigger no banco; único e imutável (RNF0021).
   @Column(unique = true, length = 20, insertable = false, updatable = false)
   private String codigo;
 
@@ -68,6 +78,7 @@ public class Produto {
     this.atualizadoEm = this.criadoEm;
   }
 
+  /** RF0012/RN0015: inativação lógica com motivo obrigatório; também oculta o produto. */
   public void inativar(String categoria, String justificativa) {
     this.ativo = false;
     this.visivel = false;
@@ -77,6 +88,7 @@ public class Produto {
     this.atualizadoEm = this.inativadoEm;
   }
 
+  /** RF0016/RN0017: ativação lógica com motivo obrigatório; não altera a visibilidade. */
   public void ativar(String categoria, String justificativa) {
     this.ativo = true;
     this.categoriaAtivacao = categoria;

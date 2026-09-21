@@ -6,6 +6,10 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 
+/**
+ * Auditoria de produtos (RNF0012), espelhando a de clientes: MANDATORY prende o registro
+ * à transação da operação auditada — se a escrita falhar, nada fica gravado.
+ */
 @Service
 public class AuditoriaProdutoService {
   private final AuditoriaProdutoRepository repo;

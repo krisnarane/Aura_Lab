@@ -6,6 +6,10 @@ import java.util.Map;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+/**
+ * Trilha de auditoria das escritas sobre produtos (RNF0012): instante, ator técnico
+ * {@code ADMIN_DEMO}, operação e snapshots JSON de situação e motivo antes/depois.
+ */
 @Entity
 @Table(name = "auditoria_produto")
 public class AuditoriaProduto {

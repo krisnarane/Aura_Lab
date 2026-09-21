@@ -7,6 +7,15 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service de endereços: listar, adicionar, alterar e inativar, mantendo os mínimos de
+ * cobrança/entrega e a unicidade do preferencial de entrega.
+ *
+ * <p>Requisitos: RF0026 (múltiplos endereços com manutenção independente), RN0021/RN0022
+ * (último endereço ativo de cada finalidade é protegido), RN0023 (validações de campos),
+ * RNF0034 (endereços alterados sem tocar no restante do cadastro) e RNF0012 (auditoria na
+ * mesma transação).
+ */
 @Service
 public class EnderecoService {
 
@@ -81,6 +90,10 @@ public class EnderecoService {
     return mapper.endereco(e);
   }
 
+  /**
+   * Inativação lógica protegida por RN0021/RN0022: se o endereço inativado era o
+   * preferencial de entrega, outro endereço ativo de entrega assume a preferência.
+   */
   @Transactional
   public void inativar(Long clienteId, Long id) {
     Cliente c = bloqueado(clienteId);
@@ -102,6 +115,7 @@ public class EnderecoService {
         clienteId, "INATIVAR_ENDERECO", "ENDERECO", id, antes, RegistroCliente.enderecos(c));
   }
 
+  // Garante exatamente um preferencial entre os ativos de entrega (RF0026).
   private void normalizarPreferencia(Cliente c) {
     Endereco escolhido =
         c.getEnderecos().stream()
@@ -122,6 +136,7 @@ public class EnderecoService {
             () -> new RegraNegocioException("CLIENTE_NAO_ENCONTRADO", "Cliente não encontrado."));
   }
 
+  // Bloqueia a linha do cliente (PESSIMISTIC_WRITE) para serializar escritas concorrentes.
   private Cliente bloqueado(Long id) {
     return repo.buscarParaAtualizacao(id)
         .orElseThrow(
@@ -148,6 +163,7 @@ public class EnderecoService {
     validador.cep(i.cep());
   }
 
+  // RN0021/RN0022: impede remover a última finalidade de cobrança ou de entrega ativa.
   private void protegerMinimos(
       Cliente c, Endereco atual, boolean novaCobranca, boolean novaEntrega) {
     if (atual.isCobranca()

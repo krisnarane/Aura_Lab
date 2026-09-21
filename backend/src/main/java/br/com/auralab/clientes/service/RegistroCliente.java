@@ -3,7 +3,10 @@ package br.com.auralab.clientes.service;
 import br.com.auralab.clientes.domain.*;
 import java.util.*;
 
-/** Allowlisted audit snapshots. Never serialize an entity or request directly. */
+/**
+ * Snapshots de auditoria com campos explicitamente permitidos (RNF0012). Nunca serialize
+ * uma entidade ou requisição inteira: senha, hash, PAN e CVV ficam de fora por construção.
+ */
 public final class RegistroCliente {
   private RegistroCliente() {}
 

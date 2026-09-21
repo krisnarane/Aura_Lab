@@ -2,6 +2,14 @@ package br.com.auralab.clientes.domain;
 
 import jakarta.persistence.*;
 
+/**
+ * Endereço do cliente com apelido, composição postal, finalidades (cobrança/entrega) e
+ * preferência de entrega.
+ *
+ * <p>Requisitos: RF0026 (múltiplos endereços de entrega), RN0021/RN0022 (ao menos um
+ * endereço de cobrança e um de entrega), RN0023 (campos obrigatórios), RNF0034
+ * (alterar/adicionar sem editar o cadastro inteiro) e RF0023 (inativação lógica).
+ */
 @Entity
 public class Endereco {
   @Id
@@ -110,6 +118,7 @@ public class Endereco {
     this.preferencialEntrega = preferencialEntrega;
   }
 
+  /** Inativação lógica; um endereço inativo não pode continuar preferencial. */
   public void inativar() {
     ativo = false;
     preferencialEntrega = false;

@@ -8,6 +8,13 @@ import java.util.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller REST de produtos (livros no DRS). Apenas delega ao ProdutoService.
+ *
+ * <p>Cobre RF0011 (cadastro parcial), RF0015 (consulta parcial) e o ciclo RF0012/RN0015
+ * (inativar) e RF0016/RN0017 (ativar), além das consultas das tabelas de domínio de
+ * motivo. Erros seguem o contrato {codigo, mensagem, campos} do ApiExceptionHandler.
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class ProdutoController {
@@ -46,11 +53,13 @@ public class ProdutoController {
     return ResponseEntity.created(URI.create("/api/v1/produtos/" + v.id())).body(v);
   }
 
+  /** RF0012/RN0015: inativação lógica com categoria e justificativa obrigatórias. */
   @PatchMapping("/produtos/{id}/inativacao")
   ProdutoView inativar(@PathVariable Long id, @Valid @RequestBody MotivoStatusProdutoInput in) {
     return produtos.inativar(id, in);
   }
 
+  /** RF0016/RN0017: ativação lógica com categoria e justificativa obrigatórias. */
   @PatchMapping("/produtos/{id}/ativacao")
   ProdutoView ativar(@PathVariable Long id, @Valid @RequestBody MotivoStatusProdutoInput in) {
     return produtos.ativar(id, in);

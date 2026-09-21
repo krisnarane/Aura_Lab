@@ -8,6 +8,11 @@ import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Traduz exceções para o contrato de erros do projeto: corpo {@code {codigo, mensagem,
+ * campos}} com 400 (entrada inválida), 404 (ausência/associação incorreta) ou 409
+ * (conflito).
+ */
 @RestControllerAdvice
 public class ApiExceptionHandler {
   @ExceptionHandler(RegraNegocioException.class)

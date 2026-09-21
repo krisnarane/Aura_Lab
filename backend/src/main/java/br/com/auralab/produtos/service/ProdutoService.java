@@ -8,6 +8,16 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Service de produtos: cadastro e consulta mínimos para suportar o ciclo ativar/inativar
+ * com motivo. Escrita e auditoria dividem a mesma transação (RNF0012); tentativa inválida
+ * não registra auditoria.
+ *
+ * <p>Requisitos: RF0011 (cadastro parcial) e RNF0021 (código PRD-), RF0015 (consulta
+ * parcial), RF0012/RN0015 (inativação) e RF0016/RN0017 (ativação), ambos com categoria e
+ * justificativa obrigatórias. Alteração de cadastro (RF0014) ainda não faz parte desta
+ * entrega.
+ */
 @Service
 public class ProdutoService {
 
@@ -28,6 +38,7 @@ public class ProdutoService {
     auditoria = a;
   }
 
+  /** RF0015: código exato, nome parcial (`%`/`_` literais) e situação, combináveis. */
   @Transactional(readOnly = true)
   public List<ProdutoView> listar(String codigo, String nome, Boolean ativo) {
     String trecho =
@@ -56,6 +67,7 @@ public class ProdutoService {
     return view(p);
   }
 
+  /** RF0012/RN0015: a categoria precisa existir em categoria_inativacao_produto; inativar também oculta (visivel = false). */
   @Transactional
   public ProdutoView inativar(Long id, MotivoStatusProdutoInput in) {
     Produto p = repo.buscarParaAtualizacao(id).orElseThrow(this::naoEncontrado);
@@ -76,6 +88,7 @@ public class ProdutoService {
     return view(p);
   }
 
+  /** RF0016/RN0017: categoria precisa existir em categoria_ativacao_produto; ativar não republica automaticamente. */
   @Transactional
   public ProdutoView ativar(Long id, MotivoStatusProdutoInput in) {
     Produto p = repo.buscarParaAtualizacao(id).orElseThrow(this::naoEncontrado);

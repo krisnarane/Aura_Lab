@@ -2,6 +2,7 @@ package br.com.auralab.clientes.api.dto;
 
 import jakarta.validation.constraints.*;
 
+/** Entrada de endereço (RF0026/RNF0034) com os campos obrigatórios de RN0023; observações são opcionais. */
 public record EnderecoInput(
     @NotBlank @Size(max = 60) String apelido,
     @NotBlank @Size(max = 40) String tipoResidencia,

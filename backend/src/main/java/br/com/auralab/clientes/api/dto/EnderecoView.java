@@ -1,5 +1,6 @@
 package br.com.auralab.clientes.api.dto;
 
+/** Saída de endereço com finalidades, preferência de entrega e situação (RF0026). */
 public record EnderecoView(
     Long id,
     String apelido,

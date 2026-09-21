@@ -6,6 +6,14 @@ import java.util.Map;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+/**
+ * Registro de auditoria das escritas sobre o cliente: instante, ator, operação, entidade e
+ * snapshots JSON antes/depois permitidos (sem senha, PAN ou CVV).
+ *
+ * <p>Requisito: RNF0012 (toda escrita registra data, hora, usuário responsável e dados
+ * alterados). O ator é o técnico {@code ADMIN_DEMO} — não há usuário autenticado nesta
+ * etapa.
+ */
 @Entity
 @Table(name = "auditoria_cliente")
 public class AuditoriaCliente {
@@ -49,6 +57,7 @@ public class AuditoriaCliente {
     this.dadosNovos = depois;
     this.ator = "ADMIN_DEMO";
     this.ocorridaEm = OffsetDateTime.now();
+    // Segredos nunca entram na trilha: troca de senha vira apenas um fato registrado.
     this.alteracoes =
         operacao.equals("ALTERAR_SENHA")
             ? "Senha alterada; conteúdo omitido."

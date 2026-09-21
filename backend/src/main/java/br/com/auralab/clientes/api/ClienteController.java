@@ -10,6 +10,14 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller REST do módulo de clientes (camada MVC). Apenas delega aos services —
+ * controllers não acessam repositories; o vínculo dos recursos filhos ao cliente da URL é
+ * validado no service.
+ *
+ * <p>Endpoints cobrem RF0021 a RF0028: CRUD e inativação de cliente, senha isolada,
+ * endereços, cartões, transações demonstrativas, auditoria e consulta de bandeiras.
+ */
 @RestController
 @RequestMapping("/api/v1")
 public class ClienteController {
@@ -38,6 +46,7 @@ public class ClienteController {
     return ResponseEntity.created(URI.create("/api/v1/clientes/" + v.id())).body(v);
   }
 
+  /** RF0024: consulta com filtros isolados ou combinados por todos os campos de identificação. */
   @GetMapping("/clientes")
   List<ClienteView> listar(
       @RequestParam(required = false) String codigo,
@@ -74,11 +83,13 @@ public class ClienteController {
     return clientes.alterar(id, in);
   }
 
+  /** RF0023: inativação lógica (não é exclusão física). */
   @PatchMapping("/clientes/{id}/inativacao")
   ClienteView inativar(@PathVariable Long id) {
     return clientes.inativar(id);
   }
 
+  /** RF0028: alteração apenas de senha, endpoint independente dos dados cadastrais. */
   @PutMapping("/clientes/{id}/senha")
   ResponseEntity<Void> senha(@PathVariable Long id, @Valid @RequestBody SenhaInput in) {
     clientes.alterarSenha(id, in);
@@ -141,6 +152,7 @@ public class ClienteController {
     return transacoes.buscar(id, transacaoId);
   }
 
+  /** RNF0012: histórico da trilha gravada em cada escrita. */
   @GetMapping("/clientes/{id}/auditoria")
   List<AuditoriaView> auditoria(@PathVariable Long id) {
     clientes.buscar(id);
@@ -160,6 +172,7 @@ public class ClienteController {
         .toList();
   }
 
+  /** RN0025: domínio de bandeiras cadastradas para preencher o formulário de cartão. */
   @GetMapping("/bandeiras")
   List<BandeiraView> bandeiras() {
     return cartoes.listarBandeiras();

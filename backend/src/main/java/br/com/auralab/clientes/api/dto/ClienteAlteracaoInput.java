@@ -3,6 +3,7 @@ package br.com.auralab.clientes.api.dto;
 import jakarta.validation.constraints.*;
 import java.time.*;
 
+/** Entrada da alteração cadastral (RF0022): sem senha, código e vínculos, preservados por regra. */
 public record ClienteAlteracaoInput(
     @NotBlank @Size(max = 150) String nome,
     @NotBlank @Size(max = 20) String cpf,

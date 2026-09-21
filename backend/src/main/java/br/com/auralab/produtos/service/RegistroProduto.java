@@ -3,7 +3,10 @@ package br.com.auralab.produtos.service;
 import br.com.auralab.produtos.domain.Produto;
 import java.util.*;
 
-/** Allowlisted audit snapshots. Never serialize an entity or request directly. */
+/**
+ * Snapshots de auditoria de produto com campos explicitamente permitidos (RNF0012):
+ * situação, visibilidade e motivo. Nunca serialize a entidade inteira.
+ */
 public final class RegistroProduto {
   private RegistroProduto() {}
 
