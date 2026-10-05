@@ -3,10 +3,9 @@ package br.com.auralab.clientes.service;
 import java.util.*;
 
 /**
- * Exceção de regra de negócio com código estável. O status HTTP é derivado do código —
- * 400 para entrada inválida, 404 para ausência/associação incorreta, 409 para conflito —
- * e {@code campos} aponta o campo relacionado quando aplicável (contrato de erros do
- * módulo).
+ * Exceção de regra de negócio com código estável. O status HTTP é derivado do código — 400 para
+ * entrada inválida, 404 para ausência/associação incorreta, 409 para conflito — e {@code campos}
+ * aponta o campo relacionado quando aplicável (contrato de erros do módulo).
  */
 public class RegraNegocioException extends RuntimeException {
   private final String codigo;
@@ -16,7 +15,11 @@ public class RegraNegocioException extends RuntimeException {
           "ENDERECO_NAO_ENCONTRADO",
           "CARTAO_NAO_ENCONTRADO",
           "TRANSACAO_NAO_ENCONTRADA",
-          "PRODUTO_NAO_ENCONTRADO");
+          "PRODUTO_NAO_ENCONTRADO",
+          "CARRINHO_NAO_ENCONTRADO",
+          "ITEM_CARRINHO_NAO_ENCONTRADO",
+          "PEDIDO_NAO_ENCONTRADO",
+          "CUPOM_NAO_ENCONTRADO");
   private static final Set<String> CONFLITOS =
       Set.of(
           "CLIENTE_DUPLICADO",
@@ -26,7 +29,11 @@ public class RegraNegocioException extends RuntimeException {
           "ULTIMO_ENDERECO_COBRANCA",
           "ULTIMO_ENDERECO_ENTREGA",
           "PRODUTO_JA_ATIVO",
-          "PRODUTO_JA_INATIVO");
+          "PRODUTO_JA_INATIVO",
+          "CARRINHO_VAZIO",
+          "ESTOQUE_INSUFICIENTE",
+          "PRODUTO_INDISPONIVEL",
+          "CUPOM_INVALIDO");
 
   public RegraNegocioException(String codigo, String mensagem) {
     super(mensagem);

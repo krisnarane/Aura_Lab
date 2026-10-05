@@ -65,6 +65,7 @@ import { inicializarAnalytics } from "./analytics.js";
 import { ehRotaClientesAdmin, renderizarClientesAdmin } from "./admin-clientes.js";
 import { ehRotaProdutosAdmin, renderizarProdutosAdmin } from "./admin-produtos.js";
 import { ehRotaPerfilApi, renderizarPerfilApi } from "./perfil-api.js";
+import { ehRotaVendasApi, renderizarVendasApi } from "./vendas-api.js";
 
 const raizAplicacao = document.querySelector("#app");
 
@@ -146,6 +147,10 @@ function renderizar() {
   }
   if (ehRotaPerfilApi()) {
     renderizarPerfilApi(raizAplicacao, navegar, exibirToast);
+    return;
+  }
+  if (ehRotaVendasApi()) {
+    renderizarVendasApi(raizAplicacao, navegar, exibirToast);
     return;
   }
   raizAplicacao.innerHTML = resolverPagina();

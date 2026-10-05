@@ -14,13 +14,13 @@ Tela administrativa
 
 | Padrão | Participantes atuais |
 | --- | --- |
-| MVC + Service Layer | `ClienteController`, `ProdutoController`, `ClienteService`, `EnderecoService`, `CartaoService`, `TransacaoService`, `AuditoriaService`, `ProdutoService`, `AuditoriaProdutoService` |
-| Repository | `ClienteRepository`, `BandeiraRepository`, `TransacaoRepository`, `AuditoriaRepository`, `ProdutoRepository`, `CategoriaAtivacaoProdutoRepository`, `CategoriaInativacaoProdutoRepository`, `AuditoriaProdutoRepository` |
-| Strategy | `PoliticaRankingCliente`, `PoliticaRankingPorCompras` |
+| MVC + Service Layer | `ClienteController`, `ProdutoController`, `VendaController`, `ClienteService`, `EnderecoService`, `CartaoService`, `TransacaoService`, `AuditoriaService`, `ProdutoService`, `AuditoriaProdutoService`, `CarrinhoService`, `VendaService` |
+| Repository | `ClienteRepository`, `BandeiraRepository`, `TransacaoRepository`, `AuditoriaRepository`, `ProdutoRepository`, `CategoriaAtivacaoProdutoRepository`, `CategoriaInativacaoProdutoRepository`, `AuditoriaProdutoRepository`, `CarrinhoRepository`, `PedidoRepository`, `CupomRepository` |
+| Strategy | `PoliticaRankingCliente`, `PoliticaRankingPorCompras`, `PoliticaFrete`/`PoliticaFretePorRegiao` |
 | Specification | `ClienteSpecifications` para filtros combináveis |
 | Adapter | `frontend/js/clientesApi.js`, `frontend/js/produtosApi.js` |
 | Facade | `frontend/js/clientesService.js`, `frontend/js/produtosService.js` |
-| Page Object | `ClientesAdminPage`, `ProdutosAdminPage`, `FormularioComponente`, `EnderecoComponente`, `CartaoComponente`, `ConfirmacaoComponente` |
+| Page Object | `ClientesAdminPage`, `ProdutosAdminPage`, `LojaPage`, `FormularioComponente`, `EnderecoComponente`, `CartaoComponente`, `ConfirmacaoComponente` |
 
 Controllers não acessam repositories diretamente. `ClienteMapper` somente converte entidades para DTOs. `RegistroCliente` monta snapshots permitidos para auditoria. Essas dependências são verificadas por teste de arquitetura.
 
@@ -36,6 +36,8 @@ Controllers não acessam repositories diretamente. `ClienteMapper` somente conve
 | `ProdutoService` | Cadastrar/listar produtos (mínimos), inativar e ativar produto com categoria e justificativa (RF0012/RF0016); listar categorias de motivo |
 | `AuditoriaProdutoService` | Registrar eventos de produto na transação corrente |
 | `ValidadorCliente` | Normalizações e validações reutilizadas |
+| `CarrinhoService` | Adicionar, alterar quantidade, remover e visualizar itens do carrinho validando estoque (RF0031/RF0032/RN0031) |
+| `VendaService` | Realizar/finalizar compra (RF0033/RF0038), endereço (RF0035), frete (RF0034), composição de pagamento e RN0033–RN0036; gera cupom de troco e reaproveita `EnderecoService`/`CartaoService` para incorporar endereço/cartão novos |
 
 Não há `SenhaService`, `BandeiraService`, `AuthService` ou domínio `UsuarioAcesso` no desenho atual.
 
@@ -70,7 +72,9 @@ O modelo completo planejado está em `docs/dvp-uml-2026/10-modelo-dominio.puml`.
 
 ## Persistência e contratos
 
-Flyway V1–V4 cria clientes, endereços, bandeiras, cartões, auditoria e transações demonstrativas. V5 cria produtos, as duas tabelas de domínio de motivo (ativação/inativação) e `auditoria_produto`; V6 traz a massa demonstrativa de produtos. Migrações aplicadas são imutáveis; mudanças novas entram na próxima versão.
+Flyway V1–V4 cria clientes, endereços, bandeiras, cartões, auditoria e transações demonstrativas. V5 cria produtos, as duas tabelas de domínio de motivo (ativação/inativação) e `auditoria_produto`; V6 traz a massa demonstrativa de produtos. V7 cria as tabelas de vendas (`carrinho`, `item_carrinho`, `cupom`, `pedido`, `item_pedido`, `pagamento_parte`, com triggers de código `PED-`/`CUP-`); V8 carrega a massa demonstrativa de vendas (cartão de Marina e cupons). Migrações aplicadas são imutáveis; mudanças novas entram na próxima versão.
+
+O módulo de vendas reutiliza a auditoria de clientes (`AuditoriaService` → `auditoria_cliente`) para RNF0012 e a `RegraNegocioException` compartilhada. O pedido guarda um snapshot do endereço de entrega e das parcelas de pagamento (sem PAN/CVV — apenas bandeira e quatro últimos dígitos na descrição). Entidades de vendas: `Carrinho` 1─* `ItemCarrinho`; `Pedido` 1─* `ItemPedido` e 1─* `PagamentoParte`, com `EnderecoEntrega` embutido; `Cupom` (PROMOCIONAL/TROCA). As coleções de itens e partes de pagamento do pedido usam carregamento em lote para evitar N+1 nas consultas cobertas pelo RNF0011.
 
 A API usa `/api/v1`, com endpoints de cliente, senha, endereços, cartões, transações e auditoria em `ClienteController`, e endpoints de produtos e motivos em `ProdutoController`. A associação de recursos filhos ao cliente da URL deve ser sempre validada.
 
@@ -83,5 +87,7 @@ A API usa `/api/v1`, com endpoints de cliente, senha, endereços, cartões, tran
 | Consulta vinculada | `GET /clientes/{id}/transacoes`, `GET /clientes/{id}/transacoes/{transacaoId}`, `GET /clientes/{id}/auditoria` |
 | Domínio | `GET /bandeiras` |
 | Produto | `GET/POST /produtos`, `GET /produtos/{id}`, `PATCH /produtos/{id}/inativacao`, `PATCH /produtos/{id}/ativacao` (corpo `{categoria, justificativa}`), `GET /categorias-ativacao-produto`, `GET /categorias-inativacao-produto` |
+| Carrinho | `GET /clientes/{id}/carrinho`, `POST /clientes/{id}/carrinho/itens`, `PUT /clientes/{id}/carrinho/itens/{itemId}`, `DELETE /clientes/{id}/carrinho/itens/{itemId}`, `POST /clientes/{id}/carrinho/resumo` |
+| Pedido/Cupom | `POST /clientes/{id}/pedidos` (finalizar), `GET /clientes/{id}/pedidos`, `GET /clientes/{id}/pedidos/{pedidoId}`, `GET /clientes/{id}/cupons` |
 
 Escrita e auditoria devem permanecer na mesma transação. Senha, hash, PAN e CVV não podem aparecer em logs, respostas ou snapshots. Mudanças de cartão preferencial usam bloqueio do cliente e índice único parcial para evitar múltiplos preferenciais ativos.

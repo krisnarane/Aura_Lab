@@ -1,12 +1,12 @@
 # Aura Lab — front-end demonstrativo
 
-**Revisão atual: 04/09/2026.** Este front-end é o protótipo navegável vigente do Aura Lab. Ele cobre as jornadas de cliente, checkout, pedidos, trocas, cupons, gestão administrativa, Consultora Aura e Analytics com dados mockados.
+**Revisão atual: 05/10/2026.** Este front-end combina módulos integrados à API com jornadas demonstrativas ainda mantidas no store local.
 
-> A rota `/admin/clientes` agora é integrada à API Spring Boot e ao PostgreSQL. Execute o sistema pelas instruções do `README.md` na raiz; o servidor Node isolado não oferece essa API.
+> Clientes, produtos, perfil e a jornada principal de vendas são integrados à API Spring Boot e ao PostgreSQL. Execute o sistema pelas instruções do `README.md` na raiz; o servidor Node isolado não oferece essa API.
 
-HTML5, CSS3, Bootstrap 5 e JavaScript ES6 modular, sem frameworks de front-end. A massa inicia com Marina Costa identificada para demonstração; o cadastro, a senha, o pagamento, o frete, o estoque e a administração são fluxos demonstrativos.
+HTML5, CSS3, Bootstrap 5 e JavaScript ES6 modular, sem frameworks de front-end. Catálogo, sacola, checkout, confirmação e cupons consomem a API real; pagamento é registrado como composição do pedido, sem autorização externa, conforme o escopo acadêmico.
 
-O navegador armazena o estado demonstrativo completo em `localStorage`. A massa inicial abre com Marina Costa (`cli-1`) selecionada para facilitar a demonstração; perfil, pedidos e checkout usam o cliente identificado.
+O navegador guarda em `localStorage` apenas a identificação do cliente escolhido para a sessão integrada e o estado das jornadas demonstrativas fora deste escopo. Carrinho e pedido são persistidos no PostgreSQL.
 
 Não há cadastro público nesta etapa. O cliente escolhe um registro já existente no PostgreSQL ao entrar em `/perfil/dados`; depois pode editar os próprios dados, senha, endereços e cartões. O perfil protege o último endereço obrigatório de cada finalidade. Cartões aceitam apenas bandeiras registradas; número completo e código de segurança são descartados após a validação e nunca entram no `localStorage`.
 
@@ -28,7 +28,8 @@ Rotas principais: `/`, `/produto/:id`, `/sacola`, `/checkout/endereco`, `/checko
 ## Mapa para estudo
 
 - `js/dados-mock.js`: massa fixa usada para restaurar a demonstração.
-- `js/store.js`: estado local e regras de cliente, carrinho, checkout, pedidos e trocas.
+- `js/store.js`: estado local das jornadas demonstrativas que ainda não foram integradas.
+- `js/vendas-api.js`: catálogo, sacola, checkout, confirmação e cupons integrados à API real.
 - `js/pages.js`: templates HTML das telas, sem alteração de estado.
 - `js/app.js`: rotas, renderização e ligação dos eventos.
 - `js/api.js`: adaptador HTTP opcional da futura API REST da Consultora Aura.

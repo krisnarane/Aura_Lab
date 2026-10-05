@@ -8,12 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service de cartões e bandeiras: lista bandeiras, adiciona cartão, define o preferencial
- * e inativa. Por decisão do projeto não existe BandeiraService: bandeiras ficam aqui.
+ * Service de cartões e bandeiras: lista bandeiras, adiciona cartão, define o preferencial e
+ * inativa. Por decisão do projeto não existe BandeiraService: bandeiras ficam aqui.
  *
- * <p>Requisitos: RF0027 (múltiplos cartões com um único preferencial ativo), RN0024
- * (número e CVV validados e descartados; persistem só os últimos quatro dígitos), RN0025
- * (bandeira cadastrada) e RNF0012 (auditoria na mesma transação).
+ * <p>Requisitos: RF0027 (múltiplos cartões com um único preferencial ativo), RN0024 (número e CVV
+ * validados e descartados; persistem só os últimos quatro dígitos), RN0025 (bandeira cadastrada) e
+ * RNF0012 (auditoria na mesma transação).
  */
 @Service
 public class CartaoService {
@@ -42,13 +42,36 @@ public class CartaoService {
   }
 
   /**
-   * RN0024/RN0025: valida número (Luhn) e CVV sem persistir nenhum dos dois; o primeiro
-   * cartão ativo do cliente passa a ser preferencial automaticamente (RF0027).
+   * RN0024/RN0025: valida número (Luhn) e CVV sem persistir nenhum dos dois; o primeiro cartão
+   * ativo do cliente passa a ser preferencial automaticamente (RF0027).
    */
   @Transactional
   public CartaoView adicionar(Long clienteId, CartaoInput in) {
     Cliente c = bloqueado(clienteId);
     Map<String, Object> antes = RegistroCliente.cartoes(c);
+    DadosCartaoValidado dados = validar(in);
+    boolean preferencial = c.getCartoes().stream().noneMatch(x -> x.isAtivo()) || in.preferencial();
+    if (preferencial) {
+      c.getCartoes().forEach(x -> x.definirPreferencial(false));
+      clientes.flush();
+    }
+    Cartao cartao =
+        new Cartao(dados.bandeira(), in.titular().trim(), dados.ultimosQuatro(), preferencial);
+    c.adicionarCartao(cartao);
+    clientes.flush();
+    auditoria.registrar(
+        clienteId, "ADICIONAR_CARTAO", "CARTAO", cartao.getId(), antes, RegistroCliente.cartoes(c));
+    return mapper.cartao(cartao);
+  }
+
+  /**
+   * Valida número (Luhn), CVV e bandeira (RN0024/RN0025) e devolve só o que pode ser persistido: a
+   * bandeira e os quatro últimos dígitos. Reutilizado pelo checkout para um cartão novo informado
+   * na compra que não é incorporado ao perfil. Não persiste nada e nunca guarda o número completo
+   * nem o CVV.
+   */
+  @Transactional(readOnly = true)
+  public DadosCartaoValidado validar(CartaoInput in) {
     String numero = digitos(in.numero()), cvv = in.codigoSeguranca();
     if (numero.length() < 13 || numero.length() > 19 || !luhn(numero))
       throw new RegraNegocioException(
@@ -63,19 +86,11 @@ public class CartaoService {
                 () ->
                     new RegraNegocioException(
                         "BANDEIRA_INVALIDA", "Selecione uma bandeira cadastrada."));
-    boolean preferencial = c.getCartoes().stream().noneMatch(x -> x.isAtivo()) || in.preferencial();
-    if (preferencial) {
-      c.getCartoes().forEach(x -> x.definirPreferencial(false));
-      clientes.flush();
-    }
-    Cartao cartao =
-        new Cartao(b, in.titular().trim(), numero.substring(numero.length() - 4), preferencial);
-    c.adicionarCartao(cartao);
-    clientes.flush();
-    auditoria.registrar(
-        clienteId, "ADICIONAR_CARTAO", "CARTAO", cartao.getId(), antes, RegistroCliente.cartoes(c));
-    return mapper.cartao(cartao);
+    return new DadosCartaoValidado(b, numero.substring(numero.length() - 4));
   }
+
+  /** Dados não sensíveis de um cartão validado: bandeira e quatro últimos dígitos (RN0024). */
+  public record DadosCartaoValidado(Bandeira bandeira, String ultimosQuatro) {}
 
   @Transactional
   public void preferencial(Long clienteId, Long id) {

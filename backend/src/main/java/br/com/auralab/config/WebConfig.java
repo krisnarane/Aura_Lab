@@ -5,9 +5,9 @@ import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Roteamento do frontend: encaminha as rotas do SPA para index.html. Não há autenticação
- * nesta etapa (decisão do projeto); os módulos integrados são /admin/clientes,
- * /admin/produtos e /perfil/**.
+ * Roteamento do frontend: encaminha as rotas do SPA para index.html. Não há autenticação nesta
+ * etapa (decisão do projeto); os módulos integrados incluem administração, perfil e a jornada
+ * principal de vendas (catálogo, sacola e checkout).
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -17,6 +17,8 @@ public class WebConfig implements WebMvcConfigurer {
         new String[] {
           "/admin/**",
           "/perfil/**",
+          "/loja",
+          "/loja/**",
           "/checkout/**",
           "/produto/**",
           "/catalogo",

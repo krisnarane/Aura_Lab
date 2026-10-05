@@ -31,7 +31,8 @@ public abstract class PostgresTest {
         throw new IllegalStateException("Refusing to reset a non-test database");
     }
     jdbc.execute(
-        "truncate auditoria_produto, produto, categoria_ativacao_produto, categoria_inativacao_produto,"
+        "truncate pagamento_parte, item_pedido, pedido, item_carrinho, carrinho, cupom,"
+            + " auditoria_produto, produto, categoria_ativacao_produto, categoria_inativacao_produto,"
             + " auditoria_cliente, transacao_cliente, cartao, endereco, cliente, bandeira restart identity cascade");
     jdbc.execute(
         "insert into bandeira(nome) values ('Visa'),('Mastercard'),('Elo'),('American Express')");
