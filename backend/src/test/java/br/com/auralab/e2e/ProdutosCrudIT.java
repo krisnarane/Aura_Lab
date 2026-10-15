@@ -59,6 +59,36 @@ class ProdutosCrudIT extends PostgresTest {
     f.enviar();
   }
 
+  @AfterAll
+  void encerrarNavegador() {
+    if (driver != null) driver.quit();
+  }
+
+  @Test
+  @DisplayName("CT026 - Recusar justificativa vazia na inativação")
+  void RF0012_RN0015_CT026_justificativaVaziaNaoInativa() {
+    page.abrir("", "tabela-produtos");
+    assertThat(page.linha(2)).contains("ATIVO", "VISÍVEL");
+    var produtoAntes = jdbc.queryForMap("select * from produto where id=2");
+    int auditoriasAntes =
+        jdbc.queryForObject("select count(*) from auditoria_produto", Integer.class);
+
+    page.clicar("[data-inativar-produto='2']");
+    page.esperar("form-motivo");
+    var formulario = page.formulario("form-motivo");
+    formulario.selecionar("categoria", "Produto descontinuado sem previsão de reposição");
+    formulario.campo("justificativa", "").enviar();
+    formulario.erro();
+    assertThat(driver.findElement(By.name("justificativa")).getDomAttribute("aria-invalid"))
+        .isEqualTo("true");
+    assertThat(page.texto()).containsIgnoringCase("justificativa");
+    assertThat(jdbc.queryForMap("select * from produto where id=2")).isEqualTo(produtoAntes);
+    assertThat(jdbc.queryForObject("select count(*) from auditoria_produto", Integer.class))
+        .isEqualTo(auditoriasAntes);
+    page.abrir("", "tabela-produtos");
+    assertThat(page.linha(2)).contains("ATIVO", "VISÍVEL");
+  }
+
   @Test
   void RF0012_RN0015_RNF0012_inativacaoRegistraMotivoEAuditoria() {
     page.abrir("", "tabela-produtos");
@@ -102,17 +132,14 @@ class ProdutosCrudIT extends PostgresTest {
         "Novo lote chegou ao centro de distribuição.");
     page.esperar("tabela-produtos");
     assertThat(page.linha(3)).contains("ATIVO").contains("OCULTO");
-    assertThat(jdbc.queryForObject("select ativo from produto where id=3", Boolean.class))
-        .isTrue();
+    assertThat(jdbc.queryForObject("select ativo from produto where id=3", Boolean.class)).isTrue();
     assertThat(jdbc.queryForObject("select visivel from produto where id=3", Boolean.class))
         .isFalse();
     assertThat(
-            jdbc.queryForObject(
-                "select categoria_ativacao from produto where id=3", String.class))
+            jdbc.queryForObject("select categoria_ativacao from produto where id=3", String.class))
         .isEqualTo("RETORNO_AO_MERCADO");
     page.abrir("?motivo=3&acao=ativar", "form-motivo");
-    preencherMotivo(
-        "Produto retorna ao mercado após período indisponível", "Tentativa repetida.");
+    preencherMotivo("Produto retorna ao mercado após período indisponível", "Tentativa repetida.");
     page.aguardarTexto("já está ativo");
     assertThat(
             jdbc.queryForObject(
@@ -135,8 +162,7 @@ class ProdutosCrudIT extends PostgresTest {
     f.erro();
     assertThat(jdbc.queryForObject("select ativo from produto where id=3", Boolean.class))
         .isFalse();
-    assertThat(
-            jdbc.queryForObject("select count(*) from auditoria_produto", Integer.class))
+    assertThat(jdbc.queryForObject("select count(*) from auditoria_produto", Integer.class))
         .isZero();
   }
 
@@ -153,8 +179,7 @@ class ProdutosCrudIT extends PostgresTest {
     assertThat(page.texto()).contains("Sabonete Líquido Lavanda", "PRD-000004");
     assertThat(
             jdbc.queryForObject(
-                "select codigo from produto where nome='Sabonete Líquido Lavanda'",
-                String.class))
+                "select codigo from produto where nome='Sabonete Líquido Lavanda'", String.class))
         .isEqualTo("PRD-000004");
   }
 }

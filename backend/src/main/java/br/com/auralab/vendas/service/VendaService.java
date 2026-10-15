@@ -27,9 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
  * (RF0035/RN0023), cálculo de frete (RF0034 via {@link PoliticaFrete}), composição de pagamento com
  * cartões e cupons (RF0036/RF0037) e as regras de pagamento RN0033 (um cupom promocional), RN0034
  * (mínimo por cartão), RN0035 (um único cartão abaixo do mínimo, apenas quando há cupons) e RN0036
- * (cupom de troco sem cupons desnecessários). O pedido é criado com status EM_PROCESSAMENTO;
- * validação/aprovação do pagamento e transições seguintes estão fora do escopo desta fase. Escrita
- * e auditoria compartilham a mesma transação (RNF0012).
+ * (cupom de troco sem cupons desnecessários). O pedido é criado com status EM_PROCESSAMENTO; a
+ * aprovação e as transições seguintes são executadas pelo CicloPedidoService. Escrita e auditoria
+ * compartilham a mesma transação (RNF0012).
  */
 @Service
 public class VendaService {
@@ -46,6 +46,9 @@ public class VendaService {
   private final ValidadorCliente validador;
   private final PoliticaFrete politicaFrete;
   private final AuditoriaService auditoria;
+  private final ReservaEstoqueService reservas;
+  private final CicloVendaRepository ciclo;
+  private final com.fasterxml.jackson.databind.ObjectMapper json;
 
   @PersistenceContext private EntityManager em;
 
@@ -59,7 +62,10 @@ public class VendaService {
       CartaoService cartoes,
       ValidadorCliente validador,
       PoliticaFrete politicaFrete,
-      AuditoriaService auditoria) {
+      AuditoriaService auditoria,
+      ReservaEstoqueService reservas,
+      CicloVendaRepository ciclo,
+      com.fasterxml.jackson.databind.ObjectMapper json) {
     this.carrinhos = carrinhos;
     this.produtos = produtos;
     this.pedidos = pedidos;
@@ -70,20 +76,35 @@ public class VendaService {
     this.validador = validador;
     this.politicaFrete = politicaFrete;
     this.auditoria = auditoria;
+    this.reservas = reservas;
+    this.ciclo = ciclo;
+    this.json = json;
   }
 
   /** RF0034: pré-cálculo de subtotal, desconto do cupom promocional, frete e total a pagar. */
-  @Transactional(readOnly = true)
+  @Transactional
   public ResumoView resumo(Long clienteId, ResumoInput in) {
+    reservas.sincronizar(clienteId);
     Cliente cliente = exigirCliente(clienteId);
     List<ItemCalc> itens =
         itensDoCarrinho(carrinhos.findByClienteId(clienteId).orElse(null), false);
     BigDecimal subtotal = somaSubtotais(itens);
     int unidades = somaUnidades(itens);
     String estado = null;
-    if (in.enderecoId() != null) estado = enderecoDoPerfil(cliente, in.enderecoId()).getEstado();
-    else if (in.estado() != null && !in.estado().isBlank()) estado = in.estado().trim();
-    BigDecimal desconto = descontoPromocional(in.cupomPromocional(), subtotal).valor();
+    if (in.enderecoId() != null) {
+      Endereco endereco = enderecoDoPerfil(cliente, in.enderecoId());
+      if (!endereco.isAtivo() || !endereco.isEntrega())
+        throw new RegraNegocioException(
+            "ENDERECO_ENTREGA_INVALIDO", "Selecione um endereço de entrega ativo.");
+      estado = endereco.getEstado();
+    } else if (in.estado() != null && !in.estado().isBlank()) {
+      estado = in.estado().trim();
+    }
+    if (estado == null || estado.isBlank())
+      throw new RegraNegocioException(
+          "ENDERECO_OBRIGATORIO",
+          "Selecione um endereço de entrega ou informe o estado do novo endereço.");
+    BigDecimal desconto = descontoPromocional(in.cupomPromocional(), subtotal, clienteId).valor();
     BigDecimal frete = politicaFrete.calcular(estado, unidades, subtotal);
     BigDecimal total = subtotal.subtract(desconto).add(frete).max(zero());
     return new ResumoView(subtotal, unidades, desconto, frete, total);
@@ -92,6 +113,19 @@ public class VendaService {
   /** RF0033/RF0038 + RN0033–RN0036: cria o pedido EM_PROCESSAMENTO a partir do carrinho. */
   @Transactional
   public PedidoView finalizar(Long clienteId, CheckoutInput in) {
+    return finalizar(clienteId, in, null);
+  }
+
+  @Transactional
+  public PedidoView finalizar(Long clienteId, CheckoutInput in, String chave) {
+    reservas.sincronizar(clienteId);
+    String resumo = impressaoCheckout(in);
+    if (chave != null) {
+      if (chave.isBlank() || chave.length() > 80)
+        throw new RegraNegocioException("IDEMPOTENCIA_INVALIDA", "Chave de compra inválida.");
+      Long anterior = ciclo.checkoutExistente(clienteId, chave, resumo);
+      if (anterior != null) return buscarPedido(clienteId, anterior);
+    }
     Cliente cliente =
         clientes
             .buscarParaAtualizacao(clienteId)
@@ -99,6 +133,8 @@ public class VendaService {
                 () ->
                     new RegraNegocioException("CLIENTE_NAO_ENCONTRADO", "Cliente não encontrado."));
     Carrinho cart = carrinhos.buscarParaAtualizacao(clienteId).orElse(null);
+    if (!cliente.isAtivo())
+      throw new RegraNegocioException("CLIENTE_INATIVO", "Cliente inativo não pode comprar.");
     if (cart == null || cart.getItens().isEmpty())
       throw new RegraNegocioException("CARRINHO_VAZIO", "O carrinho está vazio.");
 
@@ -109,7 +145,7 @@ public class VendaService {
     ResolucaoEndereco endereco = resolverEndereco(cliente, clienteId, in);
     BigDecimal frete = politicaFrete.calcular(endereco.estado(), unidades, subtotal);
 
-    Desconto promo = descontoPromocional(in.cupomPromocional(), subtotal);
+    Desconto promo = descontoPromocional(in.cupomPromocional(), subtotal, clienteId);
     BigDecimal total = subtotal.subtract(promo.valor()).add(frete).max(zero());
 
     List<Cupom> cuponsTroca = resolverCuponsTroca(clienteId, in.cuponsTroca());
@@ -147,33 +183,39 @@ public class VendaService {
       pedido.adicionarParte(PagamentoParte.cartao(pc.valor(), pc.descricao(), pc.cartaoId()));
     pedidos.saveAndFlush(pedido);
     em.refresh(pedido);
-
-    Cupom trocoCupom = null;
-    if (troco.compareTo(zero()) > 0) {
-      trocoCupom =
-          cupons.saveAndFlush(
-              Cupom.troco(clienteId, troco, "Troco do pedido " + pedido.getCodigo()));
-      em.refresh(trocoCupom);
-      pedido.registrarTrocoGerado(trocoCupom.getId());
-    }
-    cuponsTroca.forEach(Cupom::utilizar);
+    pedido.prepararCiclo(reservas.agora(), troco, chave, resumo);
+    reservas.transferir(cart, pedido);
+    cuponsTroca.forEach(c -> c.reservar(pedido.getId()));
     cupons.flush();
 
     cart.esvaziar();
     carrinhos.flush();
 
-    auditoria.registrar(
+    auditoria.registrarComo(
         clienteId,
+        "CLIENTE_DEMO:" + clienteId,
+        reservas.agora(),
         "FINALIZAR_COMPRA",
         "PEDIDO",
         pedido.getId(),
         null,
         RegistroVenda.pedido(pedido));
-    return pedidoView(pedido, trocoCupom);
+    ciclo.transacao(
+        clienteId,
+        "PEDIDO",
+        pedido.getId(),
+        pedido.getCodigo(),
+        "PEDIDO",
+        pedido.getStatus(),
+        pedido.getTotal(),
+        "Pedido real; aguardando validação de pagamento.",
+        reservas.agora());
+    return pedidoView(pedido, null);
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public PedidoView buscarPedido(Long clienteId, Long pedidoId) {
+    reservas.sincronizar(clienteId);
     Pedido pedido =
         pedidos
             .findByIdAndClienteId(pedidoId, clienteId)
@@ -186,10 +228,32 @@ public class VendaService {
    * RNF0011: os cupons de troco são buscados de uma só vez, em vez de uma consulta por pedido, para
    * que o tempo não cresça com o histórico do cliente.
    */
-  @Transactional(readOnly = true)
+  @Transactional
   public List<PedidoView> listarPedidos(Long clienteId) {
+    reservas.sincronizar(clienteId);
     exigirCliente(clienteId);
     List<Pedido> lista = pedidos.findByClienteIdOrderByCriadoEmDesc(clienteId);
+    return montarLista(lista);
+  }
+
+  @Transactional
+  public List<PedidoView> listarAdministrativos(String codigo, Long cliente, String status) {
+    var selecionados = ciclo.pedidoIds(codigo, cliente, status);
+    for (Long c :
+        selecionados.stream()
+            .map(r -> CicloVendaRepository.id(r, "cliente_id"))
+            .distinct()
+            .toList()) reservas.sincronizar(c);
+    var ids =
+        ciclo.pedidoIds(codigo, cliente, status).stream()
+            .map(r -> CicloVendaRepository.id(r, "id"))
+            .toList();
+    var lista = pedidos.findAllById(ids);
+    lista.sort(Comparator.comparing(Pedido::getCriadoEm).reversed());
+    return montarLista(lista);
+  }
+
+  private List<PedidoView> montarLista(List<Pedido> lista) {
     List<Long> trocos =
         lista.stream().map(Pedido::getCupomTrocaGeradoId).filter(Objects::nonNull).toList();
     Map<Long, Cupom> porId =
@@ -197,14 +261,14 @@ public class VendaService {
             ? Map.of()
             : cupons.findAllById(trocos).stream()
                 .collect(Collectors.toMap(Cupom::getId, Function.identity()));
+    var metadados = ciclo.metadados(lista.stream().map(Pedido::getId).toList());
     return lista.stream()
         .map(
             p ->
                 pedidoView(
                     p,
-                    p.getCupomTrocaGeradoId() == null
-                        ? null
-                        : porId.get(p.getCupomTrocaGeradoId())))
+                    p.getCupomTrocaGeradoId() == null ? null : porId.get(p.getCupomTrocaGeradoId()),
+                    metadados))
         .toList();
   }
 
@@ -263,7 +327,7 @@ public class VendaService {
     return zero();
   }
 
-  private Desconto descontoPromocional(String codigo, BigDecimal subtotal) {
+  private Desconto descontoPromocional(String codigo, BigDecimal subtotal, Long clienteId) {
     if (codigo == null || codigo.isBlank()) return new Desconto(null, zero());
     Cupom promo =
         cupons
@@ -272,7 +336,7 @@ public class VendaService {
                 () ->
                     new RegraNegocioException(
                         "CUPOM_NAO_ENCONTRADO", "Cupom promocional não encontrado."));
-    if (!promo.valido(LocalDate.now()))
+    if ((promo.getClienteId()!=null && !promo.getClienteId().equals(clienteId)) || !promo.valido(reservas.agora().toLocalDate()))
       throw new RegraNegocioException("CUPOM_INVALIDO", "Cupom promocional inválido ou expirado.");
     BigDecimal desconto =
         promo.getPercentual() != null
@@ -289,7 +353,7 @@ public class VendaService {
     List<Cupom> encontrados = cupons.findAllById(distintos);
     if (encontrados.size() != distintos.size())
       throw new RegraNegocioException("CUPOM_NAO_ENCONTRADO", "Cupom de troca não encontrado.");
-    LocalDate hoje = LocalDate.now();
+    LocalDate hoje = reservas.agora().toLocalDate();
     for (Cupom c : encontrados) {
       if (!c.isTroca() || !clienteId.equals(c.getClienteId()))
         throw new RegraNegocioException(
@@ -468,6 +532,10 @@ public class VendaService {
   // ---- views --------------------------------------------------------------------------------
 
   private PedidoView pedidoView(Pedido p, Cupom troco) {
+    return pedidoView(p, troco, ciclo.metadados(List.of(p.getId())));
+  }
+
+  private PedidoView pedidoView(Pedido p, Cupom troco, CicloVendaRepository.Metadados metadados) {
     EnderecoEntrega e = p.getEntrega();
     EnderecoEntregaView entrega =
         new EnderecoEntregaView(
@@ -494,7 +562,9 @@ public class VendaService {
                         i.getProdutoNome(),
                         i.getPrecoUnitario(),
                         i.getQuantidade(),
-                        i.getSubtotal()))
+                        i.getSubtotal(),
+                        i.getId(),
+                        metadados.comprometidas().getOrDefault(i.getId(), 0)))
             .toList();
     List<PagamentoParteView> partes =
         p.getPartes().stream()
@@ -512,7 +582,56 @@ public class VendaService {
         itens,
         partes,
         troco == null ? null : cupomView(troco),
-        p.getCriadoEm());
+        p.getCriadoEm(),
+        p.getClienteId(),
+        p.isLegado(),
+        p.getPagamentoStatus(),
+        p.getMotivoResultado(),
+        metadados.vencimentos().get(p.getId()),
+        acoes(p),
+        metadados.historicos().getOrDefault(p.getId(), List.of()).stream()
+            .map(
+                r ->
+                    new HistoricoVendaView(
+                        CicloVendaRepository.tempo(r, "ocorrida_em"),
+                        (String) r.get("operacao"),
+                        (String) r.get("ator"),
+                        (String) r.get("status")))
+            .toList());
+  }
+
+  private List<String> acoes(Pedido p) {
+    if (p.isLegado()) return List.of();
+    return switch (p.getStatus()) {
+      case "EM_PROCESSAMENTO" -> List.of("VALIDAR_PAGAMENTO");
+      case "APROVADA" -> List.of("DESPACHAR");
+      case "EM_TRANSPORTE" -> List.of("CONFIRMAR_ENTREGA");
+      case "ENTREGUE" -> List.of("SOLICITAR_TROCA");
+      default -> List.of();
+    };
+  }
+
+  private String impressaoCheckout(CheckoutInput in) {
+    try {
+      var node = json.valueToTree(in);
+      for (var parte : node.path("cartoes")) {
+        var card = parte.path("novoCartao");
+        if (card.isObject()) {
+          var obj = (com.fasterxml.jackson.databind.node.ObjectNode) card;
+          String numero = obj.path("numero").asText("").replaceAll("[^0-9]", "");
+          obj.remove("codigoSeguranca");
+          obj.remove("numero");
+          obj.put(
+              "ultimosQuatro", numero.length() >= 4 ? numero.substring(numero.length() - 4) : "");
+        }
+      }
+      return java.util.HexFormat.of()
+          .formatHex(
+              java.security.MessageDigest.getInstance("SHA-256")
+                  .digest(json.writeValueAsBytes(node)));
+    } catch (Exception e) {
+      throw new IllegalStateException("Não foi possível identificar a composição da compra", e);
+    }
   }
 
   private CupomView cupomView(Cupom c) {

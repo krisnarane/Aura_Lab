@@ -1,6 +1,6 @@
 # Estado atual e limites do Aura Lab
 
-**Atualizado em 05/10/2026.**
+**Atualizado em 12/10/2026.**
 
 ## Implementado e integrado
 
@@ -14,9 +14,13 @@ O módulo administrativo de produtos funciona de ponta a ponta em `/admin/produt
 
 O perfil do cliente da loja (`/perfil/dados`, `/perfil/seguranca`, `/perfil/enderecos` e `/perfil/cartoes`) também está integrado à API via `perfil-api.js` → `clientesService` → `clientesApi`. Como não há autenticação, a sessão da loja escolhe um **cliente real cadastrado no PostgreSQL** (identificador mantido em `localStorage`) e todas as alterações dessas quatro telas persistem no banco com as mesmas validações e auditoria do painel administrativo.
 
-O módulo de **vendas** está integrado de ponta a ponta na jornada visual principal da loja: catálogo `/`, detalhe `/produto/:id`, sacola `/sacola`, checkout `/checkout/endereco`, confirmação `/checkout/confirmacao/:id` e cupons `/perfil/cupons`. O fluxo usa `vendas-api.js` → `vendasService` → `vendasApi` → `VendaController`/`CarrinhoService`/`VendaService`, preservando os componentes e o estilo do protótipo sem manter um segundo frontend paralelo. Cobre o carrinho de compra (RF0031/RF0032/RN0031), a realização e finalização da compra criando o pedido com status **EM_PROCESSAMENTO** (RF0033/RF0038), a seleção de endereço existente ou novo com incorporação ao perfil (RF0035/RN0023), o cálculo de frete (RF0034, política por região), e a composição de pagamento com cartões e cupons obedecendo RN0033 (um cupom promocional), RN0034 (mínimo de R$ 10,00 por cartão), RN0035 (cartão abaixo do mínimo apenas com cupons) e RN0036 (cupom de troco sem cupons desnecessários). A validação/aprovação do pagamento, a baixa de estoque, o bloqueio/expiração do carrinho e o processo de troca ficam **fora do escopo desta fase**. Pedidos antigos do perfil (`/perfil/pedidos`) ainda seguem no store demonstrativo.
+O UC05 usa PostgreSQL nas telas existentes de catálogo, produto, sacola, checkout, confirmação, pedidos/cupons do perfil e administração de pedidos/trocas. Reservas persistidas bloqueiam as unidades escolhidas; o prazo configurável de 20 minutos renova na última inclusão, com aviso cinco minutos antes. RN0032 ajusta ou remove itens automaticamente e persiste notificações. A compra nasce EM_PROCESSAMENTO; a operadora determinística valida todas as parcelas, resultando em APROVADA ou REPROVADA. A baixa física, o consumo dos créditos, o troco e a auditoria acontecem somente na aprovação, na mesma transação.
+
+O administrador despacha APROVADA para EM_TRANSPORTE e confirma ENTREGUE. O cliente solicita troca parcial ou integral; o administrador autoriza e recebe, decidindo explicitamente a reentrada. Recebimento gera um único cupom. Troca parcial mantém a compra ENTREGUE; integral acompanha EM_TROCA, TROCA_AUTORIZADA e TROCADO. Pedidos anteriores à V9 são somente leitura como legados. Interpretações sobre expiração de pedido, recebimento após autorização e valor líquido do cupom aguardam validação do professor; consulte [REQUISITOS-VENDAS.md](REQUISITOS-VENDAS.md).
 
 Tecnologias atuais: Java 21, Spring Boot 3.5.5, Maven Wrapper, Spring MVC, Bean Validation, JPA/Hibernate, PostgreSQL 17, Flyway, HTML/CSS/Bootstrap/JavaScript, Selenium WebDriver e JUnit 5.
+
+O resumo de frete agora exige um endereço ativo de entrega do perfil ou a UF de um novo endereço para estimativa; não calcula a faixa de demais estados por ausência de endereço. Foram adicionados cenários Selenium rastreados a CT026, CT032, CT035, CT038, CT039, CT041, CT042 e CT053 nas classes existentes `ProdutosCrudIT` e `VendasLojaIT`. A relação e os comandos estão em `docs/crud-admin/CASOS-DE-TESTE.md`; resultados dependem da execução e dos relatórios atuais.
 
 ## Decisões de escopo vigentes
 
@@ -25,8 +29,8 @@ Tecnologias atuais: Java 21, Spring Boot 3.5.5, Maven Wrapper, Spring MVC, Bean 
 - O hash BCrypt permanece em `Cliente`. A troca de senha é coordenada por `ClienteService`.
 - `CartaoService` também lista as bandeiras cadastradas. Não há `SenhaService` nem `BandeiraService` separados.
 - Cliente, endereço e cartão são inativados logicamente, sem exclusão física; o DRS não pede ativação de cliente. Produto tem inativação **e** ativação lógicas com motivo (RF0012/RF0016 + RN0015/RN0017), conforme o grupo de livros do DRS.
-- Carrinho e finalização de compra (até o status EM_PROCESSAMENTO) estão integrados à API nas rotas principais da loja. Validação/aprovação de pagamento, baixa de estoque, bloqueio/expiração do carrinho e trocas ainda não. Cadastro público segue no store demonstrativo.
-- `TransacaoCliente` é uma estrutura persistida de demonstração para RF0025 e RN0027. No sistema completo ela deve ser substituída ou migrada para `Pedido`, `Pagamento`, `Troca` e `Cupom` reais.
+- UC05 integrado nas rotas existentes; sem cancelamento do cliente, recusa de troca, despacho de troca pelo cliente ou prazo de sete dias para reembolso.
+- `TransacaoCliente` projeta eventos reais de pedido, pagamento, troca e cupom. Origem LEGADO permanece identificada; ranking conta uma compra aprovada por pedido, sem somar pagamento ou cupom como outra compra. Fórmula de ranking é decisão de projeto.
 - Somente dados fictícios de cartão devem ser usados. PAN e CVV são transitórios e nunca são persistidos ou auditados.
 
 ## Três visões que não devem ser confundidas
@@ -35,12 +39,12 @@ Tecnologias atuais: Java 21, Spring Boot 3.5.5, Maven Wrapper, Spring MVC, Bean 
 | --- | --- | --- |
 | CRUD integrado atual | `backend/`, `/admin/clientes`, `/perfil/{dados,seguranca,enderecos,cartoes}`, figuras 18, 19, 23, 24 e 25 | Código executável e validado com PostgreSQL e Selenium |
 | Protótipo amplo | Demais rotas e `frontend/js/store.js` | Demonstração de interface e regras locais; parte ainda usa mocks e `localStorage` |
-| Sistema completo planejado | Figuras gerais 1–17 e 20–22 em `docs/dvp-uml-2026/` | Arquitetura alvo; não deve ser apresentada como totalmente implementada |
+| Sistema completo planejado | Figuras gerais 1–17 e 22 em `docs/dvp-uml-2026/` | Arquitetura alvo; não deve ser apresentada como totalmente implementada |
 
 ## Pendências conhecidas
 
-- Integrar cadastro público e a tela antiga de pedidos do perfil à API real quando essa etapa for solicitada; catálogo, sacola, checkout, confirmação e cupons já usam a jornada integrada.
-- Substituir a projeção `TransacaoCliente` pelas entidades reais de venda sem duplicar valores no ranking.
-- Evoluir produto, carrinho, pedido, pagamento e cupom além do recorte atual e implementar estoque, troca, analytics e Consultora Aura conforme o DVP quando entrarem no escopo.
+- Completar catálogo/cadastro de livros, entradas de estoque, precificação, analytics, IA e autenticação em incrementos próprios.
+- Comunicar e validar ambiguidades documentais com o professor antes de afirmar aderência sem ressalvas.
+- Conciliar registros legados manualmente quando houver evidência segura; não fabricar aprovações ou movimentações retroativas.
 - Restringir `CascadeType.ALL` nas associações atuais quando isso puder ser feito com migração e testes de preservação de histórico.
 - Confirmar a versão do DRS quando o enunciado citar `DRS_LES_1_2026`; o arquivo local é `DRS_LES_2_2026.docx`.

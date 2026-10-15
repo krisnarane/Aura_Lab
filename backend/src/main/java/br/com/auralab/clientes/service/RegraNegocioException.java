@@ -19,7 +19,9 @@ public class RegraNegocioException extends RuntimeException {
           "CARRINHO_NAO_ENCONTRADO",
           "ITEM_CARRINHO_NAO_ENCONTRADO",
           "PEDIDO_NAO_ENCONTRADO",
-          "CUPOM_NAO_ENCONTRADO");
+          "CUPOM_NAO_ENCONTRADO",
+          "TROCA_NAO_ENCONTRADA",
+          "ITEM_PEDIDO_NAO_ENCONTRADO");
   private static final Set<String> CONFLITOS =
       Set.of(
           "CLIENTE_DUPLICADO",
@@ -33,7 +35,9 @@ public class RegraNegocioException extends RuntimeException {
           "CARRINHO_VAZIO",
           "ESTOQUE_INSUFICIENTE",
           "PRODUTO_INDISPONIVEL",
-          "CUPOM_INVALIDO");
+          "CUPOM_INVALIDO",
+          "IDEMPOTENCIA_CONFLITO",
+          "PEDIDO_LEGADO");
 
   public RegraNegocioException(String codigo, String mensagem) {
     super(mensagem);

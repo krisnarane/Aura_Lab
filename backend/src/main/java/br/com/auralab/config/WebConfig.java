@@ -16,6 +16,13 @@ public class WebConfig implements WebMvcConfigurer {
     for (String rota :
         new String[] {
           "/admin/**",
+          "/perfil",
+          "/perfil/dados",
+          "/perfil/seguranca",
+          "/perfil/enderecos",
+          "/perfil/cartoes",
+          "/perfil/pedidos",
+          "/perfil/cupons",
           "/perfil/**",
           "/loja",
           "/loja/**",

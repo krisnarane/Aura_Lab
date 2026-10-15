@@ -54,14 +54,18 @@ public class VendaController {
   /** RF0034: resumo com subtotal, desconto do cupom promocional, frete e total. */
   @PostMapping("/clientes/{id}/carrinho/resumo")
   ResumoView resumo(@PathVariable Long id, @RequestBody ResumoInput in) {
+    carrinho.obter(id);
     return vendas.resumo(id, in);
   }
 
   /** RF0033/RF0038: finaliza a compra e cria o pedido com status EM_PROCESSAMENTO. */
   @PostMapping("/clientes/{id}/pedidos")
   ResponseEntity<PedidoView> finalizar(
-      @PathVariable Long id, @Valid @RequestBody CheckoutInput in) {
-    PedidoView v = vendas.finalizar(id, in);
+      @PathVariable Long id,
+      @Valid @RequestBody CheckoutInput in,
+      @RequestHeader(value = "Idempotency-Key", required = false) String chave) {
+    carrinho.obter(id);
+    PedidoView v = vendas.finalizar(id, in, chave);
     return ResponseEntity.created(URI.create("/api/v1/clientes/" + id + "/pedidos/" + v.id()))
         .body(v);
   }

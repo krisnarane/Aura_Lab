@@ -1,6 +1,7 @@
 /** Perfil do cliente integrado à API real: dados, senha, endereços e cartões persistidos no PostgreSQL. */
 import { clientesService as service } from "./clientesService.js";
-import { escaparHtml as e } from "./utilitarios.js";
+import { vendasService } from "./vendasService.js";
+import { escaparHtml as e, formatarMoeda as moeda } from "./utilitarios.js";
 import {
   status,
   camposPessoais,
@@ -20,9 +21,12 @@ export const ehRotaPerfilApi = () =>
     "/perfil/seguranca",
     "/perfil/enderecos",
     "/perfil/cartoes",
+    "/perfil/pedidos",
+    "/perfil/cupons",
   ].includes(location.pathname);
 
 let renderVersion = 0;
+let contextoCabecalho = {clienteNome:null,totalItens:0};
 
 const lerClienteId = () => localStorage.getItem(CHAVE_CLIENTE);
 const definirCliente = (id, nome) => {
@@ -58,10 +62,12 @@ const NAVEGACAO_PERFIL = [
   ["Segurança", "/perfil/seguranca", "seguranca"],
   ["Endereços", "/perfil/enderecos", "enderecos"],
   ["Cartões", "/perfil/cartoes", "cartoes"],
+  ["Pedidos", "/perfil/pedidos", "pedidos"],
+  ["Cupons", "/perfil/cupons", "cupons"],
 ];
 
 const layoutPerfil = (ativa, titulo, conteudo) =>
-  `${header()}<main class="page"><div class="container aura-container page-top"><span class="eyebrow">Cliente cadastrado</span><h1>${e(titulo)}</h1><nav class="profile-tabs">${NAVEGACAO_PERFIL.map(
+  `${header(contextoCabecalho)}<main class="page"><div class="container aura-container page-top"><span class="eyebrow">Cliente cadastrado</span><h1>${e(titulo)}</h1><nav class="profile-tabs">${NAVEGACAO_PERFIL.map(
     ([label, href, chave]) =>
       `<a href="${href}" data-api-link class="${ativa === chave ? "active" : ""}">${label}</a>`,
   ).join("")}</nav><div class="profile-content wide">${conteudo}</div></div></main>${footer()}`;
@@ -77,7 +83,7 @@ function ligarLinks(navegar) {
 }
 
 const paginaEscolha = (cadastrados, falha) =>
-  `${header()}<main class="page"><div class="container aura-container page-top"><span class="eyebrow">Área do cliente</span><h1>Selecione um cliente cadastrado</h1><div class="panel form-stack"><p>As telas de perfil da loja agora leem e gravam diretamente no PostgreSQL. Escolha qual cliente real está navegando nesta sessão.</p>${
+  `${header(contextoCabecalho)}<main class="page"><div class="container aura-container page-top"><span class="eyebrow">Área do cliente</span><h1>Selecione um cliente cadastrado</h1><div class="panel form-stack"><p>As telas de perfil da loja agora leem e gravam diretamente no PostgreSQL. Escolha qual cliente real está navegando nesta sessão.</p>${
     falha
       ? `<div class="alert alert-danger" role="alert">${e(falha)}</div>`
       : cadastrados
@@ -149,6 +155,38 @@ const paginaCartoes = (c, bandeiras) => {
       .join("")}</select></label></div><div class="col-md-6"><label>Código de segurança<input data-testid="codigo-seguranca" class="form-control" name="codigoSeguranca" inputmode="numeric" maxlength="4" required></label></div></div><label class="form-check mt-3"><input class="form-check-input" type="checkbox" name="preferencial"> Definir como preferencial</label><button class="btn aura-btn" ${c.ativo ? "" : "disabled"}>Cadastrar cartão</button></form>`,
   );
 };
+
+const paginaPedidos = (pedidos) =>
+  layoutPerfil(
+    "pedidos",
+    "Meus pedidos",
+    `<div class="panel"><div class="section-heading"><div><h2>Histórico de compras</h2><p class="muted">Pedidos finalizados nesta conta.</p></div></div>${
+      pedidos.length
+        ? pedidos
+            .map(
+              (p) =>
+                `<article class="order-item"><div><a href="/perfil/pedidos/${p.id}" data-api-link data-testid="abrir-pedido-${p.id}"><b>${e(p.codigo)}</b></a><small>${e(p.status.replaceAll("_", " "))} · ${e(new Date(p.criadoEm).toLocaleDateString("pt-BR"))}</small></div><b>${moeda(p.total)}</b></article>`,
+            )
+            .join("")
+        : "<p>Nenhum pedido foi finalizado ainda.</p>"
+    }</div>`,
+  );
+
+const paginaCupons = (cupons) =>
+  layoutPerfil(
+    "cupons",
+    "Meus cupons",
+    `<div class="panel"><div class="section-heading"><div><h2>Cupons disponíveis</h2><p class="muted">Cupons de troca podem ser usados no checkout.</p></div></div>${
+      cupons.length
+        ? cupons
+            .map(
+              (c) =>
+                `<article class="management-card ${c.situacao === "ATIVO" ? "" : "is-inactive"}"><div><h3>${e(c.codigo)}</h3><p>${e(c.tipo)}${c.origem ? " · " + e(c.origem) : ""}</p></div><div><b>${moeda(c.valor)}</b><br><small>${e(c.situacao)}</small></div></article>`,
+            )
+            .join("")
+        : "<p>Você ainda não possui cupons de troca.</p>"
+    }</div>`,
+  );
 
 function ligarEventos(raiz, navegar, toast, cliente) {
   const recarregar = () => renderizarPerfilApi(raiz, navegar, toast);
@@ -322,26 +360,36 @@ export async function renderizarPerfilApi(raiz, navegar, toast) {
   const id = lerClienteId();
   let cliente = null,
     bandeiras = [],
+    pedidos = [],
+    cupons = [],
     cadastrados = [],
-    falha = null;
+    falha = null,
+    totalItens = null;
 
   if (id) {
     try {
       cliente = await service.buscar(id);
-      definirCliente(id, cliente.nome);
+
     } catch {
-      limparCliente();
+      cliente = null;
     }
   }
   try {
+    if (cliente?.ativo) totalItens = (await vendasService.carrinho(id)).totalUnidades;
     if (cliente && location.pathname === "/perfil/cartoes")
       bandeiras = await service.bandeiras();
+    if (cliente && location.pathname === "/perfil/pedidos")
+      pedidos = await vendasService.pedidos(id);
+    if (cliente && location.pathname === "/perfil/cupons")
+      cupons = await vendasService.cupons(id);
     if (!cliente) cadastrados = await service.listar({ ativo: true });
   } catch (err) {
     falha = err.message;
   }
   if (rota !== location.href || versao !== renderVersion) return;
 
+  if (cliente) definirCliente(id, cliente.nome); else {limparCliente();totalItens=0;}
+  contextoCabecalho = {clienteNome:cliente?.nome || null,totalItens};
   if (!cliente) {
     raiz.innerHTML = paginaEscolha(cadastrados, falha);
     prepararFormularios(raiz);
@@ -358,7 +406,11 @@ export async function renderizarPerfilApi(raiz, navegar, toast) {
         ? paginaEnderecos(cliente)
         : caminho === "/perfil/cartoes"
           ? paginaCartoes(cliente, bandeiras)
-          : paginaDados(cliente);
+          : caminho === "/perfil/pedidos"
+            ? paginaPedidos(pedidos)
+            : caminho === "/perfil/cupons"
+              ? paginaCupons(cupons)
+              : paginaDados(cliente);
   raiz.innerHTML = html;
   prepararFormularios(raiz);
   ligarLinks(navegar);

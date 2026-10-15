@@ -28,20 +28,24 @@ public class CarrinhoService {
   private final ProdutoRepository produtos;
   private final ClienteRepository clientes;
   private final AuditoriaService auditoria;
+  private final ReservaEstoqueService reservas;
 
   public CarrinhoService(
       CarrinhoRepository carrinhos,
       ProdutoRepository produtos,
       ClienteRepository clientes,
-      AuditoriaService auditoria) {
+      AuditoriaService auditoria,
+      ReservaEstoqueService reservas) {
     this.carrinhos = carrinhos;
     this.produtos = produtos;
     this.clientes = clientes;
     this.auditoria = auditoria;
+    this.reservas = reservas;
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public CarrinhoView obter(Long clienteId) {
+    reservas.sincronizar(clienteId);
     exigirCliente(clienteId);
     return view(carrinhos.findByClienteId(clienteId).orElse(null));
   }
@@ -49,6 +53,7 @@ public class CarrinhoService {
   /** RF0031/RF0032 + RN0031: adiciona (ou soma à quantidade já existente) validando o estoque. */
   @Transactional
   public CarrinhoView adicionar(Long clienteId, ItemCarrinhoInput in) {
+    reservas.sincronizar(clienteId);
     exigirCliente(clienteId);
     Carrinho cart =
         carrinhos.buscarParaAtualizacao(clienteId).orElseGet(() -> criarCarrinho(clienteId));
@@ -59,7 +64,7 @@ public class CarrinhoService {
           "PRODUTO_INDISPONIVEL", "Este produto não está disponível para compra.");
     ItemCarrinho existente = cart.item(p.getId());
     int novaQtd = (existente == null ? 0 : existente.getQuantidade()) + in.quantidade();
-    exigirEstoque(p, novaQtd);
+    exigirEstoque(p, novaQtd, existente == null ? null : existente.getId());
     ItemCarrinho alvo;
     if (existente != null) {
       existente.definirQuantidade(novaQtd);
@@ -70,6 +75,7 @@ public class CarrinhoService {
       cart.adicionar(alvo);
     }
     carrinhos.flush();
+    reservas.adicionar(cart, alvo);
     auditoria.registrar(
         clienteId,
         "ADICIONAR_ITEM_CARRINHO",
@@ -83,15 +89,17 @@ public class CarrinhoService {
   /** RF0032 + RN0031: define a quantidade de um item já no carrinho, revalidando o estoque. */
   @Transactional
   public CarrinhoView alterarQuantidade(Long clienteId, Long itemId, QuantidadeInput in) {
+    reservas.sincronizar(clienteId);
     exigirCliente(clienteId);
     Carrinho cart = exigirCarrinho(clienteId);
     Map<String, Object> antes = RegistroVenda.carrinho(cart);
     ItemCarrinho item = exigirItem(cart, itemId);
     Produto p = exigirProduto(item.getProdutoId());
-    exigirEstoque(p, in.quantidade());
+    exigirEstoque(p, in.quantidade(), item.getId());
     item.definirQuantidade(in.quantidade());
     cart.tocar();
     carrinhos.flush();
+    reservas.alterar(cart, item);
     auditoria.registrar(
         clienteId,
         "ALTERAR_ITEM_CARRINHO",
@@ -104,10 +112,12 @@ public class CarrinhoService {
 
   @Transactional
   public CarrinhoView remover(Long clienteId, Long itemId) {
+    reservas.sincronizar(clienteId);
     exigirCliente(clienteId);
     Carrinho cart = exigirCarrinho(clienteId);
     Map<String, Object> antes = RegistroVenda.carrinho(cart);
     ItemCarrinho item = exigirItem(cart, itemId);
+    reservas.remover(itemId);
     cart.remover(item);
     carrinhos.flush();
     auditoria.registrar(
@@ -140,11 +150,12 @@ public class CarrinhoService {
             () -> new RegraNegocioException("PRODUTO_NAO_ENCONTRADO", "Produto não encontrado."));
   }
 
-  private void exigirEstoque(Produto p, int quantidade) {
-    if (quantidade > p.getEstoque())
+  private void exigirEstoque(Produto p, int quantidade, Long item) {
+    int disponivel = reservas.disponivel(p.getId(), item);
+    if (quantidade > disponivel)
       throw new RegraNegocioException(
           "ESTOQUE_INSUFICIENTE",
-          "Quantidade indisponível: há " + p.getEstoque() + " unidade(s) em estoque.");
+          "Quantidade indisponível: há " + disponivel + " unidade(s) em estoque.");
   }
 
   private ItemCarrinho exigirItem(Carrinho cart, Long itemId) {
@@ -156,13 +167,18 @@ public class CarrinhoService {
   }
 
   private void exigirCliente(Long clienteId) {
-    if (!clientes.existsById(clienteId))
-      throw new RegraNegocioException("CLIENTE_NAO_ENCONTRADO", "Cliente não encontrado.");
+    var c =
+        clientes
+            .findById(clienteId)
+            .orElseThrow(
+                () ->
+                    new RegraNegocioException("CLIENTE_NAO_ENCONTRADO", "Cliente não encontrado."));
+    if (!c.isAtivo())
+      throw new RegraNegocioException("CLIENTE_INATIVO", "Cliente inativo não pode comprar.");
   }
 
   CarrinhoView view(Carrinho cart) {
-    if (cart == null || cart.getItens().isEmpty())
-      return new CarrinhoView(cart == null ? null : cart.getId(), List.of(), zero(), 0);
+    if (cart == null || cart.getItens().isEmpty()) return montarView(cart, List.of(), zero(), 0);
     List<Long> ids = cart.getItens().stream().map(ItemCarrinho::getProdutoId).toList();
     Map<Long, Produto> byId =
         produtos.findAllById(ids).stream()
@@ -174,7 +190,8 @@ public class CarrinhoService {
       Produto p = byId.get(i.getProdutoId());
       BigDecimal preco = p.getPreco();
       BigDecimal sub = preco.multiply(BigDecimal.valueOf(i.getQuantidade()));
-      boolean disponivel = p.isAtivo() && p.isVisivel() && p.getEstoque() >= i.getQuantidade();
+      int capacidade = reservas.disponivel(p.getId(), i.getId());
+      boolean disponivel = p.isAtivo() && p.isVisivel() && capacidade >= i.getQuantidade();
       itens.add(
           new ItemCarrinhoView(
               i.getId(),
@@ -184,12 +201,27 @@ public class CarrinhoService {
               preco,
               i.getQuantidade(),
               sub,
-              p.getEstoque(),
+              capacidade,
               disponivel));
       subtotal = subtotal.add(sub);
       unidades += i.getQuantidade();
     }
-    return new CarrinhoView(cart.getId(), itens, subtotal, unidades);
+    return montarView(cart, itens, subtotal, unidades);
+  }
+
+  private CarrinhoView montarView(
+      Carrinho cart, List<ItemCarrinhoView> itens, BigDecimal subtotal, int unidades) {
+    Long id = cart == null ? null : cart.getId();
+    return new CarrinhoView(
+        id,
+        itens,
+        subtotal,
+        unidades,
+        reservas.vencimento(id),
+        reservas.prazoMinutos(),
+        reservas.retirados(id),
+        reservas.avisosCarrinho(id),
+        !itens.isEmpty() && itens.stream().allMatch(ItemCarrinhoView::disponivel));
   }
 
   private static BigDecimal zero() {

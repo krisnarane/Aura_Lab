@@ -7,9 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 
 /**
- * Service de auditoria de clientes (RNF0012). A propagação MANDATORY garante que o
- * registro sempre acontece dentro da transação da operação auditada: se a escrita falhar,
- * a trilha falha junto.
+ * Service de auditoria de clientes (RNF0012). A propagação MANDATORY garante que o registro sempre
+ * acontece dentro da transação da operação auditada: se a escrita falhar, a trilha falha junto.
  */
 @Service
 public class AuditoriaService {
@@ -33,5 +32,20 @@ public class AuditoriaService {
   @Transactional(readOnly = true)
   public List<AuditoriaCliente> listar(Long id) {
     return repo.findByClienteIdOrderByOcorridaEmDesc(id);
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void registrarComo(
+      Long cliente,
+      String ator,
+      java.time.OffsetDateTime instante,
+      String operacao,
+      String entidade,
+      Long id,
+      Map<String, Object> antes,
+      Map<String, Object> depois) {
+    var registro = new AuditoriaCliente(cliente, operacao, entidade, id, antes, depois);
+    registro.contextoServidor(ator, instante);
+    repo.saveAndFlush(registro);
   }
 }

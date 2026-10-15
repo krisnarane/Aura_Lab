@@ -1,5 +1,6 @@
 package br.com.auralab.e2e.pages;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -41,10 +42,7 @@ public class LojaPage {
   }
 
   public void esperarBadge(int totalUnidades) {
-    wait.until(
-        d ->
-            texto("[data-testid='ir-carrinho'] b")
-                .equals(String.valueOf(totalUnidades)));
+    wait.until(d -> texto("[data-testid='ir-carrinho'] b").equals(String.valueOf(totalUnidades)));
   }
 
   /** Tenta adicionar e espera a notificação de erro (ex.: estoque insuficiente, RN0031). */
@@ -57,8 +55,7 @@ public class LojaPage {
   }
 
   public LojaPage abrirCarrinho() {
-    clicar("[data-testid='ir-carrinho']");
-    esperar("[data-testid='carrinho-subtotal'],[data-testid='carrinho-vazio']");
+    clicarRecarregando("[data-testid='ir-carrinho']", "[data-testid='carrinho-subtotal'],[data-testid='carrinho-vazio']");
     return this;
   }
 
@@ -67,6 +64,49 @@ public class LojaPage {
     clicarRecarregando(
         "[data-testid='atualizar-" + itemId + "']", "[data-testid='carrinho-subtotal']");
     return this;
+  }
+
+  public LojaPage atualizarItemEsperandoErro(long itemId, int quantidade) {
+    setValor("[data-testid='qtd-item-" + itemId + "']", String.valueOf(quantidade));
+    clicar("[data-testid='atualizar-" + itemId + "']");
+    toastErro();
+    return this;
+  }
+
+  public String toastErro() {
+    return esperar(".aura-toast.is-error").getText();
+  }
+
+  public String quantidadeItem(long itemId) {
+    return esperar("[data-testid='qtd-item-" + itemId + "']").getDomProperty("value");
+  }
+
+  public LojaPage abrirCheckoutVazio() {
+    abrir("/checkout/endereco");
+    esperar("[data-testid='carrinho-vazio']");
+    return this;
+  }
+
+  public boolean checkoutDisponivel() {
+    return !driver.findElements(By.cssSelector("[data-testid='ir-checkout']")).isEmpty();
+  }
+
+  public boolean formularioCheckoutPresente() {
+    return !driver.findElements(By.cssSelector("[data-testid='form-checkout']")).isEmpty();
+  }
+
+  public LojaPage abrirProduto(long produtoId) {
+    abrir("/produto/" + produtoId);
+    esperar("[data-testid='add-" + produtoId + "']");
+    return this;
+  }
+
+  public boolean adicaoHabilitada(long produtoId) {
+    return esperar("[data-testid='add-" + produtoId + "']").isEnabled();
+  }
+
+  public String indisponibilidadeCarrinho() {
+    return esperar("[data-testid='indisponivel']").getText();
   }
 
   public LojaPage removerItem(long itemId) {
@@ -151,8 +191,26 @@ public class LojaPage {
   }
 
   public LojaPage calcularResumo() {
+    WebElement resumoAnterior = esperar("[data-testid='resumo-total']");
     clicar("[data-testid='calcular-resumo']");
+    wait.until(
+        ExpectedConditions.or(
+            ExpectedConditions.stalenessOf(resumoAnterior),
+            ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".aura-toast.is-error"))));
     return this;
+  }
+
+  public BigDecimal freteResumo() {
+    return moedaResumo("resumo-frete");
+  }
+
+  public BigDecimal totalResumo() {
+    return moedaResumo("resumo-total");
+  }
+
+  private BigDecimal moedaResumo(String testId) {
+    String valor = esperar("[data-testid='" + testId + "']").getText();
+    return new BigDecimal(valor.replaceAll("[^0-9,]", "").replace(',', '.'));
   }
 
   /** Clica em finalizar e aguarda a confirmação (sucesso) ou a mensagem de erro. */

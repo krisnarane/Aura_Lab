@@ -58,7 +58,19 @@ cd backend
 .\mvnw.cmd clean test-compile failsafe:integration-test failsafe:verify "-Dit.test=VendasLojaIT" "-Dselenium.headless=true"
 ```
 
-## Última verificação conhecida
+## Verificações registradas
+
+Em 12/10/2026, na verificação dirigida aos casos CT026, CT032, CT035, CT038, CT039, CT041, CT042 e CT053:
+
+- os oito novos casos Selenium foram aprovados no frontend existente;
+- `ProdutosCrudIT`: cinco cenários aprovados, após repetir a classe por uma falha inicial de abertura de sessão do Chrome em um cenário antigo;
+- `VendasLojaIT`: 15 cenários aprovados;
+- `VendaApiTest`: 26 cenários aprovados, incluindo quatro verificações novas de endereço no resumo de frete;
+- 46 cenários distintos aprovados nas três classes, com PostgreSQL 17.11 via Testcontainers e Chrome 154 headless;
+- compilação e `git diff --check` concluídos sem erros;
+- resultados dos oito CTs em `backend/target/evidencias/casos-plano.html`, com links para as capturas e relatórios XML.
+
+Essa execução foi dirigida a produtos e vendas, não uma nova execução completa de todas as classes. A relação dos CTs com os métodos e o comando para executar somente os oito casos estão em `docs/crud-admin/CASOS-DE-TESTE.md`. CT041 e CT042 passam a ser classificados como sistema / funcional nesta automação Selenium.
 
 Em 05/10/2026, após a integração da Gestão de Vendas:
 
@@ -94,3 +106,29 @@ Esses números descrevem aquela execução. Após qualquer mudança, use os rela
 - UML: execute `docs/dvp-uml-2026/renderizar.ps1` e verifique `validacao.json`; isso não requer Docker.
 
 Não execute repetidamente a suíte completa depois que ela passou, a menos que outra alteração relevante tenha sido feita.
+
+
+## Operação do ciclo completo de vendas
+
+Reservas: `aura.vendas.prazo-reserva=PT20M`, `aura.vendas.intervalo-job-ms=1000`, `aura.vendas.agendamento-ativo=true`. Testes desativam o job e injetam Clock controlado; chamam o processamento diretamente sem esperar minutos reais. Operadora usa APROVADO, REPROVADO ou FALHA; não há cobrança nem login.
+
+Os detalhes de perfil e as páginas `/admin/pedidos`, `/admin/pedidos/:id`, `/admin/trocas` usam PostgreSQL. Para demonstração: comprar, validar no detalhe administrativo, despachar, confirmar entrega, solicitar troca no perfil, autorizar/receber na administração e usar o cupom no checkout seguinte. Não alterar o status diretamente no banco para demonstrar esse fluxo.
+
+Quando o Docker CLI funcionar mas Testcontainers falhar no pipe padrão, confira `docker context inspect desktop-linux`. Neste ambiente o motor Linux usa `npipe:////./pipe/dockerDesktopLinuxEngine`. A verificação pode ser executada no PowerShell com:
+
+```powershell
+$env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+.\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' verify
+```
+
+Isso muda somente a conexão do comando, sem reset de fábrica, remoção de volumes ou troca de PostgreSQL por H2. Não execute duas compilações Maven simultaneamente no mesmo `target`: a recompilação pode remover classes enquanto o outro processo testa.
+
+Revisões acadêmicas: `docs/revisao-vendas/UC_Gestao_de_Vendas_Revisado.docx` e `DVP_Incremento_Vendas.docx`, renderizados e conferidos. A reestimativa por IDs da planilha está em `REESTIMATIVA-VENDAS.md`. As fontes originais permanecem como referências históricas; a nova revisão prevalece para este incremento. Confirmação do professor e aceitação manual do grupo são pendências externas.
+
+## Resultado consolidado do incremento — 12/10/2026
+
+Os últimos relatórios por suíte registram 84 testes backend: 82 aprovados e dois testes de desempenho reprovados, sem erros ou ignorados. Os 99 cenários Selenium estão aprovados (63 clientes, oito perfil, cinco produtos e 23 vendas). Os testes do frontend também passaram. São resultados acumulados por suíte, incluindo reexecuções dirigidas, não uma única execução simultânea de todas as classes.
+
+RNF0011 permanece pendente: máximos de 1.646,51 ms em consultas de clientes e 1.027,18 ms em vendas, acima do limite de 1.000 ms. O usuário autorizou manter o desempenho atual e adiar a otimização. O limite dos testes não foi relaxado; não declarar a suíte completa como aprovada.
+
+O registro dos cartões concluídos e pendentes está em `KANBAN-VENDAS.md`. Aceitação manual e comunicação das ambiguidades ao professor continuam pendentes.

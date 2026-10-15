@@ -1,6 +1,7 @@
-# UML revisado — sem autenticação
+# UML revisado sem autenticação
 
 ## Figura 1 — Aura Lab — Representação arquitetural
+
 ```plantuml
 @startuml
 footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
@@ -71,6 +72,7 @@ end note
 ```
 
 ## Figura 2 — Aura Lab — Caso de uso Realizar Pedido
+
 ```plantuml
 @startuml
 footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
@@ -110,7 +112,7 @@ rectangle "Aura Lab" {
   usecase "Usar créditos de troca" as Credito
   usecase "Distribuir saldo\nentre cartões" as Cartoes
   usecase "Validar total\nda composição" as Total
-  usecase "Criar pedido EM ABERTO\ne apresentar confirmação" as Pedido
+  usecase "Criar pedido EM PROCESSAMENTO\ne apresentar confirmação" as Pedido
 }
 Cliente -- Catalogo
 Cliente -- Aura
@@ -130,12 +132,12 @@ Cartoes ..> Composicao : <<extend>>\n[saldo restante > 0]
 Composicao ..> Total : <<include>>
 note bottom of Checkout
   Precondições: cliente ativo identificado e carrinho não vazio.
-  Pós-condição: pedido EM ABERTO, estoque e créditos reservados.
+  Pós-condição: pedido EM PROCESSAMENTO, estoque e créditos reservados.
   A confirmação do pagamento ocorre depois, no processamento.
 end note
 note bottom of Composicao
   Total = subtotal - desconto promocional + frete.
-  Créditos de troca + valores dos cartões = total.
+  Créditos integrais + cartões cobrem o total; excesso necessário gera troco na aprovação.
   Até um promocional; vários créditos e cartões.
   Total zero dispensa componentes de pagamento.
 end note
@@ -144,9 +146,10 @@ end note
 ```
 
 ## Figura 3 — Aura Lab — Casos de uso de pedidos e trocas
+
 ```plantuml
 @startuml
-footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+footer UC05 integrado conforme DRS — interpretações sujeitas à validação do professor
 skinparam backgroundColor white
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -169,62 +172,55 @@ title Figura 3 — Aura Lab — Casos de uso de pedidos e trocas
 left to right direction
 actor Cliente
 actor Administrador as Admin
-rectangle "Aura Lab" {
-  package "Pedidos" {
-    usecase "Consultar pedidos\ne detalhes" as Consultar
-    usecase "Iniciar processamento" as Iniciar
-    usecase "Simular confirmação\nou recusa do pagamento" as Pagar
-    usecase "Despachar pedido" as Despachar
-    usecase "Cancelar antes\ndo pagamento" as Cancelar
-    usecase "Confirmar recebimento\ndo pedido" as Entregar
-  }
-  package "Trocas por item e quantidade" {
-    usecase "Solicitar troca" as Solicitar
-    usecase "Consultar trocas" as ConsultarTrocas
-    usecase "Analisar troca\naceitar ou negar" as Analisar
-    usecase "Informar despacho\ne rastreio do item" as Enviar
-    usecase "Receber item" as Receber
-    usecase "Avaliar aptidão\npara estoque" as Avaliar
-    usecase "Registrar reentrada" as Reentrada
-    usecase "Processar troca" as Processar
-    usecase "Gerar cupom de troca\nvinculado ao cliente" as Cupom
-  }
+rectangle "Aura Lab UC05" {
+ package "Pedidos" {
+  usecase "Consultar pedidos\ne detalhes" as Consultar
+  usecase "Validar pagamento\nsimulado" as Pagar
+  usecase "Despachar compra\nAPROVADA" as Despachar
+  usecase "Confirmar entrega\nEM TRANSPORTE" as Entregar
+ }
+ package "Trocas parciais ou integrais" {
+  usecase "Solicitar troca\nde compra ENTREGUE" as Solicitar
+  usecase "Consultar trocas" as ConsultarTrocas
+  usecase "Autorizar troca" as Autorizar
+  usecase "Receber itens" as Receber
+  usecase "Decidir retorno\nao estoque" as Decidir
+  usecase "Registrar reentrada" as Reentrada
+  usecase "Gerar cupom\nno recebimento" as Cupom
+  usecase "Notificar autorização" as Notificar
+ }
 }
 Admin -- Consultar
-Admin -- Iniciar
 Admin -- Pagar
 Admin -- Despachar
+Admin -- Entregar
 Admin -- ConsultarTrocas
-Admin -- Analisar
+Admin -- Autorizar
 Admin -- Receber
-Admin -- Processar
 Cliente -- Consultar
-Cliente -- Cancelar
-Cliente -- Entregar
 Cliente -- Solicitar
 Cliente -- ConsultarTrocas
-Cliente -- Enviar
-Receber ..> Avaliar : <<include>>
-Reentrada ..> Processar : <<extend>>\n[item apto]
-Processar ..> Cupom : <<include>>
+Autorizar ..> Notificar : <<include>>
+Receber ..> Decidir : <<include>>
+Reentrada ..> Receber : <<extend>>\n[retorno indicado]
+Receber ..> Cupom : <<include>>
 note bottom of Pagar
-  EM ABERTO -> EM PROCESSAMENTO
-  Confirmação: PAGAMENTO REALIZADO; baixa e consumo dos créditos.
-  Recusa: CANCELADO; liberação das reservas.
-  Despacho: PAGAMENTO REALIZADO -> EM TRÂNSITO.
-  Cliente: EM TRÂNSITO -> ENTREGUE.
+ Finalizar cria EM PROCESSAMENTO.
+ Aprovação: APROVADA; baixa e consumo dos créditos.
+ Recusa: REPROVADA; liberar recursos, sem baixa.
+ Administração: APROVADA -> EM TRANSPORTE -> ENTREGUE.
 end note
-note bottom of Processar
-  TROCA SOLICITADA -> TROCA ACEITA ou TROCA NEGADA
-  TROCA ACEITA -> ITEM ENVIADO -> ITEM RECEBIDO
-  ITEM RECEBIDO -> TROCA PROCESSADA; um cupom por troca.
-  A troca não altera o status ENTREGUE do pedido.
+note bottom of Receber
+ EM TROCA -> TROCA AUTORIZADA -> TROCADO.
+ Parcial mantém ENTREGUE na compra; integral acompanha.
+ Recebimento, cupom e eventual reentrada são atômicos.
+ Sequência e política de crédito aguardam validação do professor.
 end note
-
 @enduml
 ```
 
 ## Figura 4 — Aura Lab — Caso de uso Gerenciar Produtos
+
 ```plantuml
 @startuml
 footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
@@ -301,6 +297,7 @@ end note
 ```
 
 ## Figura 5 — Pacotes e dependências permitidas
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -354,6 +351,7 @@ end note
 ```
 
 ## Figura 6 — Tecnologias e padrões
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -389,6 +387,7 @@ Tests ..> DB
 ```
 
 ## Figura 7 — Apresentação atual e evolução
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -438,6 +437,7 @@ end note
 ```
 
 ## Figura 8 — Negócio, políticas e integrações
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -498,102 +498,111 @@ AuditFuture --> Repo
 @enduml
 ```
 
-## Figura 9 — Controllers, Services e colaborações
+## Figura 9 — Aura Lab — Controllers e Services
+
 ```plantuml
 @startuml
+title Figura 9 — Aura Lab — Controllers e Services
+left to right direction
+
 skinparam backgroundColor white
 skinparam shadowing false
 skinparam defaultFontName Arial
-skinparam defaultFontSize 14
+skinparam defaultFontSize 13
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
-skinparam componentStyle rectangle
-skinparam ArrowColor #63424F
-skinparam ClassBackgroundColor #FFF8E6
-skinparam PackageBackgroundColor #F7F3F5
-skinparam NoteBackgroundColor #EDF5F2
-skinparam nodesep 30
-skinparam ranksep 40
+skinparam packageBackgroundColor white
+skinparam packageBorderColor #444444
+skinparam classBackgroundColor #F5F5F5
+skinparam classBorderColor #888888
+skinparam ArrowColor #555555
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 35
 hide empty members
-title Figura 9 — Controllers, Services e colaborações
-footer Arquitetura alvo — contém componentes futuros; não comprova implementação
-left to right direction
-package "Clientes — implementado" {
- class ClienteController
- class ClienteService
- class EnderecoService
- class CartaoService
- class TransacaoService
- class AuditoriaService
- ClienteController --> ClienteService
- ClienteController --> EnderecoService
- ClienteController --> CartaoService
- ClienteController --> TransacaoService
- ClienteController --> AuditoriaService : consultar
- ClienteService --> AuditoriaService
- EnderecoService --> AuditoriaService
- CartaoService --> AuditoriaService
+
+package "Controller" {
+  class AuraController <<RestController>>
+  class AnalyticsController <<RestController>>
+  class CarrinhoController <<RestController>>
+  class TrocaController <<RestController>>
+  class CheckoutController <<RestController>>
+  class ProdutoController <<RestController>>
+  class ClienteController <<RestController>>
+  class CupomController <<RestController>>
+  class PedidoController <<RestController>>
+  class EstoqueController <<RestController>>
 }
-package "Demais módulos — futuros" {
- class ProdutoController
- class ProdutoService
- class CarrinhoController
- class CarrinhoService
- class CheckoutController
- class CheckoutService
- class PedidoController
- class PedidoService
- class TrocaController
- class TrocaService
- class CupomController
- class CupomService
- class EstoqueController
- class EstoqueService
- class ReservaEstoqueService
- class PagamentoService
- class AnalyticsController
- class AnalyticsService
- class AuraController
- class ConsultoraAuraService
- class RegistroAuditoriaService
- ProdutoController --> ProdutoService
- CarrinhoController --> CarrinhoService
- CheckoutController --> CheckoutService
- PedidoController --> PedidoService
- TrocaController --> TrocaService
- CupomController --> CupomService
- EstoqueController --> EstoqueService
- AnalyticsController --> AnalyticsService
- AuraController --> ConsultoraAuraService
- CarrinhoService --> ReservaEstoqueService
- CheckoutService --> PedidoService
- CheckoutService --> PagamentoService
- CheckoutService --> CupomService
- CheckoutService --> ReservaEstoqueService
- PedidoService --> PagamentoService
- PedidoService --> ReservaEstoqueService
- PedidoService --> EstoqueService
- PedidoService --> CupomService
- TrocaService --> EstoqueService
- TrocaService --> CupomService
- PedidoService --> RegistroAuditoriaService
- TrocaService --> RegistroAuditoriaService
+
+package "Service" {
+  class ConsultoraAuraService <<Service>>
+  class AnalyticsService <<Service>>
+  class CarrinhoService <<Service>>
+  class TrocaService <<Service>>
+  class CheckoutService <<Service>>
+  class ProdutoService <<Service>>
+  class ClienteService <<Service>>
+  class CupomService <<Service>>
+  class PedidoService <<Service>>
+  class EstoqueService <<Service>>
+
+  package "Serviços especializados de cliente" {
+    class EnderecoService <<Service>>
+    class CartaoService <<Service>>
+    class TransacaoService <<Service>>
+  }
+
+  package "Serviços internos compartilhados" {
+    class ReservaEstoqueService <<Service>>
+    class PagamentoService <<Service>>
+    class AuditoriaService <<Service>>
+  }
 }
-note bottom of RegistroAuditoriaService
- Todos os services que escrevem auditam na mesma transação.
- Ligações repetidas omitidas para legibilidade.
- Sem login; validação de associação nos services.
-end note
+
+AuraController ..> ConsultoraAuraService : usa
+AnalyticsController ..> AnalyticsService : usa
+CarrinhoController ..> CarrinhoService : usa
+TrocaController ..> TrocaService : usa
+CheckoutController ..> CheckoutService : usa
+ProdutoController ..> ProdutoService : usa
+ClienteController ..> ClienteService : usa
+CupomController ..> CupomService : usa
+PedidoController ..> PedidoService : usa
+EstoqueController ..> EstoqueService : usa
+
+ClienteService ..> EnderecoService
+ClienteService ..> CartaoService
+ClienteService ..> TransacaoService
+
+legend bottom
+  Senha → ClienteService | Bandeiras → CartaoService.
+  ClienteService coordena EnderecoService, CartaoService
+  e TransacaoService.
+  Não há autenticação.
+  Todo service que escreve usa AuditoriaService
+  dentro da mesma transação.
+
+  Colaborações principais:
+  CheckoutService → PedidoService, PagamentoService,
+  CupomService e ReservaEstoqueService.
+  PedidoService → PagamentoService, EstoqueService,
+  CupomService e ReservaEstoqueService.
+  TrocaService → EstoqueService e CupomService.
+  ProdutoService → EstoqueService.
+endlegend
+
+footer Planejamento completo — visão simplificada
 @enduml
 ```
 
-## Aura Lab — Modelo de domínio
+## Figura 10 — Aura Lab — Modelo de domínio completo
+
 ```plantuml
 @startuml
-footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+footer Planejamento do sistema completo — sem autenticação
 set namespaceSeparator none
-' Visão conceitual proposta para a solução completa.
-title Aura Lab — Modelo de domínio
+' Visão conceitual do sistema completo planejado.
+title Figura 10 — Aura Lab — Modelo de domínio completo
 skinparam backgroundColor white
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -635,7 +644,7 @@ class Endereco {
   - observacoes: String [0..1]
   - logradouro: String
   - numero: String
-  - complemento: String
+  - complemento: String [0..1]
   - bairro: String
   - cep: String
   - cidade: String
@@ -776,17 +785,12 @@ class Cupom {
 }
 class Troca {
   - id: Long
-  - quantidade: Integer
   - motivo: String
   - status: StatusTroca
   - solicitadaEm: OffsetDateTime
   - analisadaEm: OffsetDateTime [0..1]
-  - justificativaDecisao: String [0..1]
-  - enviadaEm: OffsetDateTime [0..1]
+  - integral: Boolean
   - recebidaEm: OffsetDateTime [0..1]
-  - processadaEm: OffsetDateTime [0..1]
-  - transportadora: String
-  - rastreio: String
   - aptoEstoque: Boolean
   - valorCredito: BigDecimal
 }
@@ -798,7 +802,7 @@ enum StatusCarrinho {
  FINALIZADO
  EXPIRADO
 }
-class RegistroAuditoria <<futuro geral>> {
+class RegistroAuditoria {
  - id: Long
  - ator: String
  - operacao: String
@@ -814,7 +818,7 @@ Cliente "0..1" -- "0..*" RegistroAuditoria : contexto opcional
 note bottom of RegistroAuditoria
  Entidade + entidadeId são referência descritiva,
  não FK polimórfica. Ator técnico definido pelo servidor.
- AuditoriaCliente e TransacaoCliente atuais: figura 24.
+ Atende ao RNF0012 em todos os módulos.
 end note
 note bottom of Endereco
  Ao menos uma cobrança e uma entrega ativas.
@@ -842,18 +846,19 @@ enum TipoMovimentacao {
   REENTRADA
 }
 enum StatusPedido {
-  EM_ABERTO
-  EM_PROCESSAMENTO
-  PAGAMENTO_REALIZADO
-  EM_TRANSITO
-  ENTREGUE
-  CANCELADO
+ EM_PROCESSAMENTO
+ APROVADA
+ REPROVADA
+ EM_TRANSPORTE
+ ENTREGUE
+ EM_TROCA
+ TROCA_AUTORIZADA
+ TROCADO
 }
 enum StatusPagamento {
   PENDENTE
   APROVADO
   RECUSADO
-  CANCELADO
 }
 enum TipoPartePagamento {
   CARTAO
@@ -873,12 +878,9 @@ enum TipoDesconto {
   VALOR_FIXO
 }
 enum StatusTroca {
-  TROCA_SOLICITADA
-  TROCA_ACEITA
-  TROCA_NEGADA
-  ITEM_ENVIADO
-  ITEM_RECEBIDO
-  TROCA_PROCESSADA
+ EM_TROCA
+ TROCA_AUTORIZADA
+ TROCADO
 }
 
 Cliente "1" -- "1..*" Endereco : possui
@@ -905,9 +907,15 @@ PartePagamento "0..*" -- "0..1" Cartao : cartão salvo
 PartePagamento "0..*" -- "0..1" Cupom : crédito de troca
 Pedido "0..*" -- "0..1" Cupom : promocional
 Cliente "0..1" -- "0..*" Cupom : titular do crédito
-ItemPedido "1" -- "0..*" Troca
+class ItemTroca {
+ - quantidade: Integer
+ - valorLiquido: BigDecimal
+}
+Pedido "1" -- "0..*" Troca
+Troca "1" *-- "1..*" ItemTroca
+ItemPedido "1" -- "0..*" ItemTroca
 Troca "0..1" -- "0..1" Cupom : gera
-Troca "0..1" -- "0..1" MovimentacaoEstoque : reentrada
+ItemTroca "0..1" -- "0..1" MovimentacaoEstoque : reentrada
 ItemPedido "0..1" -- "0..1" MovimentacaoEstoque : baixa
 
 Produto ..> StatusProduto
@@ -922,10 +930,10 @@ Cupom ..> TipoDesconto
 Troca ..> StatusTroca
 }
 @enduml
-
 ```
 
 ## Figura 11 — Aura Lab — Camada de persistência
+
 ```plantuml
 @startuml
 footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
@@ -989,9 +997,10 @@ end note
 ```
 
 ## Figura 12 — Aura Lab — Sequência de finalização da compra
+
 ```plantuml
 @startuml
-footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+footer UC05 integrado — classes e contrato atuais
 skinparam backgroundColor white
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -1014,71 +1023,50 @@ title Figura 12 — Aura Lab — Sequência de finalização da compra
 autonumber
 actor Cliente
 boundary Webapp
-control CheckoutController as API
-control CheckoutService as Checkout
+control VendaController as API
+control VendaService as Venda
 control ReservaEstoqueService as Reserva
-control CupomService as Cupom
-control PagamentoService as Pagamento
-control PedidoService as Pedido
-database "Repositories / PostgreSQL" as DB
-Cliente -> Webapp : confirmarCompra()
-Webapp -> API : POST /checkout\nDTO + chave de idempotência
-API -> API : validar DTO e cliente identificado
-API -> Checkout : finalizar(clienteId, DTO, chave)
-Checkout -> DB : BEGIN; bloquear cliente/carrinho\nconsultar chave já utilizada
-alt chave existente e mesmo conteúdo
-  DB --> Checkout : pedido já criado
-  Checkout -> DB : encerrar transação sem nova escrita
-  Checkout --> API : mesmo pedido
-  API --> Webapp : confirmação original
-else chave existente com conteúdo diferente
-  Checkout -> DB : ROLLBACK
-  Checkout --> API : conflito de idempotência
-  API --> Webapp : 409; revisar requisição
+database PostgreSQL as DB
+Cliente -> Webapp : finalizar compra
+Webapp -> API : POST /api/v1/clientes/{id}/pedidos\nDTO + Idempotency-Key
+API -> Venda : finalizar(cliente, DTO, chave)
+Venda -> Reserva : sincronizar e conferir prazo
+Reserva -> DB : BEGIN; lock transacional; ajustar disponibilidade
+Venda -> DB : conferir chave e composição normalizada
+alt mesma chave e conteúdo
+ DB --> Venda : pedido existente
+ Venda --> API : mesmo pedido, sem efeitos duplicados
+else composição diferente na mesma chave
+ Venda --> API : conflito de idempotência
 else nova finalização
-  Checkout -> DB : carregar cliente ativo, itens e endereço\nbloquear recursos em ordem determinística
-  Checkout -> Reserva : validar disponibilidade e reservas vigentes
-  Reserva -> DB : bloquear estoque; validar quantidades e prazo
-  Checkout -> Cupom : validar promoção, créditos e titularidade
-  Cupom -> DB : bloquear cupons; consultar usos e reservas
-  Checkout -> Checkout : recalcular preços, desconto, frete\ne validar soma dos meios = total
-  alt dados, reserva ou composição inválidos
-    Checkout -> DB : ROLLBACK
-    Checkout --> API : erro de negócio
-    API --> Webapp : 400/409; revisar checkout
-  else checkout válido
-    Checkout -> Pedido : criar EM_ABERTO com snapshots
-    Pedido -> DB : inserir pedido, itens e chave única
-    Checkout -> Pagamento : registrar composição PENDENTE
-    Pagamento -> DB : inserir pagamento e partes RESERVADO
-    Checkout -> Cupom : reservar créditos e uso promocional
-    note right of Cupom
-      Reserva financeira representada pelas partes
-      RESERVADO; não debita definitivamente o crédito.
-      Uso promocional pendente deriva do pedido.
-    end note
-    Checkout -> Reserva : transferir donos para itens do pedido
-    Reserva -> DB : manter quantidades; definir expiração alvo
-    Checkout -> DB : marcar carrinho FINALIZADO; registrar auditoria
-    Checkout -> DB : COMMIT
-    Checkout --> API : pedido EM_ABERTO
-    API --> Webapp : 201; código e composição
-    Webapp --> Cliente : exibir confirmação e esvaziar sacola visual
-  end
+ Venda -> DB : validar cliente ativo; endereço; itens; cartões e cupons
+ Venda -> Venda : calcular frete, desconto e composição\nrecusar cupons redundantes
+ alt dados ou composição inválidos
+  Venda -> DB : ROLLBACK
+  Venda --> API : erro de negócio
+ else checkout válido
+  Venda -> DB : criar pedido EM_PROCESSAMENTO\ne snapshots dos itens/endereço/parcelas
+  Venda -> Reserva : transferir reservas aos itens do pedido
+  Reserva -> DB : preservar vencimento original
+  Venda -> DB : reservar créditos; esvaziar carrinho\nauditoria e transação real; COMMIT
+  Venda --> API : código, EM_PROCESSAMENTO e composição
+ end
 end
-note over Checkout, DB
-  Nenhuma baixa definitiva nem chamada ao gateway nesta sequência.
-  Falha em qualquer escrita provoca rollback de toda a finalização.
-  Prazo de expiração configurável; valor ainda a definir no projeto.
+API --> Webapp : resultado ou {codigo,mensagem,campos}
+Webapp --> Cliente : confirmação ou erro
+note over Venda, DB
+ Sem baixa física, consumo definitivo ou troco antecipado.
+ Aprovação pertence ao CicloPedidoService.
+ Prazo padrão PT20M, parametrizável.
 end note
-
 @enduml
 ```
 
 ## Figura 13 — Aura Lab — Sequência de gerenciamento administrativo do pedido
+
 ```plantuml
 @startuml
-footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+footer UC05 integrado — entrega confirmada pelo administrador
 skinparam backgroundColor white
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -1101,68 +1089,48 @@ title Figura 13 — Aura Lab — Sequência de gerenciamento administrativo do p
 autonumber
 actor Administrador as Admin
 boundary Webapp
-control PedidoController as API
-control PedidoService as Pedido
-control PagamentoService as Pagamento
-participant "GatewayPagamento\nsimulado local" as Gateway
-control "ReservaEstoqueService /\nEstoqueService / CupomService" as Recursos
-database "Repositories / PostgreSQL" as DB
-Admin -> Webapp : escolher próxima ação válida
-Webapp -> API : POST /pedidos/{id}/acoes\nINICIAR, CONFIRMAR/RECUSAR ou DESPACHAR
-API -> API : validar DTO; contexto administrativo demonstrativo
-API -> Pedido : executarAcao(id, acao, contexto)
-Pedido -> DB : BEGIN; bloquear pedido e recursos\ncarregar estado e histórico
-alt ação já concluída para este pedido
-  Pedido -> DB : encerrar sem efeitos duplicados
-  Pedido --> API : resultado previamente registrado
-else ação incompatível com estado ou prazo
-  Pedido -> DB : ROLLBACK
-  Pedido --> API : conflito; nenhuma alteração
-else INICIAR e estado EM_ABERTO
-  Pedido -> DB : atualizar para EM_PROCESSAMENTO; auditar
-  Pedido -> DB : COMMIT
-  Pedido --> API : EM_PROCESSAMENTO
-else CONFIRMAR/RECUSAR e estado EM_PROCESSAMENTO
-  Pedido -> Recursos : validar reservas de estoque e créditos
-  Recursos -> DB : verificar disponibilidade sob lock
-  Pedido -> Pagamento : simularResultado(composição, cenário)
-  Pagamento -> Gateway : avaliar todos os componentes fictícios
-  Gateway --> Pagamento : APROVADO ou RECUSADO
-  Pagamento --> Pedido : resultado agregado
-  alt APROVADO
-    Pedido -> Recursos : converter reservas e registrar baixas\nconsumir créditos; efetivar uso promocional
-    Recursos -> DB : atualizar estoque e partes; gravar movimentações
-    Pedido -> DB : pagamento APROVADO; pedido PAGAMENTO_REALIZADO
-  else RECUSADO
-    Pedido -> Recursos : liberar reservas e uso promocional pendente
-    Recursos -> DB : partes LIBERADO; reservas LIBERADA\nestoque físico permanece igual
-    Pedido -> DB : pagamento RECUSADO; pedido CANCELADO
-  end
-  Pedido -> DB : registrar histórico e auditoria; COMMIT
-  Pedido --> API : resultado da ação
-else DESPACHAR e estado PAGAMENTO_REALIZADO
-  Pedido -> DB : atualizar para EM_TRANSITO; auditar; COMMIT
-  Pedido --> API : EM_TRANSITO
+control CicloVendaController as API
+control CicloPedidoService as Pedido
+participant OperadoraCartao as Gateway
+control ReservaEstoqueService as Reserva
+database PostgreSQL as DB
+Admin -> Webapp : escolher ação permitida
+Webapp -> API : validar pagamento, despachar ou confirmar entrega
+API -> Pedido : operação explícita
+Pedido -> DB : BEGIN; advisory lock; carregar pedido
+alt operação já concluída
+ Pedido --> API : resultado, sem repetir efeitos
+else validar pagamento de EM_PROCESSAMENTO
+ Pedido -> Reserva : sincronizar prazo e disponibilidade
+ Reserva -> DB : reserva expirada reprova e libera recursos
+ Pedido -> DB : revalidar titularidade, validade e situação dos cupons
+ Pedido -> Gateway : validar cada parcela de cartão
+ Gateway --> Pedido : APROVADO, REPROVADO ou FALHA
+ alt todas formas aceitas e reserva válida
+  Pedido -> DB : baixa física; consumir reserva/créditos\ngerar eventual troco; APROVADA
+ else alguma forma inválida ou recusa/falha
+  Pedido -> DB : liberar reservas/créditos\nREPROVADA, sem baixa
+ end
+ Pedido -> DB : auditar e atualizar transações reais; COMMIT
+else despachar APROVADA
+ Pedido -> DB : EM_TRANSPORTE; auditar; COMMIT
+else confirmar entrega de EM_TRANSPORTE
+ Pedido -> DB : ENTREGUE; auditar; COMMIT
+else estado incompatível ou pedido legado
+ Pedido --> API : erro de negócio; sem alteração
 end
-API --> Webapp : estado atual ou erro de negócio
-Webapp --> Admin : atualizar ações permitidas
+API --> Webapp : estado e ações permitidas
+Webapp --> Admin : atualizar painel
 note over Pedido, DB
-  Exceção em qualquer escrita: ROLLBACK.
-  Gateway é simulado, determinístico e sem efeito financeiro externo;
-  não se mantém lock de banco aguardando um gateway real.
-  Confirmação e expiração concorrentes usam os mesmos locks.
+ Falha de escrita ou auditoria reverte a operação.
+ Operadora é simulada, sem cobrança externa.
+ Aprovação tardia de reserva expirada é impedida.
 end note
-note over Admin, API
-  ENTREGUE só pode ser confirmado pelo cliente dono do pedido.
-  Cancelamento pelo cliente antes do pagamento e expiração automática
-  reutilizam a liberação transacional de reservas/créditos.
-  Fluxo de troca é independente e pertence ao TrocaService.
-end note
-
 @enduml
 ```
 
 ## Figura 14 — Aura Lab — Sequência de cadastro ou alteração de produto
+
 ```plantuml
 @startuml
 footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
@@ -1228,6 +1196,7 @@ end note
 ```
 
 ## Figura 15 — Implantação local e testes isolados
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -1278,6 +1247,7 @@ end note
 ```
 
 ## Aura Lab — Modelo lógico de dados
+
 ```plantuml
 @startuml
 footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
@@ -1503,19 +1473,24 @@ ativo
 entity "Troca" as troca {
 * id_troca
 --
-quantidade
+pedido_id
+cliente_id
+integral
 motivo
 status
-solicitada_em
-analisada_em
-justificativa_decisao
-transportadora
-rastreio
-enviada_em
+criada_em
+autorizada_em
 recebida_em
-apto_estoque
-processada_em
-valor_credito
+retornar_estoque
+cupom_id
+}
+entity "Item de troca" as item_troca {
+* id_item_troca
+--
+troca_id
+item_pedido_id
+quantidade
+valor_liquido
 }
 }
 package "Auditoria" as PAuditoria {
@@ -1559,7 +1534,7 @@ item_carrinho |o-[norank]-o{ reserva_estoque
 item_pedido |o-[norank]-o{ reserva_estoque
 estoque ||-[norank]-o{ movimentacao_estoque
 item_pedido |o-[norank]-o| movimentacao_estoque
-troca |o-[norank]-o| movimentacao_estoque
+item_troca |o-[norank]-o| movimentacao_estoque
 pedido ||-[norank]-|{ item_pedido
 produto ||-[norank]-o{ item_pedido
 pedido ||-[norank]-|| pagamento
@@ -1568,7 +1543,9 @@ cartao |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ pedido
 cliente |o-[norank]-o{ cupom
-item_pedido ||-[norank]-o{ troca
+pedido ||-[norank]-o{ troca
+troca ||-[norank]-|{ item_troca
+item_pedido ||-[norank]-o{ item_troca
 troca |o-[norank]-o| cupom
 
 
@@ -1607,6 +1584,7 @@ endlegend
 ```
 
 ## Aura Lab — Modelo relacional
+
 ```plantuml
 @startuml
 footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
@@ -1776,7 +1754,7 @@ entity "movimentacao_estoque" as movimentacao_estoque {
 --
 * estoque_id : BIGINT <<FK>>
 item_pedido_id : BIGINT <<FK, UK>>
-troca_id : BIGINT <<FK, UK>>
+item_troca_id : BIGINT <<FK, UK>>
 * tipo : VARCHAR(12)
 * quantidade : INTEGER
 * data_hora : TIMESTAMPTZ
@@ -1847,25 +1825,28 @@ modo_desconto : VARCHAR(12)
 compra_minima : NUMERIC(12,2)
 limite_uso : INTEGER
 cliente_id : BIGINT <<FK>>
-troca_origem_id : BIGINT <<FK, UK>>
 }
 entity "troca" as troca {
 * id : BIGINT <<PK>>
 --
+* pedido_id : BIGINT <<FK>>
+* cliente_id : BIGINT <<FK>>
+* integral : BOOLEAN
+* motivo : VARCHAR(500)
+* status : VARCHAR(30)
+* criada_em : TIMESTAMPTZ
+autorizada_em : TIMESTAMPTZ
+recebida_em : TIMESTAMPTZ
+retornar_estoque : BOOLEAN
+cupom_id : BIGINT <<FK, UK>>
+}
+entity "item_troca" as item_troca {
+* id : BIGINT <<PK>>
+--
+* troca_id : BIGINT <<FK>>
 * item_pedido_id : BIGINT <<FK>>
 * quantidade : INTEGER
-* motivo : TEXT
-* status : VARCHAR(20)
-* solicitada_em : TIMESTAMPTZ
-analisada_em : TIMESTAMPTZ
-justificativa_decisao : TEXT
-transportadora : VARCHAR(100)
-rastreio : VARCHAR(100)
-enviada_em : TIMESTAMPTZ
-recebida_em : TIMESTAMPTZ
-apto_estoque : BOOLEAN
-processada_em : TIMESTAMPTZ
-valor_credito : NUMERIC(12,2)
+* valor_liquido : NUMERIC(12,2)
 }
 }
 package "Auditoria" as PAuditoria {
@@ -1910,7 +1891,7 @@ item_carrinho |o-[norank]-o{ reserva_estoque
 item_pedido |o-[norank]-o{ reserva_estoque
 estoque ||-[norank]-o{ movimentacao_estoque
 item_pedido |o-[norank]-o| movimentacao_estoque
-troca |o-[norank]-o| movimentacao_estoque
+item_troca |o-[norank]-o| movimentacao_estoque
 pedido ||-[norank]-|{ item_pedido
 produto ||-[norank]-o{ item_pedido
 pedido ||-[norank]-|| pagamento
@@ -1919,7 +1900,9 @@ cartao |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ pedido
 cliente |o-[norank]-o{ cupom
-item_pedido ||-[norank]-o{ troca
+pedido ||-[norank]-o{ troca
+troca ||-[norank]-|{ item_troca
+item_pedido ||-[norank]-o{ item_troca
 troca |o-[norank]-o| cupom
 
 
@@ -1957,11 +1940,10 @@ legend bottom
   Regras condicionais e transacionais: REGRAS-E-MIGRACAO.md.
 endlegend
 @enduml
-
-
 ```
 
 ## Figura 18 — Casos de uso do CRUD implementado
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -2011,6 +1993,7 @@ end note
 ```
 
 ## Figura 19 — Escrita do CRUD e auditoria atômica
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -2080,7 +2063,8 @@ end note
 @enduml
 ```
 
-## Figura 20 — Estados do pedido na solução alvo
+## Figura 20 — Estados do pedido conforme UC05
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -2097,29 +2081,32 @@ skinparam NoteBackgroundColor #EDF5F2
 skinparam nodesep 30
 skinparam ranksep 40
 hide empty members
-title Figura 20 — Estados do pedido na solução alvo
-footer Arquitetura alvo — contém componentes futuros; não comprova implementação
-[*] --> EM_ABERTO : checkout válido / reservar recursos
-EM_ABERTO --> EM_PROCESSAMENTO : administrador inicia
-EM_PROCESSAMENTO --> PAGAMENTO_REALIZADO : pagamento aprovado\nconverter reservas em baixa
-PAGAMENTO_REALIZADO --> EM_TRANSITO : administrador despacha
-EM_TRANSITO --> ENTREGUE : cliente dono confirma recebimento
-EM_ABERTO --> CANCELADO : cliente cancela / prazo expira
-EM_PROCESSAMENTO --> CANCELADO : recusa / cancelamento antes do pagamento\nou expiração
-ENTREGUE --> [*]
-CANCELADO --> [*]
-note right of CANCELADO
- Liberar reservas de estoque, créditos e uso promocional.
- Não efetuar baixa física.
-end note
+title Figura 20 — Estados do pedido conforme UC05
+footer Incremento integrado de vendas — decisões interpretativas sujeitas à validação do professor
+[*] --> EM_PROCESSAMENTO : cliente finaliza / preservar reservas
+EM_PROCESSAMENTO --> APROVADA : administrador valida todas as formas\nbaixar estoque e consumir créditos
+EM_PROCESSAMENTO --> REPROVADA : recusa ou falha / liberar recursos
+EM_PROCESSAMENTO --> REPROVADA : reserva expira / impedir aprovação tardia
+APROVADA --> EM_TRANSPORTE : administrador despacha
+EM_TRANSPORTE --> ENTREGUE : administrador confirma entrega
+ENTREGUE --> EM_TROCA : cliente solicita troca integral
+EM_TROCA --> TROCA_AUTORIZADA : administrador autoriza
+TROCA_AUTORIZADA --> TROCADO : administrador recebe / cupom e eventual reentrada
+REPROVADA --> [*]
+TROCADO --> [*]
 note right of ENTREGUE
- Trocas têm estado próprio por item e quantidade.
- O pedido original permanece ENTREGUE.
+ Troca parcial mantém a compra ENTREGUE.
+ Solicitação possui estados próprios.
+end note
+note right of REPROVADA
+ Expiração de pedido pendente é decisão do projeto.
+ Comunicação e validação com professor pendentes.
 end note
 @enduml
 ```
 
-## Figura 21 — Troca por item e quantidade
+## Figura 21 — Estados da troca conforme UC05
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -2136,25 +2123,25 @@ skinparam NoteBackgroundColor #EDF5F2
 skinparam nodesep 30
 skinparam ranksep 40
 hide empty members
-title Figura 21 — Troca por item e quantidade
-footer Arquitetura alvo — contém componentes futuros; não comprova implementação
-[*] --> TROCA_SOLICITADA : cliente / pedido ENTREGUE
-TROCA_SOLICITADA --> TROCA_ACEITA : administrador aceita
-TROCA_SOLICITADA --> TROCA_NEGADA : administrador justifica recusa
-TROCA_ACEITA --> ITEM_ENVIADO : cliente informa despacho
-ITEM_ENVIADO --> ITEM_RECEBIDO : administrador recebe e avalia aptidão
-ITEM_RECEBIDO --> TROCA_PROCESSADA : gerar cupom do cliente\ne reentrada somente se apto
-TROCA_NEGADA --> [*]
-TROCA_PROCESSADA --> [*]
-note right of TROCA_PROCESSADA
- Cupom, eventual reentrada e auditoria na mesma transação.
- Idempotência impede duplicar crédito ou estoque.
- Quantidade acumulada não pode exceder a comprada.
+title Figura 21 — Estados da troca conforme UC05
+footer Incremento integrado de vendas — decisões interpretativas sujeitas à validação do professor
+[*] --> EM_TROCA : cliente seleciona item ou compra ENTREGUE
+EM_TROCA --> TROCA_AUTORIZADA : administrador autoriza\nnotificar cliente
+TROCA_AUTORIZADA --> TROCADO : administrador recebe\ndecide reentrada e gera cupom
+TROCADO --> [*]
+note right of TROCADO
+ Cupom, reentrada opcional e auditoria são atômicos.
+ Repetição não duplica crédito nem estoque.
+ Crédito usa valor líquido histórico sem frete.
+ Compras integrais acompanham estes estados.
+ Recebimento após autorização e política de crédito:
+ comunicação e validação com professor pendentes.
 end note
 @enduml
 ```
 
 ## Figura 22 — CRUD simples, sem autenticação
+
 ```plantuml
 @startuml
 skinparam shadowing false
@@ -2202,6 +2189,7 @@ footer ADMIN_DEMO é um ator técnico definido pelo servidor.
 ```
 
 ## Figura 23 — Testes, padrões e evidências do CRUD
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -2247,6 +2235,7 @@ Runner --> Report
 ```
 
 ## Figura 24 — Domínio do CRUD atual
+
 ```plantuml
 @startuml
 skinparam backgroundColor white
@@ -2350,6 +2339,7 @@ end note
 ```
 
 ## Figura 25 — Banco do CRUD atual V1–V4
+
 ```plantuml
 @startuml
 skinparam backgroundColor white

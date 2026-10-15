@@ -1,5 +1,5 @@
 @startuml
-footer Arquitetura alvo do DVP — CRUD atual documentado nas figuras 18, 19, 24 e 25
+footer UC05 integrado — entrega confirmada pelo administrador
 skinparam backgroundColor white
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -22,62 +22,41 @@ title Figura 13 — Aura Lab — Sequência de gerenciamento administrativo do p
 autonumber
 actor Administrador as Admin
 boundary Webapp
-control PedidoController as API
-control PedidoService as Pedido
-control PagamentoService as Pagamento
-participant "GatewayPagamento\nsimulado local" as Gateway
-control "ReservaEstoqueService /\nEstoqueService / CupomService" as Recursos
-database "Repositories / PostgreSQL" as DB
-Admin -> Webapp : escolher próxima ação válida
-Webapp -> API : POST /pedidos/{id}/acoes\nINICIAR, CONFIRMAR/RECUSAR ou DESPACHAR
-API -> API : validar DTO; contexto administrativo demonstrativo
-API -> Pedido : executarAcao(id, acao, contexto)
-Pedido -> DB : BEGIN; bloquear pedido e recursos\ncarregar estado e histórico
-alt ação já concluída para este pedido
-  Pedido -> DB : encerrar sem efeitos duplicados
-  Pedido --> API : resultado previamente registrado
-else ação incompatível com estado ou prazo
-  Pedido -> DB : ROLLBACK
-  Pedido --> API : conflito; nenhuma alteração
-else INICIAR e estado EM_ABERTO
-  Pedido -> DB : atualizar para EM_PROCESSAMENTO; auditar
-  Pedido -> DB : COMMIT
-  Pedido --> API : EM_PROCESSAMENTO
-else CONFIRMAR/RECUSAR e estado EM_PROCESSAMENTO
-  Pedido -> Recursos : validar reservas de estoque e créditos
-  Recursos -> DB : verificar disponibilidade sob lock
-  Pedido -> Pagamento : simularResultado(composição, cenário)
-  Pagamento -> Gateway : avaliar todos os componentes fictícios
-  Gateway --> Pagamento : APROVADO ou RECUSADO
-  Pagamento --> Pedido : resultado agregado
-  alt APROVADO
-    Pedido -> Recursos : converter reservas e registrar baixas\nconsumir créditos; efetivar uso promocional
-    Recursos -> DB : atualizar estoque e partes; gravar movimentações
-    Pedido -> DB : pagamento APROVADO; pedido PAGAMENTO_REALIZADO
-  else RECUSADO
-    Pedido -> Recursos : liberar reservas e uso promocional pendente
-    Recursos -> DB : partes LIBERADO; reservas LIBERADA\nestoque físico permanece igual
-    Pedido -> DB : pagamento RECUSADO; pedido CANCELADO
-  end
-  Pedido -> DB : registrar histórico e auditoria; COMMIT
-  Pedido --> API : resultado da ação
-else DESPACHAR e estado PAGAMENTO_REALIZADO
-  Pedido -> DB : atualizar para EM_TRANSITO; auditar; COMMIT
-  Pedido --> API : EM_TRANSITO
+control CicloVendaController as API
+control CicloPedidoService as Pedido
+participant OperadoraCartao as Gateway
+control ReservaEstoqueService as Reserva
+database PostgreSQL as DB
+Admin -> Webapp : escolher ação permitida
+Webapp -> API : validar pagamento, despachar ou confirmar entrega
+API -> Pedido : operação explícita
+Pedido -> DB : BEGIN; advisory lock; carregar pedido
+alt operação já concluída
+ Pedido --> API : resultado, sem repetir efeitos
+else validar pagamento de EM_PROCESSAMENTO
+ Pedido -> Reserva : sincronizar prazo e disponibilidade
+ Reserva -> DB : reserva expirada reprova e libera recursos
+ Pedido -> DB : revalidar titularidade, validade e situação dos cupons
+ Pedido -> Gateway : validar cada parcela de cartão
+ Gateway --> Pedido : APROVADO, REPROVADO ou FALHA
+ alt todas formas aceitas e reserva válida
+  Pedido -> DB : baixa física; consumir reserva/créditos\ngerar eventual troco; APROVADA
+ else alguma forma inválida ou recusa/falha
+  Pedido -> DB : liberar reservas/créditos\nREPROVADA, sem baixa
+ end
+ Pedido -> DB : auditar e atualizar transações reais; COMMIT
+else despachar APROVADA
+ Pedido -> DB : EM_TRANSPORTE; auditar; COMMIT
+else confirmar entrega de EM_TRANSPORTE
+ Pedido -> DB : ENTREGUE; auditar; COMMIT
+else estado incompatível ou pedido legado
+ Pedido --> API : erro de negócio; sem alteração
 end
-API --> Webapp : estado atual ou erro de negócio
-Webapp --> Admin : atualizar ações permitidas
+API --> Webapp : estado e ações permitidas
+Webapp --> Admin : atualizar painel
 note over Pedido, DB
-  Exceção em qualquer escrita: ROLLBACK.
-  Gateway é simulado, determinístico e sem efeito financeiro externo;
-  não se mantém lock de banco aguardando um gateway real.
-  Confirmação e expiração concorrentes usam os mesmos locks.
+ Falha de escrita ou auditoria reverte a operação.
+ Operadora é simulada, sem cobrança externa.
+ Aprovação tardia de reserva expirada é impedida.
 end note
-note over Admin, API
-  ENTREGUE só pode ser confirmado pelo cliente dono do pedido.
-  Cancelamento pelo cliente antes do pagamento e expiração automática
-  reutilizam a liberação transacional de reservas/créditos.
-  Fluxo de troca é independente e pertence ao TrocaService.
-end note
-
 @enduml

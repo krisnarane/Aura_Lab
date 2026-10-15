@@ -166,7 +166,7 @@ entity "movimentacao_estoque" as movimentacao_estoque {
 --
 * estoque_id : BIGINT <<FK>>
 item_pedido_id : BIGINT <<FK, UK>>
-troca_id : BIGINT <<FK, UK>>
+item_troca_id : BIGINT <<FK, UK>>
 * tipo : VARCHAR(12)
 * quantidade : INTEGER
 * data_hora : TIMESTAMPTZ
@@ -237,25 +237,28 @@ modo_desconto : VARCHAR(12)
 compra_minima : NUMERIC(12,2)
 limite_uso : INTEGER
 cliente_id : BIGINT <<FK>>
-troca_origem_id : BIGINT <<FK, UK>>
 }
 entity "troca" as troca {
 * id : BIGINT <<PK>>
 --
+* pedido_id : BIGINT <<FK>>
+* cliente_id : BIGINT <<FK>>
+* integral : BOOLEAN
+* motivo : VARCHAR(500)
+* status : VARCHAR(30)
+* criada_em : TIMESTAMPTZ
+autorizada_em : TIMESTAMPTZ
+recebida_em : TIMESTAMPTZ
+retornar_estoque : BOOLEAN
+cupom_id : BIGINT <<FK, UK>>
+}
+entity "item_troca" as item_troca {
+* id : BIGINT <<PK>>
+--
+* troca_id : BIGINT <<FK>>
 * item_pedido_id : BIGINT <<FK>>
 * quantidade : INTEGER
-* motivo : TEXT
-* status : VARCHAR(20)
-* solicitada_em : TIMESTAMPTZ
-analisada_em : TIMESTAMPTZ
-justificativa_decisao : TEXT
-transportadora : VARCHAR(100)
-rastreio : VARCHAR(100)
-enviada_em : TIMESTAMPTZ
-recebida_em : TIMESTAMPTZ
-apto_estoque : BOOLEAN
-processada_em : TIMESTAMPTZ
-valor_credito : NUMERIC(12,2)
+* valor_liquido : NUMERIC(12,2)
 }
 }
 package "Auditoria" as PAuditoria {
@@ -300,7 +303,7 @@ item_carrinho |o-[norank]-o{ reserva_estoque
 item_pedido |o-[norank]-o{ reserva_estoque
 estoque ||-[norank]-o{ movimentacao_estoque
 item_pedido |o-[norank]-o| movimentacao_estoque
-troca |o-[norank]-o| movimentacao_estoque
+item_troca |o-[norank]-o| movimentacao_estoque
 pedido ||-[norank]-|{ item_pedido
 produto ||-[norank]-o{ item_pedido
 pedido ||-[norank]-|| pagamento
@@ -309,7 +312,9 @@ cartao |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ pedido
 cliente |o-[norank]-o{ cupom
-item_pedido ||-[norank]-o{ troca
+pedido ||-[norank]-o{ troca
+troca ||-[norank]-|{ item_troca
+item_pedido ||-[norank]-o{ item_troca
 troca |o-[norank]-o| cupom
 
 

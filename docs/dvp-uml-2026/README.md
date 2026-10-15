@@ -6,9 +6,11 @@ Abra [a galeria](index.html). Cada figura possui PlantUML independente (`.puml`)
 
 ## Escopo das figuras
 
-- **1–17:** revisão das figuras originais, conservando a numeração. Representam a arquitetura alvo completa, com a etapa atual identificada quando pertinente. Não afirmam que vendas ou Gemini já foram implementados.
+- **1, 4–11 e 14–17:** arquitetura alvo geral. A figura 10 teve os estados e a estrutura de troca corrigidos conforme o UC05; os demais módulos futuros não são declarados implementados.
+- **2, 3, 12 e 13:** casos de uso e sequências de vendas revisados em 12/10/2026, com EM_PROCESSAMENTO, APROVADA/REPROVADA, entrega administrativa e recebimento que gera cupom.
 - **18, 19, 23, 24 e 25:** implementação atual e estrutura de testes. Em especial, 24/25 mostram `senhaHash` em Cliente e as entidades demonstrativas realmente existentes.
-- **20–22:** propostas para estados de pedido, troca e responsabilidades simples do CRUD.
+- **20 e 21:** estados do incremento integrado de vendas, corrigidos conforme o DRS em 12/10/2026.
+- **22:** proposta de responsabilidades simples do CRUD.
 
 As figuras 16, 17 e 25 usam notação de engenharia da informação (pé de galinha), expressa em PlantUML; não são diagramas de classes UML estritos.
 

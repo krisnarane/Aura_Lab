@@ -61,11 +61,11 @@ const criarArteProduto = (item) =>
 const card = (item) =>
   `<article class="aura-card">${criarArteProduto(item)}<div class="card-body"><small>${escaparHtml(item.brand)}</small><button class="product-link" data-product="${item.id}">${escaparHtml(item.name)}</button><p class="availability ${available(item) <= 0 ? "sold-out" : ""}">${descreverDisponibilidade(item)}</p><div class="d-flex align-items-center"><b>${formatarMoeda(item.price)}</b><button class="round ms-auto" data-add="${item.id}" aria-label="Adicionar ${escaparHtml(item.name)}" ${available(item) > 0 ? "" : "disabled"}>＋</button></div></div></article>`;
 
-export const header = () => {
+export const header = (contextoApi = null) => {
   // O cabeçalho decide quais links aparecem a partir do cliente atual.
   // Quando o perfil da loja está conectado à API, o nome real tem precedência na identificação.
-  const owner = currentCustomer();
-  const nomeApi =
+  const owner = contextoApi ? (contextoApi.clienteNome ? {name: contextoApi.clienteNome} : null) : currentCustomer();
+  const nomeApi = contextoApi ? contextoApi.clienteNome :
     typeof localStorage !== "undefined"
       ? localStorage.getItem("aura-lab-perfil-api-nome")
       : null;
@@ -90,7 +90,7 @@ export const header = () => {
     )
     .join("");
   return `<header class="site-header"><div class="notice">Beleza que acompanha
-o seu ritmo <span>•</span> </div><nav class="navbar navbar-expand-lg container aura-container"><a href="/" data-link class="brand">aura <i>LAB</i></a><button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Abrir menu">☰</button><div id="nav" class="collapse navbar-collapse"><ul class="navbar-nav mx-auto nav-main">${navHtml}</ul><div class="nav-actions"><a href="/perfil/dados" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.8-4 3.3-6 7.5-6s6.7 2 7.5 6"/></svg><span>${escaparHtml(nomeApi?.split(" ")[0] || owner?.name?.split(" ")[0] || "Escolher cliente")}</span></a><a href="/sacola" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7a3 3 0 016 0v1"/><path d="M6 8h12l-1 13H7L6 8z"/></svg><span>Sacola</span><b>${cart().reduce((sum, item) => sum + item.q, 0)}</b></a></div></div></nav></header>`;
+o seu ritmo <span>•</span> </div><nav class="navbar navbar-expand-lg container aura-container"><a href="/" data-link class="brand">aura <i>LAB</i></a><button class="navbar-toggler border-0" data-bs-toggle="collapse" data-bs-target="#nav" aria-label="Abrir menu">☰</button><div id="nav" class="collapse navbar-collapse"><ul class="navbar-nav mx-auto nav-main">${navHtml}</ul><div class="nav-actions"><a href="/perfil/dados" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.8-4 3.3-6 7.5-6s6.7 2 7.5 6"/></svg><span>${escaparHtml(nomeApi?.split(" ")[0] || owner?.name?.split(" ")[0] || "Escolher cliente")}</span></a><a href="/sacola" data-link><svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7a3 3 0 016 0v1"/><path d="M6 8h12l-1 13H7L6 8z"/></svg><span>Sacola</span><b>${contextoApi ? (contextoApi.totalItens ?? "") : cart().reduce((sum, item) => sum + item.q, 0)}</b></a></div></div></nav></header>`;
 };
 
 // Rodapé compartilhado pelas telas públicas e de cliente.

@@ -48,12 +48,24 @@ export const vendasApi = {
       method: "POST",
       body: JSON.stringify(d),
     }),
-  finalizar: (id, d) =>
+  finalizar: (id, d, chave) =>
     requisitar(`/clientes/${id}/pedidos`, {
       method: "POST",
+      headers: chave ? {"Idempotency-Key": chave} : {},
       body: JSON.stringify(d),
     }),
   pedido: (id, pedidoId) => requisitar(`/clientes/${id}/pedidos/${pedidoId}`),
   pedidos: (id) => requisitar(`/clientes/${id}/pedidos`),
   cupons: (id) => requisitar(`/clientes/${id}/cupons`),
+  pedidosAdmin: (f = {}) => requisitar(`/admin/pedidos?${new URLSearchParams(f)}`),
+  pedidoAdmin: (id) => requisitar(`/admin/pedidos/${id}`),
+  validarPagamento: (id, d) => requisitar(`/admin/pedidos/${id}/pagamento/validar`, {method:"POST", body:JSON.stringify(d)}),
+  despachar: (id) => requisitar(`/admin/pedidos/${id}/despacho`, {method:"POST"}),
+  entregar: (id) => requisitar(`/admin/pedidos/${id}/entrega`, {method:"POST"}),
+  solicitarTroca: (cliente, pedido, d, chave) => requisitar(`/clientes/${cliente}/pedidos/${pedido}/trocas`, {method:"POST", headers: {"Idempotency-Key": chave}, body:JSON.stringify(d)}),
+  trocas: (cliente, pedido) => requisitar(`/clientes/${cliente}/trocas${pedido ? `?pedidoId=${pedido}` : ""}`),
+  trocasAdmin: () => requisitar("/admin/trocas"),
+  autorizarTroca: (id) => requisitar(`/admin/trocas/${id}/autorizacao`, {method:"POST"}),
+  receberTroca: (id, retornarEstoque) => requisitar(`/admin/trocas/${id}/recebimento`, {method:"POST", body:JSON.stringify({retornarEstoque})}),
+  notificacoes: (cliente) => requisitar(`/clientes/${cliente}/notificacoes`),
 };

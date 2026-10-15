@@ -187,6 +187,64 @@
   gap: 14px;
   justify-content: space-between;
 }
+.checkout-form {
+  padding: clamp(22px, 4vw, 38px);
+}
+.checkout-form h2 {
+  color: #4d323b;
+  font-family: var(--font-display, inherit);
+  margin: 0;
+}
+.checkout-form h3 {
+  font-size: 1rem;
+  margin: 4px 0 0;
+}
+.checkout-form hr {
+  border-color: var(--line);
+  margin: 10px 0 2px;
+  opacity: 1;
+}
+.coupon-choice {
+  align-items: flex-start;
+}
+.coupon-choice b {
+  color: var(--rose);
+  letter-spacing: 0.04em;
+}
+.checkout-new-card {
+  background: #fffafa;
+  border: 1px dashed #dfcbd1;
+  border-radius: 12px;
+  padding: 14px;
+}
+.checkout-new-card summary {
+  color: #814e60;
+  cursor: pointer;
+  font-weight: 700;
+}
+.checkout-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.payment-summary {
+  position: sticky;
+  top: 18px;
+}
+.payment-summary li {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 0;
+}
+.payment-summary li:last-child {
+  border-bottom: 0;
+  color: var(--rose);
+  font-size: 1.08rem;
+  padding-top: 14px;
+}
 
 /* Texto de destaque para ações ou avisos de risco. */
 .text-destructive {
@@ -251,6 +309,13 @@
   justify-content: center;
   margin: 0 auto 18px;
   width: 58px;
+}
+.confirmation-heading {
+  margin-bottom: 24px;
+  text-align: center;
+}
+.confirmation-heading h2 {
+  margin-top: 8px;
 }
 
 /* Cartão de gerenciamento em áreas administrativas ou de conta. */
@@ -503,6 +568,13 @@
   }
   .payment-card input {
     max-width: none;
+    width: 100%;
+  }
+  .checkout-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+  .checkout-actions .btn {
     width: 100%;
   }
   .filter-bar {

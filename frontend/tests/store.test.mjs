@@ -14,6 +14,10 @@ const identificarClienteMock = (id = "cli-1") => {
   store.persist();
 };
 
+const cabecalhoIntegrado = pages.header({clienteNome:"Cliente API",totalItens:7});
+assert.match(cabecalhoIntegrado, /<span>Cliente<\/span>/);
+assert.match(cabecalhoIntegrado, /<b>7<\/b>/, "cabeçalho integrado usa o carrinho da API");
+assert.match(pages.header({clienteNome:null,totalItens:0}), /Escolher cliente/, "não identifica o cliente demonstrativo como cliente da API");
 store.resetDemo();
 assert.equal(
   store.customers().length,

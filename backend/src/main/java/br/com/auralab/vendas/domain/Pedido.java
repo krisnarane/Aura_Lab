@@ -30,6 +30,24 @@ public class Pedido {
   @Column(nullable = false, length = 30)
   private String status;
 
+  @Column(nullable = false)
+  private boolean legado;
+
+  @Column(name = "pagamento_status", nullable = false)
+  private String pagamentoStatus = "PENDENTE";
+
+  @Column(name = "motivo_resultado")
+  private String motivoResultado;
+
+  @Column(name = "chave_checkout")
+  private String chaveCheckout;
+
+  @Column(name = "resumo_checkout")
+  private String resumoCheckout;
+
+  @Column(name = "troco_previsto", nullable = false, precision = 12, scale = 2)
+  private BigDecimal trocoPrevisto = BigDecimal.ZERO;
+
   @Column(nullable = false, precision = 12, scale = 2)
   private BigDecimal subtotal;
 
@@ -101,6 +119,41 @@ public class Pedido {
 
   public void registrarTrocoGerado(Long cupomId) {
     this.cupomTrocaGeradoId = cupomId;
+  }
+
+  public void prepararCiclo(
+      java.time.OffsetDateTime instante, BigDecimal troco, String chave, String resumo) {
+    criadoEm = instante;
+    trocoPrevisto = troco;
+    chaveCheckout = chave;
+    resumoCheckout = resumo;
+  }
+
+  public boolean isLegado() {
+    return legado;
+  }
+
+  public String getPagamentoStatus() {
+    return pagamentoStatus;
+  }
+
+  public String getMotivoResultado() {
+    return motivoResultado;
+  }
+
+  public BigDecimal getTrocoPrevisto() {
+    return trocoPrevisto;
+  }
+
+  public void resultadoPagamento(boolean aprovado, String motivo) {
+    status = aprovado ? "APROVADA" : "REPROVADA";
+    pagamentoStatus = aprovado ? "APROVADO" : "REPROVADO";
+    motivoResultado = motivo;
+  }
+
+  public void transicionar(String esperado, String novo) {
+    RegrasCicloVenda.exigirEstado(status, esperado);
+    status = novo;
   }
 
   public Long getId() {

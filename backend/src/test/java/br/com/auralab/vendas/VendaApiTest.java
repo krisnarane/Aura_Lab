@@ -77,6 +77,33 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
 
   // ---- RF0033/RF0035/RF0036/RF0038: compra com endereço e cartão já cadastrados ----
 
+  @ParameterizedTest
+  @ValueSource(strings = {"{}", "{\"estado\":\"   \"}"})
+  void RF0034_CT041_resumoSemEnderecoNaoCalculaFrete(String payload) throws Exception {
+    adicionar(1L, 1);
+    var itensAntes = jdbc.queryForList("select * from item_carrinho order by id");
+    int auditoriasAntes =
+        jdbc.queryForObject("select count(*) from auditoria_cliente", Integer.class);
+    mvc.perform(post(base() + "/carrinho/resumo").contentType(JSON).content(payload))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.codigo").value("ENDERECO_OBRIGATORIO"));
+    assertThat(jdbc.queryForList("select * from item_carrinho order by id")).isEqualTo(itensAntes);
+    assertThat(jdbc.queryForObject("select count(*) from pedido", Integer.class)).isZero();
+    assertThat(jdbc.queryForObject("select count(*) from auditoria_cliente", Integer.class))
+        .isEqualTo(auditoriasAntes);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"ativo=false", "entrega=false"})
+  void RF0034_resumoRecusaEnderecoInativoOuSemFinalidadeDeEntrega(String alteracao)
+      throws Exception {
+    adicionar(1L, 1);
+    jdbc.execute("update endereco set " + alteracao + " where id=1");
+    mvc.perform(post(base() + "/carrinho/resumo").contentType(JSON).content("{\"enderecoId\":1}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.codigo").value("ENDERECO_ENTREGA_INVALIDO"));
+  }
+
   @Test
   void RF0033_RF0038_compraComEnderecoECartaoExistentes() throws Exception {
     adicionar(1L, 1);
@@ -261,7 +288,10 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.status").value("EM_PROCESSAMENTO"));
-    // O cupom de troca usado é consumido
+    assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
+        .isEqualTo("RESERVADO");
+    aprovarUltimoPedido();
+    // A aprovação consome o crédito reservado
     assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
         .isEqualTo("UTILIZADO");
   }
@@ -312,7 +342,8 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
     mvc.perform(
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.cupomTrocaGerado.tipo").value("TROCA"));
+        .andExpect(jsonPath("$.cupomTrocaGerado").doesNotExist());
+    aprovarUltimoPedido();
 
     BigDecimal gerado =
         jdbc.queryForObject(
@@ -356,7 +387,8 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.total").value(50.00))
-        .andExpect(jsonPath("$.cupomTrocaGerado.tipo").value("TROCA"));
+        .andExpect(jsonPath("$.cupomTrocaGerado").doesNotExist());
+    aprovarUltimoPedido();
     assertThat(
             jdbc.queryForObject(
                 "select valor from cupom where cliente_id=1 and origem like 'Troco%'",
@@ -530,6 +562,16 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
         .andExpect(jsonPath("$.status").value("EM_PROCESSAMENTO"));
     assertThat(jdbc.queryForObject("select desconto from pedido", BigDecimal.class))
         .isEqualByComparingTo("8.99"); // 10% de 89.90
+  }
+
+  private void aprovarUltimoPedido() throws Exception {
+    long pedido = jdbc.queryForObject("select max(id) from pedido", Long.class);
+    mvc.perform(
+            post("/api/v1/admin/pedidos/" + pedido + "/pagamento/validar")
+                .contentType(JSON)
+                .content("{\"resultadoSimulado\":\"APROVADO\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("APROVADA"));
   }
 
   // ---- helpers ----

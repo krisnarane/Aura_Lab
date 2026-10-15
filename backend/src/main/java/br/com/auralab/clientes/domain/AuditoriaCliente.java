@@ -10,9 +10,8 @@ import org.hibernate.type.SqlTypes;
  * Registro de auditoria das escritas sobre o cliente: instante, ator, operação, entidade e
  * snapshots JSON antes/depois permitidos (sem senha, PAN ou CVV).
  *
- * <p>Requisito: RNF0012 (toda escrita registra data, hora, usuário responsável e dados
- * alterados). O ator é o técnico {@code ADMIN_DEMO} — não há usuário autenticado nesta
- * etapa.
+ * <p>Requisito: RNF0012 (toda escrita registra data, hora, usuário responsável e dados alterados).
+ * O ator é o técnico {@code ADMIN_DEMO} — não há usuário autenticado nesta etapa.
  */
 @Entity
 @Table(name = "auditoria_cliente")
@@ -66,6 +65,11 @@ public class AuditoriaCliente {
 
   public Long getId() {
     return id;
+  }
+
+  public void contextoServidor(String ator, OffsetDateTime instante) {
+    this.ator = ator;
+    this.ocorridaEm = instante;
   }
 
   public OffsetDateTime getOcorridaEm() {

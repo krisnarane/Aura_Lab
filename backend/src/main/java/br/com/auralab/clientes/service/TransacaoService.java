@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service somente-leitura das transações demonstrativas (RF0025). O vínculo com o cliente
- * da URL é sempre validado antes de devolver o detalhe (404 se não pertencer).
+ * Service somente-leitura das transações demonstrativas (RF0025). O vínculo com o cliente da URL é
+ * sempre validado antes de devolver o detalhe (404 se não pertencer).
  */
 @Service
 public class TransacaoService {
@@ -33,7 +33,7 @@ public class TransacaoService {
                     t.getStatus(),
                     t.getValor(),
                     t.getOcorridaEm(),
-                    t.getDetalhes()))
+                    ("LEGADO".equals(t.getOrigem()) ? "[LEGADO] " : "") + t.getDetalhes()))
         .toList();
   }
 
@@ -53,7 +53,7 @@ public class TransacaoService {
         t.getStatus(),
         t.getValor(),
         t.getOcorridaEm(),
-        t.getDetalhes());
+        ("LEGADO".equals(t.getOrigem()) ? "[LEGADO] " : "") + t.getDetalhes());
   }
 
   private void garantir(Long id) {

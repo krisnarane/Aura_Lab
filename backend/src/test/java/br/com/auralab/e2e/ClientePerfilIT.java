@@ -43,6 +43,15 @@ class ClientePerfilIT extends PostgresTest {
     driver.manage().deleteAllCookies();
     driver.manage().window().setSize(new Dimension(1440, 1200));
     driver.get("http://localhost:" + port + "/");
+    // Aguarda a vitrine terminar os fetches assíncronos antes de limpar o storage:
+    // renderizarVendasApi regrava a chave do cliente selecionado quando o fetch resolve.
+    new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
+        .until(
+            org.openqa.selenium.support.ui.ExpectedConditions.or(
+                org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
+                    org.openqa.selenium.By.cssSelector("[data-testid='ir-carrinho']")),
+                org.openqa.selenium.support.ui.ExpectedConditions.visibilityOfElementLocated(
+                    org.openqa.selenium.By.cssSelector("[data-entrar-cliente]"))));
     ((org.openqa.selenium.JavascriptExecutor) driver)
         .executeScript("localStorage.clear();sessionStorage.clear();");
     driver.get("http://localhost:" + port + "/perfil/dados");
@@ -66,6 +75,8 @@ class ClientePerfilIT extends PostgresTest {
   void RF0022_RNF0012_perfilEscolheClienteAtivoEEditaDados() {
     assertThat(page.texto()).contains("Marina Costa").doesNotContain("Cliente Inativo");
     page.selecionar(1);
+    assertThat(page.texto())
+        .contains("Dados", "Segurança", "Endereços", "Cartões", "Pedidos", "Cupons");
     String codigo = jdbc.queryForObject("select codigo from cliente where id=1", String.class);
 
     var formulario = page.formulario("form-cliente");
@@ -87,14 +98,16 @@ class ClientePerfilIT extends PostgresTest {
   void RF0028_RNF0033_perfilAlteraSenhaSemExporHash() {
     page.selecionar(1);
     page.abrir("/perfil/seguranca", "form-senha");
-    String hashAntes = jdbc.queryForObject("select senha_hash from cliente where id=1", String.class);
+    String hashAntes =
+        jdbc.queryForObject("select senha_hash from cliente where id=1", String.class);
 
     page.formulario("form-senha")
         .campo("novaSenha", "NovaSenha@123")
         .campo("confirmacaoSenha", "NovaSenha@123")
         .enviar();
 
-    String hashDepois = jdbc.queryForObject("select senha_hash from cliente where id=1", String.class);
+    String hashDepois =
+        jdbc.queryForObject("select senha_hash from cliente where id=1", String.class);
     assertThat(hashDepois).isNotEqualTo(hashAntes);
     assertThat(new BCryptPasswordEncoder().matches("NovaSenha@123", hashDepois)).isTrue();
     assertThat(page.texto()).doesNotContain(hashDepois, "NovaSenha@123");
@@ -121,7 +134,8 @@ class ClientePerfilIT extends PostgresTest {
   void RF0028_RNF0031_RNF0032_perfilRecusaSenhaFracaOuDiferente() {
     page.selecionar(1);
     page.abrir("/perfil/seguranca", "form-senha");
-    String hashAntes = jdbc.queryForObject("select senha_hash from cliente where id=1", String.class);
+    String hashAntes =
+        jdbc.queryForObject("select senha_hash from cliente where id=1", String.class);
     var formulario = page.formulario("form-senha");
     formulario.campo("novaSenha", "fraca").campo("confirmacaoSenha", "diferente").enviar();
     formulario.erro();
@@ -154,13 +168,15 @@ class ClientePerfilIT extends PostgresTest {
     page.aguardarTexto("Trabalho");
 
     Long enderecoId =
-        jdbc.queryForObject("select id from endereco where cliente_id=1 and apelido='Trabalho'", Long.class);
+        jdbc.queryForObject(
+            "select id from endereco where cliente_id=1 and apelido='Trabalho'", Long.class);
     page.abrir("/perfil/enderecos?edit=" + enderecoId, "form-endereco");
     page.formulario("form-endereco").campo("endereco_complemento", "Sala 5").enviar();
     page.aguardarTexto("Sala 5");
 
     assertThat(
-            jdbc.queryForObject("select complemento from endereco where id=?", String.class, enderecoId))
+            jdbc.queryForObject(
+                "select complemento from endereco where id=?", String.class, enderecoId))
         .isEqualTo("Sala 5");
   }
 

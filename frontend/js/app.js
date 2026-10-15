@@ -64,8 +64,12 @@ import { inicializarConsultoraAura } from "./consultora-aura.js";
 import { inicializarAnalytics } from "./analytics.js";
 import { ehRotaClientesAdmin, renderizarClientesAdmin } from "./admin-clientes.js";
 import { ehRotaProdutosAdmin, renderizarProdutosAdmin } from "./admin-produtos.js";
-import { ehRotaPerfilApi, renderizarPerfilApi } from "./perfil-api.js";
+import {
+  ehRotaPerfilApi,
+  renderizarPerfilApi,
+} from "./perfil-api.js?v=perfil-abas-20261005";
 import { ehRotaVendasApi, renderizarVendasApi } from "./vendas-api.js";
+import { ehRotaPedidosApi, renderizarPedidosApi } from "./pedidos-api.js";
 
 const raizAplicacao = document.querySelector("#app");
 
@@ -143,6 +147,10 @@ function renderizar() {
   }
   if (ehRotaProdutosAdmin()) {
     renderizarProdutosAdmin(raizAplicacao, navegar, exibirToast);
+    return;
+  }
+  if (ehRotaPedidosApi()) {
+    renderizarPedidosApi(raizAplicacao, navegar, exibirToast);
     return;
   }
   if (ehRotaPerfilApi()) {

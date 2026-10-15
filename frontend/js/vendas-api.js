@@ -33,6 +33,7 @@ export const ehRotaVendasApi = () =>
   location.pathname.startsWith("/loja");
 
 let versao = 0;
+let consultaCarrinho;
 const lerClienteId = () => localStorage.getItem(CHAVE_CLIENTE);
 const definirCliente = (id, nome) => {
   localStorage.setItem(CHAVE_CLIENTE, String(id));
@@ -90,14 +91,14 @@ const paginaCatalogo = (nome, produtos, totalItens) =>
       ? produtos
           .map(
             (p, indice) =>
-              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}"><article class="aura-card" data-testid="produto-${p.id}"><div class="product-art" data-cor-produto="${["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4]}"><span class="product-mark">aura</span></div><div class="card-body"><small>${e(p.marca)}</small><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p class="availability">${p.estoque < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoque}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
+              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}"><article class="aura-card" data-testid="produto-${p.id}"><div class="product-art" data-cor-produto="${["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4]}"><span class="product-mark">aura</span></div><div class="card-body"><small>${e(p.marca)}</small><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p class="availability">${p.estoqueDisponivel < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
           )
           .join("")
       : '<div class="panel">Nenhum produto disponível no momento.</div>'
   }</div></section></div></div></main>${footer()}`;
 
 const paginaProduto = (nome, p, totalItens) =>
-  `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container"><a href="/" data-loja-link class="back">← Produtos</a><div class="row g-5 mt-1 align-items-center"><div class="col-lg-6"><div class="detail-art" data-cor-produto="#d7a3ae"><span class="product-mark">aura</span></div></div><div class="col-lg-6"><small>${e(p.marca)}</small><h1>${e(p.nome)}</h1><h3>${moeda(p.preco)}</h3><p>Código ${e(p.codigo)} · ${p.estoque} unidade(s) disponíveis.</p><div class="chips"><span>${p.estoque > 0 ? "Disponível" : "Esgotado"}</span></div><div class="product-buy"><label for="product-quantity">Quantidade</label><input id="product-quantity" class="form-control" type="number" min="1" max="${p.estoque}" value="1" data-testid="qtd-${p.id}"><button class="btn aura-btn" data-add="${p.id}" data-testid="add-${p.id}" ${p.estoque > 0 ? "" : "disabled"}>Adicionar à sacola</button></div></div></div></div></main>${footer()}`;
+  `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container"><a href="/" data-loja-link class="back">← Produtos</a><div class="row g-5 mt-1 align-items-center"><div class="col-lg-6"><div class="detail-art" data-cor-produto="#d7a3ae"><span class="product-mark">aura</span></div></div><div class="col-lg-6"><small>${e(p.marca)}</small><h1>${e(p.nome)}</h1><h3>${moeda(p.preco)}</h3><p>Código ${e(p.codigo)} · ${p.estoqueDisponivel} unidade(s) disponíveis.</p><div class="chips"><span>${p.estoqueDisponivel > 0 ? "Disponível" : "Esgotado"}</span></div><div class="product-buy"><label for="product-quantity">Quantidade</label><input id="product-quantity" class="form-control" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}"><button class="btn aura-btn" data-add="${p.id}" data-testid="add-${p.id}" ${p.estoqueDisponivel > 0 ? "" : "disabled"}>Adicionar à sacola</button></div></div></div></div></main>${footer()}`;
 
 // ---- carrinho ----
 const paginaCarrinho = (nome, carrinho) => {
@@ -123,7 +124,7 @@ const paginaCarrinho = (nome, carrinho) => {
   return layout(
     nome,
     "Seu ritual está quase pronto.",
-    `${
+    `${carrinho.venceEm ? `<div class="alert-soft" data-testid="prazo-reserva">Reserva até ${e(new Date(carrinho.venceEm).toLocaleString("pt-BR"))}. Prazo: ${carrinho.prazoMinutos} minutos após a última inclusão.</div>` : ""}${(carrinho.avisos || []).map(n => `<p class="alert-soft" data-testid="aviso-reserva">${e(n.mensagem)}</p>`).join("")}${(carrinho.retirados || []).filter(r => !r.readicionado).map(r => `<div class="alert alert-warning" data-testid="item-retirado">${e(r.produtoNome)} × ${r.quantidade} · ${e(r.motivo)} · prazo ${r.prazoMinutos} minutos. Faça uma nova inclusão para reservar novamente.</div>`).join("")}${
       itens.length
         ? `<div class="row g-4"><section class="col-lg-8 panel">${linhas}</section><aside class="col-lg-4"><div class="panel summary"><h3>Resumo</h3><p>Produtos <b data-testid="carrinho-subtotal">${moeda(
             carrinho.subtotal,
@@ -170,9 +171,9 @@ const paginaCheckout = (
     ? cupons
         .map(
           (c) =>
-            `<label class="form-check"><input class="form-check-input" type="checkbox" name="cupomTroca" value="${c.id}" data-testid="cupom-${c.id}"> ${e(
+            `<label class="choice-card coupon-choice"><input type="checkbox" name="cupomTroca" value="${c.id}" data-testid="cupom-${c.id}"><span><b>${e(
               c.codigo,
-            )} — crédito de ${moeda(c.valor)}</label>`,
+            )}</b><small>Crédito disponível: ${moeda(c.valor)}</small></span></label>`,
         )
         .join("")
     : '<p class="muted small">Nenhum cupom de troca disponível.</p>';
@@ -180,42 +181,39 @@ const paginaCheckout = (
     ? cartoes
         .map(
           (x) =>
-            `<div class="d-flex gap-2 align-items-center mb-2"><span style="min-width:220px">${e(
-              x.bandeira,
-            )} final ${e(
+            `<label class="payment-card"><span><b>${e(x.bandeira)} final ${e(
               x.ultimosQuatro,
-            )}</span><input class="form-control" style="max-width:140px" type="number" step="0.01" min="0" value="0" name="valorCartao_${x.id}" data-testid="valor-cartao-${x.id}" aria-label="Valor no cartão"></div>`,
+            )}</b><small>${e(x.titular)}${x.preferencial ? " · Preferencial" : ""}</small></span><input class="form-control" type="number" step="0.01" min="0" value="0" name="valorCartao_${x.id}" data-testid="valor-cartao-${x.id}" aria-label="Valor no cartão ${e(x.bandeira)} final ${e(x.ultimosQuatro)}" placeholder="R$ 0,00"></label>`,
         )
         .join("")
     : '<p class="muted small">Nenhum cartão salvo. Use um novo cartão abaixo.</p>';
   return layout(
     nome,
-    "Onde você quer receber e como deseja pagar?",
-    `<ol class="checkout-steps"><li class="active"><span>1</span>Endereço</li><li class="active"><span>2</span>Pagamento</li><li><span>3</span>Confirmação</li></ol><div class="row g-4"><section class="col-lg-8"><form id="loja-checkout-form" data-testid="form-checkout" class="panel form-stack">
+    "Finalize sua compra com tranquilidade.",
+    `<ol class="checkout-steps"><li class="active"><span>1</span>Entrega</li><li class="active"><span>2</span>Pagamento</li><li><span>3</span>Confirmação</li></ol><div class="row g-4"><section class="col-lg-8"><form id="loja-checkout-form" data-testid="form-checkout" class="panel checkout-form form-stack">
       <h2>Endereço de entrega</h2>
+      <p class="muted small">Escolha um endereço salvo ou informe um novo para esta compra.</p>
       <div class="choice-grid">${opcoesEndereco}<label class="choice-card"><input type="radio" name="enderecoId" value="novo" data-testid="endereco-novo" ${
         enderecos.length ? "" : "checked"
-      }><span><b>Cadastrar novo endereço</b></span></label></div>
-      <div class="new-address"><h3 class="h6">Novo endereço</h3>${camposEndereco(
+      }><span><b>Usar novo endereço</b><small>Preencha os dados obrigatórios abaixo.</small></span></label></div>
+      <div class="new-address-fields ${enderecos.length ? "hidden-section" : ""}" data-novo-endereco><h3>Novo endereço</h3>${camposEndereco(
         {},
         "endereco_",
       )}<label class="form-check"><input class="form-check-input" type="checkbox" name="incorporarEndereco" data-testid="incorporar-endereco"> Salvar este endereço no meu perfil</label></div>
       <hr>
       <h2>Pagamento</h2>
-      <label>Cupom promocional (opcional)<input class="form-control" name="cupomPromocional" data-testid="cupom-promocional" placeholder="Código do cupom"></label>
-      <div><h3 class="h6">Cupons de troca</h3>${opcoesCupom}</div>
-      <div><h3 class="h6">Cartões de crédito</h3>${linhasCartoes}</div>
-      <details class="mb-2"><summary data-testid="novo-cartao">Adicionar novo cartão</summary><div class="row g-2 mt-1"><div class="col-md-6"><label>Número<input class="form-control" name="cartao_numero" inputmode="numeric" data-testid="cartao-numero"></label></div><div class="col-md-6"><label>Nome impresso<input class="form-control" name="cartao_titular" data-testid="cartao-titular"></label></div><div class="col-md-4"><label>Bandeira<select class="form-select" name="cartao_bandeiraId" data-testid="cartao-bandeira">${bandeiras
+      <label>Cupom promocional <small>(opcional)</small><div class="input-group"><input class="form-control" name="cupomPromocional" data-testid="cupom-promocional" placeholder="Ex.: AURA10"><button type="button" class="btn btn-outline-secondary" data-calcular>Aplicar</button></div></label>
+      <p class="muted small">Use no máximo um cupom promocional. Cupons de troca entram como crédito no pagamento.</p>
+      <div><h3>Cupons de troca</h3><div class="choice-grid">${opcoesCupom}</div></div>
+      <div class="section-heading"><div><h3>Cartões de crédito</h3><p class="muted small">Informe o valor que será cobrado em cada cartão.</p></div></div>${linhasCartoes}
+      <details class="checkout-new-card"><summary data-testid="novo-cartao">Adicionar novo cartão</summary><div class="row g-3 mt-2"><div class="col-md-6"><label>Número<input class="form-control" name="cartao_numero" inputmode="numeric" data-testid="cartao-numero"></label></div><div class="col-md-6"><label>Nome impresso<input class="form-control" name="cartao_titular" data-testid="cartao-titular"></label></div><div class="col-md-4"><label>Bandeira<select class="form-select" name="cartao_bandeiraId" data-testid="cartao-bandeira">${bandeiras
         .map((b) => `<option value="${b.id}">${e(b.nome)}</option>`)
         .join(
           "",
         )}</select></label></div><div class="col-md-4"><label>CVV<input class="form-control" name="cartao_codigoSeguranca" inputmode="numeric" maxlength="4" data-testid="cartao-cvv"></label></div><div class="col-md-4"><label>Valor neste cartão<input class="form-control" type="number" step="0.01" min="0" value="0" name="valorCartaoNovo" data-testid="valor-cartao-novo"></label></div><div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" name="incorporarCartao" data-testid="incorporar-cartao"> Salvar este cartão no meu perfil</label></div></div></details>
-      <hr>
-      <div class="section-heading"><div><h3>Resumo</h3><div data-testid="resumo">${linhaResumo(
-        resumo,
-      )}</div></div><button type="button" class="btn btn-outline-secondary" data-calcular data-testid="calcular-resumo">Calcular resumo</button></div>
+      <div class="checkout-actions"><button type="button" class="btn btn-outline-secondary" data-calcular data-testid="calcular-resumo">Recalcular resumo</button>
       <button type="submit" class="btn aura-btn" data-testid="finalizar-compra">Finalizar compra</button>
-    </form></section><aside class="col-lg-4"><div class="panel summary payment-summary"><h3>Resumo da compra</h3><div data-testid="resumo-lateral">${linhaResumo(resumo)}</div><p class="muted small">O pedido será registrado como EM PROCESSAMENTO.</p></div></aside></div>`,
+      </div></form></section><aside class="col-lg-4"><div class="panel summary payment-summary"><h3>Resumo da compra</h3><div data-testid="resumo-lateral">${linhaResumo(resumo)}</div><p class="muted small">O pedido será registrado com status <b>EM PROCESSAMENTO</b>.</p></div></aside></div>`,
     totalItens,
     "Checkout",
   );
@@ -226,11 +224,11 @@ const paginaConfirmacao = (nome, pedido) =>
   layout(
     nome,
     "Obrigada pela sua compra.",
-    `<div class="panel confirmation" data-testid="pedido-confirmado"><span class="confirmation-mark">✓</span><div class="section-heading"><div><span class="eyebrow">Pedido ${e(
+    `<div class="panel confirmation" data-testid="pedido-confirmado"><span class="confirmation-mark">✓</span><div class="confirmation-heading"><span class="eyebrow">Pedido ${e(
       pedido.codigo,
     )}</span><h2>Status: <span data-testid="pedido-status">${e(
       pedido.status.replace("_", " "),
-    )}</span></h2></div></div><ul class="list-unstyled"><li>Subtotal: ${moeda(
+    )}</span></h2></div><ul class="list-unstyled"><li>Subtotal: ${moeda(
       pedido.subtotal,
     )}</li><li>Desconto: ${moeda(pedido.desconto)}</li><li>Frete: ${moeda(
       pedido.frete,
@@ -357,6 +355,7 @@ function ligarAdicao(raiz, navegar, toast, clienteId) {
 }
 
 export async function renderizarVendasApi(raiz, navegar, toast) {
+  clearTimeout(consultaCarrinho);
   const v = ++versao;
   const rota = location.href;
   const id = lerClienteId();
@@ -418,7 +417,7 @@ export async function renderizarVendasApi(raiz, navegar, toast) {
         vendasService.carrinho(id),
       ]);
       if (rota !== location.href || v !== versao) return;
-      const disponiveis = produtos.filter((p) => p.visivel && p.estoque > 0);
+      const disponiveis = produtos.filter((p) => p.visivel && p.estoqueDisponivel > 0);
       raiz.innerHTML = paginaCatalogo(nome, disponiveis, carrinho.totalUnidades);
       ligarLinks(navegar);
       ligarFiltroCatalogo(raiz);
@@ -437,6 +436,17 @@ export async function renderizarVendasApi(raiz, navegar, toast) {
       const carrinho = await vendasService.carrinho(id);
       if (rota !== location.href || v !== versao) return;
       raiz.innerHTML = paginaCarrinho(nome, carrinho);
+      const assinatura = JSON.stringify(carrinho);
+      const sincronizar = async () => {
+        if (location.href !== rota || v !== versao) return;
+        try {
+          const novo = await vendasService.carrinho(id);
+          if (location.href !== rota || v !== versao) return;
+          if (JSON.stringify(novo) !== assinatura) { renderizarVendasApi(raiz, navegar, toast); return; }
+        } catch (err) { toast(err.message, "error"); }
+        consultaCarrinho = setTimeout(sincronizar, 5000);
+      };
+      consultaCarrinho = setTimeout(sincronizar, 5000);
       ligarLinks(navegar);
       raiz.querySelectorAll("[data-atualizar]").forEach(
         (b) =>
@@ -478,6 +488,17 @@ export async function renderizarVendasApi(raiz, navegar, toast) {
       if (rota !== location.href || v !== versao) return;
       if (!carrinho.itens || !carrinho.itens.length) {
         raiz.innerHTML = paginaCarrinho(nome, carrinho);
+      const assinatura = JSON.stringify(carrinho);
+      const sincronizar = async () => {
+        if (location.href !== rota || v !== versao) return;
+        try {
+          const novo = await vendasService.carrinho(id);
+          if (location.href !== rota || v !== versao) return;
+          if (JSON.stringify(novo) !== assinatura) { renderizarVendasApi(raiz, navegar, toast); return; }
+        } catch (err) { toast(err.message, "error"); }
+        consultaCarrinho = setTimeout(sincronizar, 5000);
+      };
+      consultaCarrinho = setTimeout(sincronizar, 5000);
         ligarLinks(navegar);
         return;
       }
@@ -568,25 +589,39 @@ function estadoSelecionado(form, cliente) {
 function ligarCheckout(raiz, navegar, toast, id, cliente) {
   const form = raiz.querySelector("#loja-checkout-form");
   const promoInput = form.querySelector("[name='cupomPromocional']");
+  const camposNovoEndereco = form.querySelector("[data-novo-endereco]");
+  const atualizarNovoEndereco = () => {
+    const novo = form.querySelector("[name='enderecoId']:checked")?.value === "novo";
+    camposNovoEndereco?.classList.toggle("hidden-section", !novo);
+  };
+  form.querySelectorAll("[name='enderecoId']").forEach((campo) =>
+    campo.addEventListener("change", atualizarNovoEndereco),
+  );
+  atualizarNovoEndereco();
 
-  raiz.querySelector("[data-calcular]")?.addEventListener("click", async (ev) => {
-    const botao = ev.currentTarget;
-    const base = estadoSelecionado(form, cliente);
-    const promo = (promoInput.value || "").trim();
-    await acao(
-      botao,
-      async () => {
-        const r = await vendasService.resumo(id, promo ? { ...base, cupomPromocional: promo } : base);
-        raiz.querySelector("[data-testid='resumo']").innerHTML = linhaResumo(r);
-        raiz.querySelector("[data-testid='resumo-lateral']").innerHTML = linhaResumo(r);
-      },
-      toast,
-      () => {
-        botao.disabled = false;
-      },
-    );
-  });
+  raiz.querySelectorAll("[data-calcular]").forEach((controle) =>
+    controle.addEventListener("click", async (ev) => {
+      const botao = ev.currentTarget;
+      const base = estadoSelecionado(form, cliente);
+      const promo = (promoInput.value || "").trim();
+      await acao(
+        botao,
+        async () => {
+          const r = await vendasService.resumo(
+            id,
+            promo ? { ...base, cupomPromocional: promo } : base,
+          );
+          raiz.querySelector("[data-testid='resumo-lateral']").innerHTML = linhaResumo(r);
+        },
+        toast,
+        () => {
+          botao.disabled = false;
+        },
+      );
+    }),
+  );
 
+  const chaveCheckout = crypto.randomUUID();
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     if (form.dataset.enviando) return;
@@ -595,7 +630,7 @@ function ligarCheckout(raiz, navegar, toast, id, cliente) {
     botao.disabled = true;
     form.querySelectorAll("[data-form-error]").forEach((x) => x.remove());
     try {
-      const pedido = await vendasService.finalizar(id, montarPayload(form, cliente));
+      const pedido = await vendasService.finalizar(id, montarPayload(form, cliente), chaveCheckout);
       toast("Pedido finalizado com status EM PROCESSAMENTO.");
       navegar(`/checkout/confirmacao/${pedido.id}`);
     } catch (err) {

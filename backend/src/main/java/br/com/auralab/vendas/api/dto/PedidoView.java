@@ -17,4 +17,11 @@ public record PedidoView(
     List<ItemPedidoView> itens,
     List<PagamentoParteView> pagamentos,
     CupomView cupomTrocaGerado,
-    OffsetDateTime criadoEm) {}
+    OffsetDateTime criadoEm,
+    Long clienteId,
+    boolean legado,
+    String pagamentoStatus,
+    String motivoResultado,
+    OffsetDateTime venceEm,
+    List<String> acoesPermitidas,
+    List<HistoricoVendaView> historico) {}

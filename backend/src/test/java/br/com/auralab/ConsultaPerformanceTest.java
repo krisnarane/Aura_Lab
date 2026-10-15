@@ -59,7 +59,12 @@ class ConsultaPerformanceTest extends PostgresTest {
             "/clientes/1/carrinho",
             "/clientes/1/pedidos",
             "/clientes/1/pedidos/" + pedidoId,
-            "/clientes/1/cupons")) max = Math.max(max, medir(caminho, linhas));
+            "/clientes/1/cupons",
+            "/admin/pedidos",
+            "/admin/pedidos/" + pedidoId,
+            "/admin/trocas",
+            "/clientes/1/trocas",
+            "/clientes/1/notificacoes")) max = Math.max(max, medir(caminho, linhas));
     gravar("performance-vendas.csv", linhas);
     assertThat(max)
         .as("Maior tempo HTTP após aquecimento, 200 pedidos e 100 cupons")
@@ -82,7 +87,7 @@ class ConsultaPerformanceTest extends PostgresTest {
             .GET()
             .build();
     for (int i = 0; i < 5; i++)
-      assertThat(http.send(request, HttpResponse.BodyHandlers.discarding()).statusCode())
+      assertThat(http.send(request, HttpResponse.BodyHandlers.ofByteArray()).statusCode())
           .isEqualTo(200);
     double max = 0;
     for (int i = 0; i < 30; i++) {

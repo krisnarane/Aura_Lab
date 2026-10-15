@@ -56,3 +56,10 @@ Hoje `auditoria_cliente.cliente_id` é obrigatório. Na proposta geral, o contex
 7. Testar banco novo e atualização, rollback, concorrência e Selenium antes de retirar compatibilidade.
 
 Analytics é serviço de consulta/exportação, sem necessidade de entidade artificial. BeautyAdvisor/GatewayPagamento são interfaces futuras, não tabelas. A figura 23 documenta testes atuais, não cobertura aprovada dos módulos futuros.
+
+
+## Revisão UC05 implementada em 12 outubro 2026
+
+Para vendas, aplicam se `docs/ai/REQUISITOS-VENDAS.md`, a revisão UC05 e o complemento DVP em `docs/revisao-vendas/`. As figuras 20/21 agora mostram estados implementados, substituindo os estados demonstrativos anteriores. EM_TRANSPORTE e confirmação de entrega pelo administrador seguem o DRS. Troca parcial preserva ENTREGUE; integral acompanha EM_TROCA → TROCA_AUTORIZADA → TROCADO. O recebimento gera cupom, sem processamento posterior separado. Decisões interpretativas permanecem sujeitas à confirmação acadêmica.
+
+V9 cria o ciclo persistido, marca pedidos preexistentes somente para consulta e conserva cupons existentes. `TransacaoCliente` passa a projetar eventos reais com origem única, conservando o legado identificado. Ranking considera pedidos reais com pagamento APROVADO e os pedidos pagos legados; nunca soma eventos de pagamento ou cupom como outra compra.

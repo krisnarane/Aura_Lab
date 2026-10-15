@@ -9,14 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service de produtos: cadastro e consulta mínimos para suportar o ciclo ativar/inativar
- * com motivo. Escrita e auditoria dividem a mesma transação (RNF0012); tentativa inválida
- * não registra auditoria.
+ * Service de produtos: cadastro e consulta mínimos para suportar o ciclo ativar/inativar com
+ * motivo. Escrita e auditoria dividem a mesma transação (RNF0012); tentativa inválida não registra
+ * auditoria.
  *
- * <p>Requisitos: RF0011 (cadastro parcial) e RNF0021 (código PRD-), RF0015 (consulta
- * parcial), RF0012/RN0015 (inativação) e RF0016/RN0017 (ativação), ambos com categoria e
- * justificativa obrigatórias. Alteração de cadastro (RF0014) ainda não faz parte desta
- * entrega.
+ * <p>Requisitos: RF0011 (cadastro parcial) e RNF0021 (código PRD-), RF0015 (consulta parcial),
+ * RF0012/RN0015 (inativação) e RF0016/RN0017 (ativação), ambos com categoria e justificativa
+ * obrigatórias. Alteração de cadastro (RF0014) ainda não faz parte desta entrega.
  */
 @Service
 public class ProdutoService {
@@ -25,28 +24,37 @@ public class ProdutoService {
   private final CategoriaInativacaoProdutoRepository categoriasInativacao;
   private final CategoriaAtivacaoProdutoRepository categoriasAtivacao;
   private final AuditoriaProdutoService auditoria;
+  private final br.com.auralab.vendas.repository.CicloVendaRepository ciclo;
+  private final java.time.Clock clock;
   @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager em;
 
   public ProdutoService(
       ProdutoRepository r,
       CategoriaInativacaoProdutoRepository ci,
       CategoriaAtivacaoProdutoRepository ca,
-      AuditoriaProdutoService a) {
+      AuditoriaProdutoService a,
+      br.com.auralab.vendas.repository.CicloVendaRepository ciclo,
+      java.time.Clock clock) {
     repo = r;
     categoriasInativacao = ci;
     categoriasAtivacao = ca;
     auditoria = a;
+    this.ciclo = ciclo;
+    this.clock = clock;
   }
 
   /** RF0015: código exato, nome parcial (`%`/`_` literais) e situação, combináveis. */
   @Transactional(readOnly = true)
   public List<ProdutoView> listar(String codigo, String nome, Boolean ativo) {
+    var reservadas = ciclo.reservasPorProduto(java.time.OffsetDateTime.now(clock));
     String trecho =
-        nome == null || nome.isBlank() ? null : "%" + escaparLike(nome.trim().toLowerCase(Locale.ROOT)) + "%";
-    return repo.filtrar(
-            codigo == null || codigo.isBlank() ? null : codigo.trim(), trecho, ativo)
+        nome == null || nome.isBlank()
+            ? null
+            : "%" + escaparLike(nome.trim().toLowerCase(Locale.ROOT)) + "%";
+    return repo
+        .filtrar(codigo == null || codigo.isBlank() ? null : codigo.trim(), trecho, ativo)
         .stream()
-        .map(this::view)
+        .map(p -> view(p, reservadas.getOrDefault(p.getId(), 0)))
         .toList();
   }
 
@@ -58,8 +66,7 @@ public class ProdutoService {
   @Transactional
   public ProdutoView cadastrar(ProdutoInput in) {
     Produto p =
-        new Produto(
-            in.nome().trim(), in.marca().trim(), in.preco(), in.estoque(), in.visivel());
+        new Produto(in.nome().trim(), in.marca().trim(), in.preco(), in.estoque(), in.visivel());
     repo.saveAndFlush(p);
     em.refresh(p);
     auditoria.registrar(
@@ -67,7 +74,10 @@ public class ProdutoService {
     return view(p);
   }
 
-  /** RF0012/RN0015: a categoria precisa existir em categoria_inativacao_produto; inativar também oculta (visivel = false). */
+  /**
+   * RF0012/RN0015: a categoria precisa existir em categoria_inativacao_produto; inativar também
+   * oculta (visivel = false).
+   */
   @Transactional
   public ProdutoView inativar(Long id, MotivoStatusProdutoInput in) {
     Produto p = repo.buscarParaAtualizacao(id).orElseThrow(this::naoEncontrado);
@@ -88,7 +98,10 @@ public class ProdutoService {
     return view(p);
   }
 
-  /** RF0016/RN0017: categoria precisa existir em categoria_ativacao_produto; ativar não republica automaticamente. */
+  /**
+   * RF0016/RN0017: categoria precisa existir em categoria_ativacao_produto; ativar não republica
+   * automaticamente.
+   */
   @Transactional
   public ProdutoView ativar(Long id, MotivoStatusProdutoInput in) {
     Produto p = repo.buscarParaAtualizacao(id).orElseThrow(this::naoEncontrado);
@@ -142,6 +155,12 @@ public class ProdutoService {
   }
 
   private ProdutoView view(Produto p) {
+    return view(
+        p,
+        ciclo.reservasPorProduto(java.time.OffsetDateTime.now(clock)).getOrDefault(p.getId(), 0));
+  }
+
+  private ProdutoView view(Produto p, int reservadas) {
     return new ProdutoView(
         p.getId(),
         p.getCodigo(),
@@ -156,6 +175,7 @@ public class ProdutoService {
         p.getInativadoEm(),
         p.getCategoriaAtivacao(),
         p.getJustificativaAtivacao(),
-        p.getAtivadoEm());
+        p.getAtivadoEm(),
+        Math.max(0, p.getEstoque() - reservadas));
   }
 }

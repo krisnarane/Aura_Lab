@@ -57,7 +57,7 @@ Produto 1 ── 0..* AuditoriaProduto
 - `Cliente` contém dados pessoais, `senhaHash`, situação e timestamps. O ranking é derivado.
 - `Endereco` pertence ao cliente e contém apelido, composição postal, finalidades, preferência e situação.
 - `Cartao` pertence ao cliente, referencia `Bandeira` e guarda titular, últimos quatro dígitos, preferência e situação.
-- `TransacaoCliente` é demonstrativa e temporária.
+- `TransacaoCliente` é projeção persistida dos eventos reais, com origem LEGADO identificada.
 - `AuditoriaCliente` registra contexto do cliente, entidade, identificador, operação, instante, ator e snapshots JSON permitidos.
 - `Produto` contém nome, marca, preço, estoque, situação (`ativo`), visibilidade (`visivel`) e o último motivo de ativação e de inativação (categoria + justificativa + instante). Histórico completo fica em `AuditoriaProduto`; inativar força `visivel = false` e ativar não republica automaticamente.
 
@@ -78,6 +78,8 @@ O módulo de vendas reutiliza a auditoria de clientes (`AuditoriaService` → `a
 
 A API usa `/api/v1`, com endpoints de cliente, senha, endereços, cartões, transações e auditoria em `ClienteController`, e endpoints de produtos e motivos em `ProdutoController`. A associação de recursos filhos ao cliente da URL deve ser sempre validada.
 
+No resumo do checkout (RF0034), `VendaService.resumo` exige endereço ativo com finalidade de entrega do cliente ou a UF de um novo endereço para estimativa. Ausência de endereço/UF retorna `ENDERECO_OBRIGATORIO`; endereço do perfil inativo ou sem finalidade de entrega retorna `ENDERECO_ENTREGA_INVALIDO`. A finalização continua exigindo endereço completo (RF0035/RN0023).
+
 | Recurso | Endpoints atuais |
 | --- | --- |
 | Cliente | `POST /clientes`, `GET /clientes`, `GET /clientes/{id}`, `PUT /clientes/{id}`, `PATCH /clientes/{id}/inativacao` |
@@ -91,3 +93,12 @@ A API usa `/api/v1`, com endpoints de cliente, senha, endereços, cartões, tran
 | Pedido/Cupom | `POST /clientes/{id}/pedidos` (finalizar), `GET /clientes/{id}/pedidos`, `GET /clientes/{id}/pedidos/{pedidoId}`, `GET /clientes/{id}/cupons` |
 
 Escrita e auditoria devem permanecer na mesma transação. Senha, hash, PAN e CVV não podem aparecer em logs, respostas ou snapshots. Mudanças de cartão preferencial usam bloqueio do cliente e índice único parcial para evitar múltiplos preferenciais ativos.
+
+
+## Ciclo integrado de vendas V9
+
+`pedidos-api.js` reutiliza as rotas `/admin/pedidos`, `/admin/pedidos/:id`, `/admin/trocas` e `/perfil/pedidos/:id`. Facade `vendasService` e Adapter `vendasApi` usam `CicloVendaController`. `CicloPedidoService` coordena operadora simulada, estoque e aprovação; `TrocaService` coordena troca, crédito e reentrada; `ReservaEstoqueService` usa Clock injetável e `JobReservaVenda` para sincronizar/expirar reservas. Nenhum controller depende de repository.
+
+V9 acrescenta reservas, itens retirados, notificações, trocas/itens de troca, movimentações e identificação de legados. Restrições únicas impedem duplicação dos efeitos. Operações críticas usam advisory lock transacional PostgreSQL de ordem única (serialização global nesta etapa acadêmica). Alterações diretas de estoque fora da aplicação não adquirem esse lock; são reconciliadas pela sincronização. O histórico carrega metadados e cupons em lote. Reservas consultadas em leitura ou job podem escrever notificações e ajustes, por isso essas consultas possuem transação de escrita.
+
+Novos contratos: `GET /admin/pedidos`, `GET /admin/pedidos/{id}`, `POST /admin/pedidos/{id}/pagamento/validar`, `/despacho`, `/entrega`; `POST /clientes/{cliente}/pedidos/{pedido}/trocas`; `GET /clientes/{cliente}/trocas`, `/trocas/{id}`, `/notificacoes`; `GET /admin/trocas`; `POST /admin/trocas/{id}/autorizacao`, `/recebimento`. Checkout e solicitação aceitam Idempotency-Key. Erros mantêm `{codigo,mensagem,campos}`. Nenhum dado comercial é importado do localStorage.

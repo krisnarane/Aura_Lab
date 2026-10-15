@@ -13,23 +13,25 @@ skinparam NoteBackgroundColor #EDF5F2
 skinparam nodesep 30
 skinparam ranksep 40
 hide empty members
-title Figura 20 — Estados do pedido na solução alvo
-footer Arquitetura alvo — contém componentes futuros; não comprova implementação
-[*] --> EM_ABERTO : checkout válido / reservar recursos
-EM_ABERTO --> EM_PROCESSAMENTO : administrador inicia
-EM_PROCESSAMENTO --> PAGAMENTO_REALIZADO : pagamento aprovado\nconverter reservas em baixa
-PAGAMENTO_REALIZADO --> EM_TRANSITO : administrador despacha
-EM_TRANSITO --> ENTREGUE : cliente dono confirma recebimento
-EM_ABERTO --> CANCELADO : cliente cancela / prazo expira
-EM_PROCESSAMENTO --> CANCELADO : recusa / cancelamento antes do pagamento\nou expiração
-ENTREGUE --> [*]
-CANCELADO --> [*]
-note right of CANCELADO
- Liberar reservas de estoque, créditos e uso promocional.
- Não efetuar baixa física.
-end note
+title Figura 20 — Estados do pedido conforme UC05
+footer Incremento integrado de vendas — decisões interpretativas sujeitas à validação do professor
+[*] --> EM_PROCESSAMENTO : cliente finaliza / preservar reservas
+EM_PROCESSAMENTO --> APROVADA : administrador valida todas as formas\nbaixar estoque e consumir créditos
+EM_PROCESSAMENTO --> REPROVADA : recusa ou falha / liberar recursos
+EM_PROCESSAMENTO --> REPROVADA : reserva expira / impedir aprovação tardia
+APROVADA --> EM_TRANSPORTE : administrador despacha
+EM_TRANSPORTE --> ENTREGUE : administrador confirma entrega
+ENTREGUE --> EM_TROCA : cliente solicita troca integral
+EM_TROCA --> TROCA_AUTORIZADA : administrador autoriza
+TROCA_AUTORIZADA --> TROCADO : administrador recebe / cupom e eventual reentrada
+REPROVADA --> [*]
+TROCADO --> [*]
 note right of ENTREGUE
- Trocas têm estado próprio por item e quantidade.
- O pedido original permanece ENTREGUE.
+ Troca parcial mantém a compra ENTREGUE.
+ Solicitação possui estados próprios.
+end note
+note right of REPROVADA
+ Expiração de pedido pendente é decisão do projeto.
+ Comunicação e validação com professor pendentes.
 end note
 @enduml

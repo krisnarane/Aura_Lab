@@ -174,6 +174,35 @@ Seletor base:
 
 ## 5. Evidências geradas
 
+### Casos do plano adicionados em 12/10/2026
+
+Todos os casos abaixo usam Selenium nas telas existentes, com PostgreSQL via Testcontainers.
+JDBC prepara a massa e consulta as pós-condições; as operações avaliadas são acionadas pelo navegador.
+
+| CT | Requisitos | Classe e método | Verificações |
+| --- | --- | --- | --- |
+| CT026 | RF0012, RN0015 | `ProdutosCrudIT#RF0012_RN0015_CT026_justificativaVaziaNaoInativa` | Categoria válida e justificativa vazia: erro no campo, produto e auditoria preservados |
+| CT032 | RF0031, RN0031 | `VendasLojaIT#RF0031_RN0031_CT032_produtoSemEstoqueNaoEntraNoCarrinho` | Vitrine carregada antes de esgotar o produto: tentativa real recusada; carrinho e auditoria preservados; detalhe mostra esgotado e botão desabilitado |
+| CT035 | RF0032 | `VendasLojaIT#RF0032_CT035_quantidadeZeroNaoAlteraCarrinho` | Quantidade zero recusada; item, quantidade anterior e auditoria preservados; remoção continua sendo ação própria |
+| CT038 | RF0033 | `VendasLojaIT#RF0033_CT038_carrinhoVazioNaoIniciaCompra` | Sacola vazia não oferece checkout; acesso direto à rota também não abre formulário nem cria pedido |
+| CT039 | RF0033, RN0031 | `VendasLojaIT#RF0033_RN0031_RN0032_CT039_itemEsgotadoNaoFinalizaCompra` | Estoque zerado após inclusão: remoção automática, notificação persistida e sacola vazia sem checkout; nenhum pedido inválido é criado. Auditoria registra a sincronização |
+| CT041 | RF0034 | `VendasLojaIT#RF0034_CT041_semEnderecoNaoCalculaFrete` | Cliente ativo sem endereço disponível para entrega: novo endereço em branco não permite recalcular frete nem finalizar; resumo, carrinho e endereços preservados |
+| CT042 | RF0034 | `VendasLojaIT#RF0034_CT042_recalculaFreteAoMudarEndereco` | Mesmo item, alternando SP → BA → SP e acionando Recalcular resumo: fretes 17/32/17 e totais 106,90/121,90/106,90; carrinho, endereços e auditoria preservados |
+| CT053 | RF0038 | `VendasLojaIT#RF0038_CT053_semEnderecoNaoFinalizaCompra` | Carrinho e cartão válidos; novo endereço em branco: erro, sem pedido/pagamentos/auditoria novos e sacola disponível |
+
+CT041 e CT042 são executados como **sistema / funcional** nesta automação Selenium, embora o plano inicial os classificasse como integração. O CT041 também tem apoio em `VendaApiTest#RF0034_CT041_resumoSemEnderecoNaoCalculaFrete`, para ausência de endereço/UF, e em `RF0034_resumoRecusaEnderecoInativoOuSemFinalidadeDeEntrega`.
+
+O resumo aceita endereço ativo de entrega do perfil ou UF de um endereço novo para estimativa. Sem essas informações, retorna `ENDERECO_OBRIGATORIO`; endereço do perfil inativo ou sem finalidade de entrega retorna `ENDERECO_ENTREGA_INVALIDO`. A compra exige o endereço completo. A fórmula de frete permanece uma decisão do projeto, sem atribuir valores novos ao DRS.
+
+```powershell
+cd backend
+.\mvnw.cmd test-compile failsafe:integration-test failsafe:verify "-Dit.test=ProdutosCrudIT#*CT026*,VendasLojaIT#*CT*" "-Dselenium.headless=true"
+```
+
+Para apresentação no Chrome visível, usar `-Dselenium.headless=false`. A situação de execução deve ser obtida dos relatórios atuais; a existência do método não comprova aprovação.
+
+Verificados em 12/10/2026: os oito CTs acima foram aprovados. A regressão dirigida aprovou 20 cenários Selenium de produtos/vendas e 26 cenários de API de vendas. Evidências dos oito casos: `backend/target/evidencias/casos-plano.html`. A primeira tentativa teve uma falha de criação de sessão Chrome em cenário antigo de produtos; o reteste completo dessa classe passou.
+
 | Artefato | Local |
 | --- | --- |
 | Matriz requisito → teste → resultado | `backend/target/evidencias/matriz.html` |
@@ -187,3 +216,19 @@ Observações:
 - Execuções isoladas com `failsafe` sobrescrevem os relatórios da mesma classe. Para a evidência consolidada, rode `.\testar-crud.ps1` ao final.
 - Cada cenário Selenium reinicia a massa de testes; os dados não aparecem na aplicação da porta 4200, que usa outro banco (Docker Compose).
 - Números históricos em `docs/ai/OPERACAO-E-TESTES.md` (63 cenários Selenium, 25 de apoio em 09/09/2026) são referência daquela execução; use sempre os relatórios gerados pela execução atual.
+
+
+## Casos adicionais do ciclo completo de vendas
+
+| Caso | Requisitos | Jornada Selenium nas telas existentes |
+| --- | --- | --- |
+| CT055 | RF0039, RF0040, RF0053, RN0028, RN0037–RN0040 | Compra → aprovação administrativa → despacho → entrega; banco confirma baixa única |
+| CT056 | RN0038, RN0028 | Recusa pela operadora simulada libera reserva sem baixa física |
+| CT057 | RN0044, RN0045, RNF0042 | Relógio controlado: aviso cinco minutos antes, expiração, produto/motivo/prazo visíveis e nova inclusão |
+| CT058 e CT059 | RF0041–RF0045, RF0054, RN0041–RN0043, RN0046 | Parcial/integral, autorização, notificação, recebimento com/sem reentrada e uso do crédito em outra compra |
+| CT060 | RN0032 | Sacola atualiza e remove automaticamente após alteração da disponibilidade |
+| CT061 | RN0036 | Compra R$50 e pares 20+35, 20+40 e 40+35; troco somente após aprovação |
+
+`CicloVendaApiTest` complementa os cenários com concorrência pela última unidade e pelo mesmo cupom, revalidação de cupom na aprovação, rollback da auditoria, idempotência e limites de troca. `MigrationPersistenceTest` verifica V8 → V9 mantendo pedido/cupom legados. `ConsultaPerformanceTest` mede também as novas consultas administrativas e notificações.
+
+Resultados só podem ser marcados como aprovados após consultar os relatórios da execução atual. As decisões sujeitas à validação do professor estão em `docs/ai/REQUISITOS-VENDAS.md`.

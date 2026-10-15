@@ -41,6 +41,9 @@ public class Cupom {
   @Column(nullable = false, length = 20)
   private String situacao = ATIVO;
 
+  @Column(name = "pedido_reserva_id")
+  private Long pedidoReservaId;
+
   private LocalDate validade;
 
   @Column(length = 120)
@@ -86,6 +89,27 @@ public class Cupom {
 
   public void utilizar() {
     this.situacao = UTILIZADO;
+    this.pedidoReservaId = null;
+  }
+
+  public void reservar(Long pedido) {
+    situacao = "RESERVADO";
+    pedidoReservaId = pedido;
+  }
+
+  public void liberar() {
+    situacao = ATIVO;
+    pedidoReservaId = null;
+  }
+
+  public boolean reservadoPara(Long pedido, LocalDate hoje) {
+    return "RESERVADO".equals(situacao)
+        && java.util.Objects.equals(pedidoReservaId, pedido)
+        && (validade == null || !validade.isBefore(hoje));
+  }
+
+  public void definirInstante(OffsetDateTime instante) {
+    criadoEm = instante;
   }
 
   public Long getId() {

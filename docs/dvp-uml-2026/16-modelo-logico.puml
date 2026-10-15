@@ -222,19 +222,24 @@ ativo
 entity "Troca" as troca {
 * id_troca
 --
-quantidade
+pedido_id
+cliente_id
+integral
 motivo
 status
-solicitada_em
-analisada_em
-justificativa_decisao
-transportadora
-rastreio
-enviada_em
+criada_em
+autorizada_em
 recebida_em
-apto_estoque
-processada_em
-valor_credito
+retornar_estoque
+cupom_id
+}
+entity "Item de troca" as item_troca {
+* id_item_troca
+--
+troca_id
+item_pedido_id
+quantidade
+valor_liquido
 }
 }
 package "Auditoria" as PAuditoria {
@@ -278,7 +283,7 @@ item_carrinho |o-[norank]-o{ reserva_estoque
 item_pedido |o-[norank]-o{ reserva_estoque
 estoque ||-[norank]-o{ movimentacao_estoque
 item_pedido |o-[norank]-o| movimentacao_estoque
-troca |o-[norank]-o| movimentacao_estoque
+item_troca |o-[norank]-o| movimentacao_estoque
 pedido ||-[norank]-|{ item_pedido
 produto ||-[norank]-o{ item_pedido
 pedido ||-[norank]-|| pagamento
@@ -287,7 +292,9 @@ cartao |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ parte_pagamento
 cupom |o-[norank]-o{ pedido
 cliente |o-[norank]-o{ cupom
-item_pedido ||-[norank]-o{ troca
+pedido ||-[norank]-o{ troca
+troca ||-[norank]-|{ item_troca
+item_pedido ||-[norank]-o{ item_troca
 troca |o-[norank]-o| cupom
 
 

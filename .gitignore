@@ -7,4 +7,6 @@ docs/*
 !docs/ai/**
 !docs/skills/
 !docs/skills/**
+!docs/revisao-vendas/
+!docs/revisao-vendas/*.docx
 backend/target/

@@ -36,7 +36,7 @@ rectangle "Aura Lab" {
   usecase "Usar créditos de troca" as Credito
   usecase "Distribuir saldo\nentre cartões" as Cartoes
   usecase "Validar total\nda composição" as Total
-  usecase "Criar pedido EM ABERTO\ne apresentar confirmação" as Pedido
+  usecase "Criar pedido EM PROCESSAMENTO\ne apresentar confirmação" as Pedido
 }
 Cliente -- Catalogo
 Cliente -- Aura
@@ -56,12 +56,12 @@ Cartoes ..> Composicao : <<extend>>\n[saldo restante > 0]
 Composicao ..> Total : <<include>>
 note bottom of Checkout
   Precondições: cliente ativo identificado e carrinho não vazio.
-  Pós-condição: pedido EM ABERTO, estoque e créditos reservados.
+  Pós-condição: pedido EM PROCESSAMENTO, estoque e créditos reservados.
   A confirmação do pagamento ocorre depois, no processamento.
 end note
 note bottom of Composicao
   Total = subtotal - desconto promocional + frete.
-  Créditos de troca + valores dos cartões = total.
+  Créditos integrais + cartões cobrem o total; excesso necessário gera troco na aprovação.
   Até um promocional; vários créditos e cartões.
   Total zero dispensa componentes de pagamento.
 end note

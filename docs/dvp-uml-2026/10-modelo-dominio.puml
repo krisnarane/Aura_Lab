@@ -185,17 +185,12 @@ class Cupom {
 }
 class Troca {
   - id: Long
-  - quantidade: Integer
   - motivo: String
   - status: StatusTroca
   - solicitadaEm: OffsetDateTime
   - analisadaEm: OffsetDateTime [0..1]
-  - justificativaDecisao: String [0..1]
-  - enviadaEm: OffsetDateTime [0..1]
+  - integral: Boolean
   - recebidaEm: OffsetDateTime [0..1]
-  - processadaEm: OffsetDateTime [0..1]
-  - transportadora: String
-  - rastreio: String
   - aptoEstoque: Boolean
   - valorCredito: BigDecimal
 }
@@ -251,18 +246,19 @@ enum TipoMovimentacao {
   REENTRADA
 }
 enum StatusPedido {
-  EM_ABERTO
-  EM_PROCESSAMENTO
-  PAGAMENTO_REALIZADO
-  EM_TRANSITO
-  ENTREGUE
-  CANCELADO
+ EM_PROCESSAMENTO
+ APROVADA
+ REPROVADA
+ EM_TRANSPORTE
+ ENTREGUE
+ EM_TROCA
+ TROCA_AUTORIZADA
+ TROCADO
 }
 enum StatusPagamento {
   PENDENTE
   APROVADO
   RECUSADO
-  CANCELADO
 }
 enum TipoPartePagamento {
   CARTAO
@@ -282,12 +278,9 @@ enum TipoDesconto {
   VALOR_FIXO
 }
 enum StatusTroca {
-  TROCA_SOLICITADA
-  TROCA_ACEITA
-  TROCA_NEGADA
-  ITEM_ENVIADO
-  ITEM_RECEBIDO
-  TROCA_PROCESSADA
+ EM_TROCA
+ TROCA_AUTORIZADA
+ TROCADO
 }
 
 Cliente "1" -- "1..*" Endereco : possui
@@ -314,9 +307,15 @@ PartePagamento "0..*" -- "0..1" Cartao : cartão salvo
 PartePagamento "0..*" -- "0..1" Cupom : crédito de troca
 Pedido "0..*" -- "0..1" Cupom : promocional
 Cliente "0..1" -- "0..*" Cupom : titular do crédito
-ItemPedido "1" -- "0..*" Troca
+class ItemTroca {
+ - quantidade: Integer
+ - valorLiquido: BigDecimal
+}
+Pedido "1" -- "0..*" Troca
+Troca "1" *-- "1..*" ItemTroca
+ItemPedido "1" -- "0..*" ItemTroca
 Troca "0..1" -- "0..1" Cupom : gera
-Troca "0..1" -- "0..1" MovimentacaoEstoque : reentrada
+ItemTroca "0..1" -- "0..1" MovimentacaoEstoque : reentrada
 ItemPedido "0..1" -- "0..1" MovimentacaoEstoque : baixa
 
 Produto ..> StatusProduto

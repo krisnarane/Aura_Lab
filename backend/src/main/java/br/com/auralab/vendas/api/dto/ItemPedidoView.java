@@ -9,4 +9,6 @@ public record ItemPedidoView(
     String nome,
     BigDecimal precoUnitario,
     int quantidade,
-    BigDecimal subtotal) {}
+    BigDecimal subtotal,
+    Long id,
+    int quantidadeJaSolicitada) {}

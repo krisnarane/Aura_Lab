@@ -7,3 +7,6 @@ spring:
     enabled: true
 server:
   port: 0
+aura:
+  vendas:
+    agendamento-ativo: false
