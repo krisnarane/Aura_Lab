@@ -344,11 +344,22 @@ h4 {
   padding: 18px;
 }
 
+/* Marca e título são blocos independentes para não se unirem visualmente. */
+.product-brand {
+  color: var(--gold);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
 /* Link de produto com aparência de título em cards. */
 .product-link {
   background: none;
   border: 0;
   color: var(--ink);
+  display: block;
   font-size: 0.94rem;
   font-weight: 750;
   line-height: 1.4;

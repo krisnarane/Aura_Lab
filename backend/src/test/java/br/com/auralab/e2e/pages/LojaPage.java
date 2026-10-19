@@ -60,15 +60,16 @@ public class LojaPage {
   }
 
   public LojaPage atualizarItem(long itemId, int quantidade) {
-    setValor("[data-testid='qtd-item-" + itemId + "']", String.valueOf(quantidade));
-    clicarRecarregando(
-        "[data-testid='atualizar-" + itemId + "']", "[data-testid='carrinho-subtotal']");
+    WebElement campo = esperar("[data-testid='qtd-item-" + itemId + "']");
+    campo.clear();
+    campo.sendKeys(String.valueOf(quantidade));
+    wait.until(ExpectedConditions.stalenessOf(campo));
+    esperar("[data-testid='carrinho-subtotal']");
     return this;
   }
 
   public LojaPage atualizarItemEsperandoErro(long itemId, int quantidade) {
     setValor("[data-testid='qtd-item-" + itemId + "']", String.valueOf(quantidade));
-    clicar("[data-testid='atualizar-" + itemId + "']");
     toastErro();
     return this;
   }

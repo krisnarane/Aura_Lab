@@ -91,7 +91,7 @@ const paginaCatalogo = (nome, produtos, totalItens) =>
       ? produtos
           .map(
             (p, indice) =>
-              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}"><article class="aura-card" data-testid="produto-${p.id}"><div class="product-art" data-cor-produto="${["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4]}"><span class="product-mark">aura</span></div><div class="card-body"><small>${e(p.marca)}</small><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p class="availability">${p.estoqueDisponivel < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
+              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}"><article class="aura-card" data-testid="produto-${p.id}"><div class="product-art" data-cor-produto="${["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4]}"><span class="product-mark">aura</span></div><div class="card-body"><p class="product-brand">${e(p.marca)}</p><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p class="availability">${p.estoqueDisponivel < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
           )
           .join("")
       : '<div class="panel">Nenhum produto disponível no momento.</div>'
@@ -116,7 +116,7 @@ const paginaCarrinho = (nome, carrinho) => {
           i.disponivel
             ? ""
             : '<p class="text-danger small" data-testid="indisponivel">Quantidade indisponível em estoque.</p>'
-        }</div><div class="d-flex gap-2 align-items-center"><input class="form-control" style="width:80px" type="number" min="1" max="${i.estoqueDisponivel}" value="${i.quantidade}" data-testid="qtd-item-${i.id}" aria-label="Quantidade"><button class="btn btn-sm btn-outline-secondary" data-atualizar="${i.id}" data-testid="atualizar-${i.id}">Atualizar</button></div><b>${moeda(
+        }</div><div class="d-flex gap-2 align-items-center"><input class="form-control" style="width:80px" type="number" min="1" max="${i.estoqueDisponivel}" value="${i.quantidade}" data-item-carrinho="${i.id}" data-testid="qtd-item-${i.id}" aria-label="Quantidade"></div><b>${moeda(
           i.subtotal,
         )}</b><button class="link-danger" data-remover="${i.id}" data-testid="remover-${i.id}">Remover</button></div>`,
     )
@@ -448,24 +448,28 @@ export async function renderizarVendasApi(raiz, navegar, toast) {
       };
       consultaCarrinho = setTimeout(sincronizar, 5000);
       ligarLinks(navegar);
-      raiz.querySelectorAll("[data-atualizar]").forEach(
-        (b) =>
-          (b.onclick = () => {
-            const itemId = b.dataset.atualizar;
-            const qtd = toNum(
-              raiz.querySelector(`[data-testid='qtd-item-${itemId}']`)?.value || 1,
-            );
-            acao(
-              b,
-              () => vendasService.alterarItem(id, itemId, { quantidade: qtd }),
-              toast,
-              () => {
+      const temporizadoresQuantidade = new Map();
+      raiz.querySelectorAll("[data-item-carrinho]").forEach((campo) => {
+        campo.addEventListener("input", () => {
+          const itemId = campo.dataset.itemCarrinho;
+          clearTimeout(temporizadoresQuantidade.get(itemId));
+          temporizadoresQuantidade.set(
+            itemId,
+            setTimeout(async () => {
+              if (!campo.isConnected || campo.disabled) return;
+              campo.disabled = true;
+              try {
+                await vendasService.alterarItem(id, itemId, { quantidade: toNum(campo.value) });
                 toast("Quantidade atualizada.");
                 renderizarVendasApi(raiz, navegar, toast);
-              },
-            );
-          }),
-      );
+              } catch (err) {
+                toast(err.message, "error");
+                campo.disabled = false;
+              }
+            }, 350),
+          );
+        });
+      });
       raiz.querySelectorAll("[data-remover]").forEach(
         (b) =>
           (b.onclick = () =>

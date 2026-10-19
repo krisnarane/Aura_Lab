@@ -59,7 +59,7 @@ const art = (item) =>
 const criarArteProduto = (item) =>
   `<div class="product-art" ${art(item)}>${item.image ? `<img src="${escaparHtml(item.image)}" alt="${escaparHtml(item.name)}" data-ocultar-imagem-com-erro>` : ""}<span class="product-mark">aura</span></div>`;
 const card = (item) =>
-  `<article class="aura-card">${criarArteProduto(item)}<div class="card-body"><small>${escaparHtml(item.brand)}</small><button class="product-link" data-product="${item.id}">${escaparHtml(item.name)}</button><p class="availability ${available(item) <= 0 ? "sold-out" : ""}">${descreverDisponibilidade(item)}</p><div class="d-flex align-items-center"><b>${formatarMoeda(item.price)}</b><button class="round ms-auto" data-add="${item.id}" aria-label="Adicionar ${escaparHtml(item.name)}" ${available(item) > 0 ? "" : "disabled"}>＋</button></div></div></article>`;
+  `<article class="aura-card">${criarArteProduto(item)}<div class="card-body"><p class="product-brand">${escaparHtml(item.brand)}</p><button class="product-link" data-product="${item.id}">${escaparHtml(item.name)}</button><p class="availability ${available(item) <= 0 ? "sold-out" : ""}">${descreverDisponibilidade(item)}</p><div class="d-flex align-items-center"><b>${formatarMoeda(item.price)}</b><button class="round ms-auto" data-add="${item.id}" aria-label="Adicionar ${escaparHtml(item.name)}" ${available(item) > 0 ? "" : "disabled"}>＋</button></div></div></article>`;
 
 export const header = (contextoApi = null) => {
   // O cabeçalho decide quais links aparecem a partir do cliente atual.
