@@ -504,6 +504,11 @@ class VendasLojaIT extends PostgresTest {
                 By.cssSelector(seletor)));
   }
 
+  /** Centraliza o alvo e espera que esteja desobstruído antes do clique nativo. */
+  private void clicar(String seletor) {
+    br.com.auralab.e2e.pages.InteracaoNavegador.clicar(driver, aguardar(seletor));
+  }
+
   private long compraPeloNavegador(int quantidade) {
     long cartao = inserirCartao();
     loja.entrar(CLIENTE);
@@ -527,7 +532,7 @@ class VendasLojaIT extends PostgresTest {
     loja.abrir("/admin/pedidos/" + id);
     new org.openqa.selenium.support.ui.Select(aguardar("[name='resultadoSimulado']"))
         .selectByValue(resultado);
-    aguardar("[data-testid='validar-pagamento'] button").click();
+    clicar("[data-testid='validar-pagamento'] button");
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20)).ignoring(org.openqa.selenium.StaleElementReferenceException.class).until(
             d ->
                 aguardar("[data-testid='detalhe-pedido']")
@@ -537,8 +542,8 @@ class VendasLojaIT extends PostgresTest {
 
   private void entregarPeloNavegador(long p) {
     validarPeloNavegador("APROVADO");
-    aguardar("[data-despachar]").click();
-    aguardar("[data-entregar]").click();
+    clicar("[data-despachar]");
+    clicar("[data-entregar]");
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20)).ignoring(org.openqa.selenium.StaleElementReferenceException.class).until(d -> aguardar("[data-testid='detalhe-pedido']").getText().contains("ENTREGUE"));
   }
 
@@ -602,17 +607,17 @@ class VendasLojaIT extends PostgresTest {
     long p = compraPeloNavegador(2);
     entregarPeloNavegador(p);
     loja.abrir("/perfil/pedidos");
-    aguardar("[data-testid='abrir-pedido-" + p + "']").click();
+    clicar("[data-testid='abrir-pedido-" + p + "']");
     aguardar("[data-testid='solicitar-troca']");
     new org.openqa.selenium.support.ui.Select(aguardar("[name='itemPedidoId']")).selectByIndex(1);
     aguardar("[name='motivo']").sendKeys("Avaria fictícia");
-    aguardar("[data-testid='solicitar-troca'] button").click();
+    clicar("[data-testid='solicitar-troca'] button");
     aguardar("[data-testid='troca-1']");
     loja.abrir("/admin/trocas");
-    aguardar("[data-autorizar]").click();
+    clicar("[data-autorizar]");
     new org.openqa.selenium.support.ui.Select(aguardar("[name='retornarEstoque']"))
         .selectByValue("true");
-    aguardar("[data-testid='receber-troca'] button").click();
+    clicar("[data-testid='receber-troca'] button");
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20)).ignoring(org.openqa.selenium.StaleElementReferenceException.class).until(d -> aguardar("[data-testid='troca-1']").getText().contains("TROCADO"));
     assertThat(jdbc.queryForObject("select estoque from produto where id=1", Integer.class))
         .isEqualTo(24);
@@ -639,13 +644,13 @@ class VendasLojaIT extends PostgresTest {
         .isEqualTo("UTILIZADO");
     loja.abrir("/perfil/pedidos/" + segundo);
     aguardar("[name='motivo']").sendKeys("Troca integral fictícia");
-    aguardar("[data-testid='solicitar-troca'] button").click();
+    clicar("[data-testid='solicitar-troca'] button");
     aguardar("[data-testid='troca-2']");
     loja.abrir("/admin/trocas");
-    aguardar("[data-autorizar]").click();
+    clicar("[data-autorizar]");
     new org.openqa.selenium.support.ui.Select(aguardar("[name='retornarEstoque']"))
         .selectByValue("false");
-    aguardar("[data-testid='receber-troca'] button").click();
+    clicar("[data-testid='receber-troca'] button");
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20)).ignoring(org.openqa.selenium.StaleElementReferenceException.class).until(d -> aguardar("[data-testid='troca-2']").getText().contains("TROCADO"));
     assertThat(jdbc.queryForObject("select status from pedido where id=?", String.class, segundo))
         .isEqualTo("TROCADO");

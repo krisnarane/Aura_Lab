@@ -132,3 +132,18 @@ Os últimos relatórios por suíte registram 84 testes backend: 82 aprovados e d
 RNF0011 permanece pendente: máximos de 1.646,51 ms em consultas de clientes e 1.027,18 ms em vendas, acima do limite de 1.000 ms. O usuário autorizou manter o desempenho atual e adiar a otimização. O limite dos testes não foi relaxado; não declarar a suíte completa como aprovada.
 
 O registro dos cartões concluídos e pendentes está em `KANBAN-VENDAS.md`. Aceitação manual e comunicação das ambiguidades ao professor continuam pendentes.
+
+## Clique no fluxo de troca — 19/10/2026
+
+A execução de apresentação teve 23 cenários Selenium, com 22 aprovados e um erro `ElementClickIntercepted` no botão Solicitar troca (CT058/CT059). A captura mostra o formulário abaixo da área visível; as ações desse fluxo usavam clique direto. `VendasLojaIT` passou a reutilizar `InteracaoNavegador`, que centraliza o elemento, aguarda que esteja habilitado e desobstruído e executa um clique nativo do WebDriver. As asserções de negócio foram preservadas.
+
+Para repetir somente o cenário de troca, a partir de `backend`, com Docker ativo:
+
+```powershell
+$env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+.\mvnw.cmd test-compile failsafe:integration-test failsafe:verify "-Dit.test=VendasLojaIT#*CT058*" "-Dselenium.headless=false" "-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy"
+```
+
+O relatório da execução original com erro foi preservado em `backend/target/evidencias/reteste-clique-troca-2026-10-19/execucao-original-com-erro.xml`. A execução dirigida não substitui uma nova execução completa da suíte.
+
+Reteste dirigido em 19/10/2026, Chrome 155 visível e PostgreSQL/Testcontainers: CT058/CT059 aprovado (um método, zero falhas, zero erros, zero ignorados), BUILD SUCCESS. Tempo total: 3 min 22 s. Incluiu compras, aprovação, despacho, entrega, troca parcial com reentrada, uso do cupom em nova compra e troca integral sem reentrada. Evidência: backend/target/evidencias/reteste-clique-troca-2026-10-19/reteste-aprovado.xml.
