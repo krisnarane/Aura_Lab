@@ -191,12 +191,12 @@ public class LojaPage {
   }
 
   public LojaPage calcularResumo() {
-    WebElement resumoAnterior = esperar("[data-testid='resumo-total']");
-    clicar("[data-testid='calcular-resumo']");
-    wait.until(
-        ExpectedConditions.or(
-            ExpectedConditions.stalenessOf(resumoAnterior),
-            ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".aura-toast.is-error"))));
+    // Aguarda o cálculo automático; não aciona botão nem JavaScript de negócio.
+    wait.until(d -> {
+      String situacao = d.findElement(By.cssSelector("[data-testid='estado-resumo']"))
+          .getAttribute("data-situacao");
+      return "pronto".equals(situacao) || "erro".equals(situacao);
+    });
     return this;
   }
 

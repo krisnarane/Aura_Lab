@@ -202,7 +202,7 @@ const paginaCheckout = (
       )}<label class="form-check"><input class="form-check-input" type="checkbox" name="incorporarEndereco" data-testid="incorporar-endereco"> Salvar este endereço no meu perfil</label></div>
       <hr>
       <h2>Pagamento</h2>
-      <label>Cupom promocional <small>(opcional)</small><div class="input-group"><input class="form-control" name="cupomPromocional" data-testid="cupom-promocional" placeholder="Ex.: AURA10"><button type="button" class="btn btn-outline-secondary" data-calcular>Aplicar</button></div></label>
+      <label>Cupom promocional <small>(opcional)</small><div class="input-group"><input class="form-control" name="cupomPromocional" data-testid="cupom-promocional" placeholder="Ex.: AURA10"></div></label>
       <p class="muted small">Use no máximo um cupom promocional. Cupons de troca entram como crédito no pagamento.</p>
       <div><h3>Cupons de troca</h3><div class="choice-grid">${opcoesCupom}</div></div>
       <div class="section-heading"><div><h3>Cartões de crédito</h3><p class="muted small">Informe o valor que será cobrado em cada cartão.</p></div></div>${linhasCartoes}
@@ -211,9 +211,9 @@ const paginaCheckout = (
         .join(
           "",
         )}</select></label></div><div class="col-md-4"><label>CVV<input class="form-control" name="cartao_codigoSeguranca" inputmode="numeric" maxlength="4" data-testid="cartao-cvv"></label></div><div class="col-md-4"><label>Valor neste cartão<input class="form-control" type="number" step="0.01" min="0" value="0" name="valorCartaoNovo" data-testid="valor-cartao-novo"></label></div><div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" name="incorporarCartao" data-testid="incorporar-cartao"> Salvar este cartão no meu perfil</label></div></div></details>
-      <div class="checkout-actions"><button type="button" class="btn btn-outline-secondary" data-calcular data-testid="calcular-resumo">Recalcular resumo</button>
+      <div class="checkout-actions">
       <button type="submit" class="btn aura-btn" data-testid="finalizar-compra">Finalizar compra</button>
-      </div></form></section><aside class="col-lg-4"><div class="panel summary payment-summary"><h3>Resumo da compra</h3><div data-testid="resumo-lateral">${linhaResumo(resumo)}</div><p class="muted small">O pedido será registrado com status <b>EM PROCESSAMENTO</b>.</p></div></aside></div>`,
+      </div></form></section><aside class="col-lg-4"><div class="panel summary payment-summary"><h3>Resumo da compra</h3><p data-testid="estado-resumo" role="status" aria-live="polite"></p><div data-testid="resumo-lateral">${linhaResumo(resumo)}</div><p class="muted small">O pedido será registrado com status <b>EM PROCESSAMENTO</b>.</p></div></aside></div>`,
     totalItens,
     "Checkout",
   );
@@ -599,32 +599,55 @@ function ligarCheckout(raiz, navegar, toast, id, cliente) {
   );
   atualizarNovoEndereco();
 
-  raiz.querySelectorAll("[data-calcular]").forEach((controle) =>
-    controle.addEventListener("click", async (ev) => {
-      const botao = ev.currentTarget;
+  const painelResumo = raiz.querySelector("[data-testid='resumo-lateral']");
+  const estadoResumo = raiz.querySelector("[data-testid='estado-resumo']");
+  let revisaoResumo = 0;
+  let temporizadorResumo;
+  const agendarResumo = () => {
+    clearTimeout(temporizadorResumo);
+    const revisao = ++revisaoResumo;
+    estadoResumo.textContent = "Atualizando resumo…";
+    estadoResumo.dataset.situacao = "calculando";
+    painelResumo.setAttribute("aria-busy", "true");
+    form.querySelector("[data-testid='finalizar-compra']").disabled = true;
+    temporizadorResumo = setTimeout(async () => {
+      if (!form.isConnected) return;
       const base = estadoSelecionado(form, cliente);
       const promo = (promoInput.value || "").trim();
-      await acao(
-        botao,
-        async () => {
-          const r = await vendasService.resumo(
-            id,
-            promo ? { ...base, cupomPromocional: promo } : base,
-          );
-          raiz.querySelector("[data-testid='resumo-lateral']").innerHTML = linhaResumo(r);
-        },
-        toast,
-        () => {
-          botao.disabled = false;
-        },
-      );
-    }),
-  );
+      try {
+        const r = await vendasService.resumo(
+          id, promo ? { ...base, cupomPromocional: promo } : base,
+        );
+        if (!form.isConnected || revisao !== revisaoResumo) return;
+        painelResumo.innerHTML = linhaResumo(r);
+        estadoResumo.textContent = "Resumo atualizado automaticamente.";
+        estadoResumo.dataset.situacao = "pronto";
+      } catch (err) {
+        if (!form.isConnected || revisao !== revisaoResumo) return;
+        estadoResumo.textContent = err.message;
+        estadoResumo.dataset.situacao = "erro";
+        toast(err.message, "error");
+      } finally {
+        if (form.isConnected && revisao === revisaoResumo) {
+          painelResumo.setAttribute("aria-busy", "false");
+          if (!form.dataset.enviando)
+            form.querySelector("[data-testid='finalizar-compra']").disabled = false;
+        }
+      }
+    }, 350);
+  };
+  const aoAlterarResumo = (ev) => {
+    if (ev.target.matches("[name='enderecoId'], [name='endereco_estado'], [name='cupomPromocional']"))
+      agendarResumo();
+  };
+  form.addEventListener("input", aoAlterarResumo);
+  form.addEventListener("change", aoAlterarResumo);
+  agendarResumo();
 
   const chaveCheckout = crypto.randomUUID();
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    if (form.dataset.enviando) return;
+    if (form.dataset.enviando || estadoResumo.dataset.situacao === "calculando") return;
     form.dataset.enviando = "true";
     const botao = form.querySelector("[data-testid='finalizar-compra']");
     botao.disabled = true;

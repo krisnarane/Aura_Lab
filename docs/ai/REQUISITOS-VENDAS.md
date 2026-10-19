@@ -85,3 +85,8 @@ A sacola apresenta avisos associados à reserva vigente; notificações antigas 
 A listagem `/perfil/pedidos` permite abrir o detalhe pelo código do pedido e solicitar troca quando o estado permite. A confirmação de checkout centraliza código e situação. O histórico do detalhe projeta eventos de `auditoria_cliente` da entidade PEDIDO, com situação, data e ator; não expõe todos os snapshots da auditoria. RF0040/RN0040 atribuem explicitamente a confirmação de entrega ao administrador.
 
 Verificação dirigida das correções: 23 testes de `CicloVendaApiTest` e três cenários Selenium (CT055, CT057 e CT058/CT059) aprovados; testes do frontend aprovados. Relatórios preservados em `backend/target/evidencias/revisao-sacola-pedidos`. A verificação foi executada em cópia temporária para evitar conflito de compilação com o ambiente aberto; não equivale a nova execução integral de todas as suítes.
+
+
+## Checkout — resumo automático (19/10/2026)
+
+RF0034/RF0037: o frontend recalcula frete, desconto e total pela API ao selecionar endereço, alterar o estado de um novo endereço ou editar/remover cupom promocional, com intervalo de 350 ms após a alteração. Os botões Aplicar e Recalcular resumo foram removidos. Respostas antigas são descartadas e a finalização aguarda o cálculo pendente. Erros aparecem junto ao resumo; a validação final continua no servidor. Cupons de troca e valores de cartão são composição de pagamento e não alteram o preço da compra. O Page Object Selenium passa a aguardar o cálculo automático.
