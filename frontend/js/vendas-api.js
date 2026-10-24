@@ -213,7 +213,7 @@ const paginaCheckout = (
         )}</select></label></div><div class="col-md-4"><label>CVV<input class="form-control" name="cartao_codigoSeguranca" inputmode="numeric" maxlength="4" data-testid="cartao-cvv"></label></div><div class="col-md-4"><label>Valor neste cartão<input class="form-control" type="number" step="0.01" min="0" value="0" name="valorCartaoNovo" data-testid="valor-cartao-novo"></label></div><div class="col-12"><label class="form-check"><input class="form-check-input" type="checkbox" name="incorporarCartao" data-testid="incorporar-cartao"> Salvar este cartão no meu perfil</label></div></div></details>
       <div class="checkout-actions">
       <button type="submit" class="btn aura-btn" data-testid="finalizar-compra">Finalizar compra</button>
-      </div></form></section><aside class="col-lg-4"><div class="panel summary payment-summary"><h3>Resumo da compra</h3><p data-testid="estado-resumo" role="status" aria-live="polite"></p><div data-testid="resumo-lateral">${linhaResumo(resumo)}</div><p class="muted small">O pedido será registrado com status <b>EM PROCESSAMENTO</b>.</p></div></aside></div>`,
+      </div></form></section><aside class="col-lg-4"><div class="panel summary payment-summary"><h3>Resumo da compra</h3><p data-testid="estado-resumo" role="status" aria-live="polite"></p><div data-testid="resumo-lateral">${linhaResumo(resumo)}</div><p class="muted small">O pagamento será validado automaticamente ao finalizar.</p></div></aside></div>`,
     totalItens,
     "Checkout",
   );
@@ -223,8 +223,8 @@ const paginaCheckout = (
 const paginaConfirmacao = (nome, pedido) =>
   layout(
     nome,
-    "Obrigada pela sua compra.",
-    `<div class="panel confirmation" data-testid="pedido-confirmado"><span class="confirmation-mark">✓</span><div class="confirmation-heading"><span class="eyebrow">Pedido ${e(
+    pedido.status === "APROVADA" ? "Obrigada pela sua compra." : "Pagamento não aprovado.",
+    `<div class="panel confirmation" data-testid="pedido-confirmado"><span class="confirmation-mark">${pedido.status === "APROVADA" ? "✓" : "!"}</span><div class="confirmation-heading"><span class="eyebrow">Pedido ${e(
       pedido.codigo,
     )}</span><h2>Status: <span data-testid="pedido-status">${e(
       pedido.status.replace("_", " "),
@@ -658,7 +658,7 @@ function ligarCheckout(raiz, navegar, toast, id, cliente) {
     form.querySelectorAll("[data-form-error]").forEach((x) => x.remove());
     try {
       const pedido = await vendasService.finalizar(id, montarPayload(form, cliente), chaveCheckout);
-      toast("Pedido finalizado com status EM PROCESSAMENTO.");
+      toast(`Pedido finalizado: ${pedido.status.replaceAll("_", " ")}.`);
       navegar(`/checkout/confirmacao/${pedido.id}`);
     } catch (err) {
       form.insertAdjacentHTML(

@@ -23,10 +23,12 @@ public class VendaController {
 
   private final CarrinhoService carrinho;
   private final VendaService vendas;
+  private final CheckoutService checkout;
 
-  public VendaController(CarrinhoService carrinho, VendaService vendas) {
+  public VendaController(CarrinhoService carrinho, VendaService vendas, CheckoutService checkout) {
     this.carrinho = carrinho;
     this.vendas = vendas;
+    this.checkout = checkout;
   }
 
   @GetMapping("/clientes/{id}/carrinho")
@@ -58,14 +60,14 @@ public class VendaController {
     return vendas.resumo(id, in);
   }
 
-  /** RF0033/RF0038: finaliza a compra e cria o pedido com status EM_PROCESSAMENTO. */
+  /** RF0033/RF0038: registra EM_PROCESSAMENTO e valida o pagamento na mesma operação. */
   @PostMapping("/clientes/{id}/pedidos")
   ResponseEntity<PedidoView> finalizar(
       @PathVariable Long id,
       @Valid @RequestBody CheckoutInput in,
       @RequestHeader(value = "Idempotency-Key", required = false) String chave) {
     carrinho.obter(id);
-    PedidoView v = vendas.finalizar(id, in, chave);
+    PedidoView v = checkout.finalizar(id, in, chave);
     return ResponseEntity.created(URI.create("/api/v1/clientes/" + id + "/pedidos/" + v.id()))
         .body(v);
   }

@@ -222,10 +222,10 @@ Observações:
 
 | Caso | Requisitos | Jornada Selenium nas telas existentes |
 | --- | --- | --- |
-| CT055 | RF0039, RF0040, RF0053, RN0028, RN0037–RN0040 | Compra → aprovação administrativa → despacho → entrega; banco confirma baixa única |
-| CT056 | RN0038, RN0028 | Recusa pela operadora simulada libera reserva sem baixa física |
+| CT055 | RF0039, RF0040, RF0053, RN0028, RN0037–RN0040 | Compra → aprovação automática → despacho → entrega; banco confirma baixa única |
+| CT056 | RN0038, RN0028 | Cartão configurado como recusado reprova automaticamente e libera reserva sem baixa física |
 | CT057 | RN0044, RN0045, RNF0042 | Relógio controlado: aviso cinco minutos antes, expiração, produto/motivo/prazo visíveis e nova inclusão |
-| CT058 e CT059 | RF0041–RF0045, RF0054, RN0041–RN0043, RN0046 | Parcial/integral, autorização, notificação, recebimento com/sem reentrada e uso do crédito em outra compra |
+| CT058 e CT059 | RF0041–RF0045, RF0054, RN0041–RN0043, RN0046 | Parcial/integral, autorização, notificação, recebimento com reentrada obrigatória e uso do crédito em outra compra |
 | CT060 | RN0032 | Sacola atualiza e remove automaticamente após alteração da disponibilidade |
 | CT061 | RN0036 | Compra R$50 e pares 20+35, 20+40 e 40+35; troco somente após aprovação |
 

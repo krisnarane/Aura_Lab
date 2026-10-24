@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
  * cartões e cupons (RF0036/RF0037) e as regras de pagamento RN0033 (um cupom promocional), RN0034
  * (mínimo por cartão), RN0035 (um único cartão abaixo do mínimo, apenas quando há cupons) e RN0036
  * (cupom de troco sem cupons desnecessários). O pedido é criado com status EM_PROCESSAMENTO; a
- * aprovação e as transições seguintes são executadas pelo CicloPedidoService. Escrita e auditoria
+ * validação automática é coordenada pelo CheckoutService. Escrita e auditoria
  * compartilham a mesma transação (RNF0012).
  */
 @Service
@@ -110,7 +110,7 @@ public class VendaService {
     return new ResumoView(subtotal, unidades, desconto, frete, total);
   }
 
-  /** RF0033/RF0038 + RN0033–RN0036: cria o pedido EM_PROCESSAMENTO a partir do carrinho. */
+  /** RF0033/RF0038 + RN0033–RN0036: cria o pedido EM_PROCESSAMENTO para validação imediata. */
   @Transactional
   public PedidoView finalizar(Long clienteId, CheckoutInput in) {
     return finalizar(clienteId, in, null);
@@ -603,7 +603,7 @@ public class VendaService {
   private List<String> acoes(Pedido p) {
     if (p.isLegado()) return List.of();
     return switch (p.getStatus()) {
-      case "EM_PROCESSAMENTO" -> List.of("VALIDAR_PAGAMENTO");
+      case "EM_PROCESSAMENTO" -> List.of();
       case "APROVADA" -> List.of("DESPACHAR");
       case "EM_TRANSPORTE" -> List.of("CONFIRMAR_ENTREGA");
       case "ENTREGUE" -> List.of("SOLICITAR_TROCA");

@@ -18,6 +18,20 @@ class MigrationPersistenceTest {
           .dataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword())
           .load()
           .migrate();
+      try (var connection = DriverManager.getConnection(
+              pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+          var statement = connection.createStatement();
+          var outcomes = statement.executeQuery(
+              "select c.ultimos_quatro, o.resultado from resultado_operadora_cartao o "
+                  + "join cartao c on c.id=o.cartao_id order by c.ultimos_quatro")) {
+        assertThat(outcomes.next()).isTrue();
+        assertThat(outcomes.getString(1)).isEqualTo("1111");
+        assertThat(outcomes.getString(2)).isEqualTo("APROVADO");
+        assertThat(outcomes.next()).isTrue();
+        assertThat(outcomes.getString(1)).isEqualTo("2222");
+        assertThat(outcomes.getString(2)).isEqualTo("REPROVADO");
+        assertThat(outcomes.next()).isFalse();
+      }
       Map<String, Object> props =
           Map.of(
               "spring.datasource.url",

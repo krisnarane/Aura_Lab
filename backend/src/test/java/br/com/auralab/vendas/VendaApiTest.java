@@ -116,11 +116,11 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
     mvc.perform(
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("EM_PROCESSAMENTO"))
+        .andExpect(jsonPath("$.status").value("APROVADA"))
         .andExpect(jsonPath("$.codigo").value(org.hamcrest.Matchers.startsWith("PED-")));
 
     assertThat(jdbc.queryForObject("select status from pedido", String.class))
-        .isEqualTo("EM_PROCESSAMENTO");
+        .isEqualTo("APROVADA");
     assertThat(jdbc.queryForObject("select total from pedido", BigDecimal.class))
         .isEqualByComparingTo(total);
     // Carrinho esvaziado após a finalização
@@ -158,7 +158,7 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
     mvc.perform(
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("EM_PROCESSAMENTO"))
+        .andExpect(jsonPath("$.status").value("APROVADA"))
         // RN0023: o snapshot do pedido preserva a composição, inclusive observações
         .andExpect(jsonPath("$.entrega.observacoes").value("Entregar na portaria"))
         .andExpect(jsonPath("$.entrega.estado").value("SP"));
@@ -241,7 +241,7 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
     mvc.perform(
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("EM_PROCESSAMENTO"));
+        .andExpect(jsonPath("$.status").value("APROVADA"));
     assertThat(
             jdbc.queryForObject(
                 "select count(*) from pagamento_parte where tipo='CARTAO'", Integer.class))
@@ -287,9 +287,9 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
     mvc.perform(
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("EM_PROCESSAMENTO"));
+        .andExpect(jsonPath("$.status").value("APROVADA"));
     assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
-        .isEqualTo("RESERVADO");
+        .isEqualTo("UTILIZADO");
     aprovarUltimoPedido();
     // A aprovação consome o crédito reservado
     assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
@@ -342,7 +342,7 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
     mvc.perform(
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.cupomTrocaGerado").doesNotExist());
+        .andExpect(jsonPath("$.cupomTrocaGerado.valor").value(troco.doubleValue()));
     aprovarUltimoPedido();
 
     BigDecimal gerado =
@@ -387,7 +387,7 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.total").value(50.00))
-        .andExpect(jsonPath("$.cupomTrocaGerado").doesNotExist());
+        .andExpect(jsonPath("$.cupomTrocaGerado").exists());
     aprovarUltimoPedido();
     assertThat(
             jdbc.queryForObject(
@@ -559,17 +559,30 @@ class VendaApiTest extends br.com.auralab.PostgresTest {
     mvc.perform(
             post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(payload)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("EM_PROCESSAMENTO"));
+        .andExpect(jsonPath("$.status").value("APROVADA"));
     assertThat(jdbc.queryForObject("select desconto from pedido", BigDecimal.class))
         .isEqualByComparingTo("8.99"); // 10% de 89.90
+  }
+
+  @Test
+  void RN0035_promocionalPermiteCartaoAbaixoDeDezReais() throws Exception {
+    jdbc.update("update produto set preco=300.00 where id=1");
+    adicionar(1L, 1);
+    long cartao = criarCartao();
+    String promocional = inserirCupomPromocional(new BigDecimal("99.00"));
+    BigDecimal total = resumoTotal(ENDERECO, promocional);
+    assertThat(total).isEqualByComparingTo("3.00");
+    mvc.perform(post(base() + "/pedidos").contentType(JSON).content(json.writeValueAsString(
+        Map.of("enderecoId", ENDERECO, "cupomPromocional", promocional,
+            "cartoes", List.of(Map.of("cartaoId", cartao, "valor", total))))))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.status").value("APROVADA"));
   }
 
   private void aprovarUltimoPedido() throws Exception {
     long pedido = jdbc.queryForObject("select max(id) from pedido", Long.class);
     mvc.perform(
-            post("/api/v1/admin/pedidos/" + pedido + "/pagamento/validar")
-                .contentType(JSON)
-                .content("{\"resultadoSimulado\":\"APROVADO\"}"))
+            get("/api/v1/admin/pedidos/" + pedido))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("APROVADA"));
   }

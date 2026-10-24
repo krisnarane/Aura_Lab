@@ -6,6 +6,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.auralab.PostgresTest;
 import br.com.auralab.vendas.service.ReservaEstoqueService;
+import br.com.auralab.vendas.service.VendaService;
+import br.com.auralab.vendas.service.CicloPedidoService;
+import br.com.auralab.vendas.api.dto.CheckoutInput;
+import br.com.auralab.vendas.api.dto.ParcelaCartaoInput;
 import com.fasterxml.jackson.databind.*;
 import java.time.*;
 import java.util.*;
@@ -55,6 +59,8 @@ class CicloVendaApiTest extends PostgresTest {
   @Autowired ObjectMapper json;
   @Autowired Relogio clock;
   @Autowired ReservaEstoqueService reservas;
+  @Autowired VendaService vendas;
+  @Autowired CicloPedidoService cicloPedido;
 
   @BeforeEach
   void horario() {
@@ -129,17 +135,15 @@ class CicloVendaApiTest extends PostgresTest {
         postJson("/clientes/1/carrinho/resumo", Map.of("enderecoId", 1), 200)
             .path("total")
             .decimalValue();
-    return postJson(
-            "/clientes/1/pedidos",
-            Map.of("enderecoId", 1, "cartoes", List.of(Map.of("cartaoId", cartao, "valor", total))),
-            201)
-        .path("id")
-        .asLong();
+    return vendas.finalizar(1L, new CheckoutInput(1L, null, false, null, List.of(),
+        List.of(new ParcelaCartaoInput(cartao, null, false, total)))).id();
   }
 
   JsonNode validar(long p, String resultado) throws Exception {
-    return postJson(
-        "/admin/pedidos/" + p + "/pagamento/validar", Map.of("resultadoSimulado", resultado), 200);
+    jdbc.update("insert into resultado_operadora_cartao(cartao_id,resultado) "
+        + "select cartao_id, ? from pagamento_parte where pedido_id=? and cartao_id is not null "
+        + "on conflict (cartao_id) do update set resultado=excluded.resultado", resultado, p);
+    return json.valueToTree(cicloPedido.validar(p));
   }
 
   void entregar(long p) throws Exception {
@@ -154,6 +158,58 @@ class CicloVendaApiTest extends PostgresTest {
 
   int estoque() {
     return jdbc.queryForObject("select estoque from produto where id=1", Integer.class);
+  }
+
+  @Test
+  void RN0037_RN0038_RN0028_checkoutAutomaticoReprovaSeUmCartaoFalhar() throws Exception {
+    adicionar(1);
+    long aprovado = jdbc.queryForObject(
+        "insert into cartao(cliente_id,bandeira_id,titular,ultimos_quatro,preferencial,ativo) "
+            + "values(1,1,'MARINA COSTA','1111',false,true) returning id", Long.class);
+    long reprovado = jdbc.queryForObject(
+        "insert into cartao(cliente_id,bandeira_id,titular,ultimos_quatro,preferencial,ativo) "
+            + "values(1,2,'MARINA COSTA','2222',false,true) returning id", Long.class);
+    jdbc.update("insert into resultado_operadora_cartao(cartao_id,resultado) values(?,'REPROVADO')", reprovado);
+    long cupom = jdbc.queryForObject(
+        "insert into cupom(tipo,cliente_id,valor,situacao,criado_em) "
+            + "values('TROCA',1,30.00,'ATIVO',current_timestamp) returning id", Long.class);
+    JsonNode resultado = postJson("/clientes/1/pedidos", Map.of("enderecoId", 1,
+        "cuponsTroca", List.of(cupom),
+        "cartoes", List.of(Map.of("cartaoId", aprovado, "valor", "30.00"),
+            Map.of("cartaoId", reprovado, "valor", "46.90"))), 201);
+    assertThat(resultado.path("status").asText()).isEqualTo("REPROVADA");
+    assertThat(resultado.path("historico").toString()).contains("EM_PROCESSAMENTO", "REPROVADA");
+    assertThat(estoque()).isEqualTo(25);
+    assertThat(contar("movimentacao_estoque")).isZero();
+    assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
+        .isEqualTo("ATIVO");
+    assertThat(jdbc.queryForObject("select count(*) from reserva_estoque where estado='ATIVA'", Integer.class)).isZero();
+    postJson("/admin/pedidos/" + resultado.path("id").asLong() + "/despacho", Map.of(), 400);
+  }
+
+  @Test
+  void RNF0012_falhaNaValidacaoAutomaticaReverteCheckoutCompleto() throws Exception {
+    adicionar(1);
+    long cartao = jdbc.queryForObject(
+        "insert into cartao(cliente_id,bandeira_id,titular,ultimos_quatro,preferencial,ativo) "
+            + "values(1,1,'MARINA COSTA','1111',false,true) returning id", Long.class);
+    jdbc.execute("create function falhar_checkout_teste() returns trigger language plpgsql as $$ "
+        + "begin if NEW.operacao='VALIDAR_PAGAMENTO' then raise exception 'Falha induzida'; "
+        + "end if; return NEW; end $$");
+    jdbc.execute("create trigger falhar_checkout_teste before insert on auditoria_cliente "
+        + "for each row execute function falhar_checkout_teste()");
+    try {
+      assertThatThrownBy(() -> postJson("/clientes/1/pedidos",
+          Map.of("enderecoId", 1, "cartoes", List.of(Map.of("cartaoId", cartao, "valor", "106.90"))),
+          201)).isInstanceOf(Exception.class);
+      assertThat(contar("pedido")).isZero();
+      assertThat(contar("item_carrinho")).isEqualTo(1);
+      assertThat(estoque()).isEqualTo(25);
+      assertThat(contar("movimentacao_estoque")).isZero();
+    } finally {
+      jdbc.execute("drop trigger falhar_checkout_teste on auditoria_cliente");
+      jdbc.execute("drop function falhar_checkout_teste()");
+    }
   }
 
   @Test
@@ -278,16 +334,16 @@ class CicloVendaApiTest extends PostgresTest {
     postJson("/admin/trocas/"+t+"/autorizacao",Map.of(),200);
     assertThat(jdbc.queryForObject("select count(*) from notificacao_venda where tipo='TROCA_AUTORIZADA'",Integer.class)).isEqualTo(1);
     var recebida =
-        postJson("/admin/trocas/" + t + "/recebimento", Map.of("retornarEstoque", true), 200);
+        postJson("/admin/trocas/" + t + "/recebimento", Map.of(), 200);
     assertThat(recebida.path("cupom").path("valor").decimalValue()).isEqualByComparingTo("89.90");
     assertThat(estoque()).isEqualTo(24);
-    postJson("/admin/trocas/" + t + "/recebimento", Map.of("retornarEstoque", true), 200);
+    postJson("/admin/trocas/" + t + "/recebimento", Map.of(), 200);
     assertThat(contar("cupom")).isEqualTo(1);
     assertThat(contar("movimentacao_estoque")).isEqualTo(2);
   }
 
   @Test
-  void RF0042_trocaIntegralAcompanhaCompraSemReentradaQuandoDecisaoNao() throws Exception {
+  void RF0042_RF0054_trocaIntegralAcompanhaCompraEReentraNoEstoque() throws Exception {
     long p = pedido(1);
     entregar(p);
     long t =
@@ -302,8 +358,8 @@ class CicloVendaApiTest extends PostgresTest {
     postJson("/admin/trocas/" + t + "/autorizacao", Map.of(), 200);
     assertThat(jdbc.queryForObject("select status from pedido", String.class))
         .isEqualTo("TROCA_AUTORIZADA");
-    postJson("/admin/trocas/" + t + "/recebimento", Map.of("retornarEstoque", false), 200);
-    assertThat(estoque()).isEqualTo(24);
+    postJson("/admin/trocas/" + t + "/recebimento", Map.of(), 200);
+    assertThat(estoque()).isEqualTo(25);
     assertThat(jdbc.queryForObject("select status from pedido", String.class)).isEqualTo("TROCADO");
   }
 
@@ -352,20 +408,7 @@ class CicloVendaApiTest extends PostgresTest {
   @Test
   void RN0037_todasParcelasPrecisamSerAprovadas() throws Exception {
     long p = pedido(1);
-    long parcela =
-        jdbc.queryForObject("select id from pagamento_parte where pedido_id=?", Long.class, p);
-    assertThat(
-            postJson(
-                    "/admin/pedidos/" + p + "/pagamento/validar",
-                    Map.of(
-                        "resultadoSimulado",
-                        "APROVADO",
-                        "resultadosPorParcela",
-                        Map.of(parcela, "FALHA")),
-                    200)
-                .path("status")
-                .asText())
-        .isEqualTo("REPROVADA");
+    assertThat(validar(p, "FALHA").path("status").asText()).isEqualTo("REPROVADA");
     assertThat(estoque()).isEqualTo(25);
   }
 
@@ -393,7 +436,7 @@ class CicloVendaApiTest extends PostgresTest {
                 201)
             .path("id")
             .asLong();
-    postJson("/admin/trocas/" + t + "/recebimento", Map.of("retornarEstoque", true), 400);
+    postJson("/admin/trocas/" + t + "/recebimento", Map.of(), 400);
     assertThat(contar("cupom")).isZero();
     assertThat(estoque()).isEqualTo(24);
   }
@@ -408,7 +451,7 @@ class CicloVendaApiTest extends PostgresTest {
         "create trigger falha_auditoria_teste before insert on auditoria_cliente for each row execute function falhar_auditoria_teste()");
     try {
       assertThatThrownBy(() -> validar(p, "APROVADO"))
-          .isInstanceOf(jakarta.servlet.ServletException.class);
+          .isInstanceOf(RuntimeException.class);
       assertThat(estoque()).isEqualTo(25);
       assertThat(contar("movimentacao_estoque")).isZero();
       assertThat(contar("auditoria_cliente")).isEqualTo(antes);
@@ -488,7 +531,7 @@ class CicloVendaApiTest extends PostgresTest {
     }
     assertThat(contar("pedido")).isEqualTo(1);
     assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
-        .isEqualTo("RESERVADO");
+        .isEqualTo("UTILIZADO");
   }
 
   @Test
@@ -496,13 +539,8 @@ class CicloVendaApiTest extends PostgresTest {
     jdbc.update("update produto set preco=33 where id=1");
     adicionar(1);
     long cupom = cupomCinquenta();
-    long p =
-        postJson(
-                "/clientes/1/pedidos",
-                Map.of("enderecoId", 1, "cuponsTroca", List.of(cupom), "cartoes", List.of()),
-                201)
-            .path("id")
-            .asLong();
+    long p = vendas.finalizar(1L,
+        new CheckoutInput(1L, null, false, null, List.of(cupom), List.of())).id();
     jdbc.update("update cupom set validade='2026-10-11' where id=?", cupom);
     assertThat(validar(p, "APROVADO").path("status").asText()).isEqualTo("REPROVADA");
     assertThat(estoque()).isEqualTo(25);

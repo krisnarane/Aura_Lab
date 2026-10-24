@@ -189,13 +189,10 @@ public class TrocaService {
   }
 
   @Transactional
-  public TrocaView receber(Long id, boolean retornar) {
+  public TrocaView receber(Long id) {
     repo.bloquearFluxo();
     var antes = buscar(null, id);
     if ("TROCADO".equals(antes.status())) {
-      if (!Objects.equals(antes.retornarEstoque(), retornar))
-        throw new RegraNegocioException(
-            "IDEMPOTENCIA_CONFLITO", "Recebimento já concluído com outra decisão de estoque.");
       return antes;
     }
     RegrasCicloVenda.exigirEstado(antes.status(), "TROCA_AUTORIZADA");
@@ -207,8 +204,7 @@ public class TrocaService {
     cupom.definirInstante(reservas.agora());
     cupons.saveAndFlush(cupom);
     em.refresh(cupom);
-    if (retornar)
-      for (var item : repo.itensTroca(id)) {
+    for (var item : repo.itensTroca(id)) {
         repo.reentrar(
             id(item, "produto_id"), qtd(item, "quantidade"), id(item, "id"), reservas.agora());
         auditoria.registrarComo(
@@ -220,8 +216,8 @@ public class TrocaService {
             id(item, "id"),
             Map.of("retornarEstoque", false),
             Map.of("produtoId", id(item, "produto_id"), "quantidade", qtd(item, "quantidade")));
-      }
-    repo.receber(id, retornar, cupom.getId(), reservas.agora());
+    }
+    repo.receber(id, true, cupom.getId(), reservas.agora());
     ciclo.registrarCupom(antes.clienteId(), cupom);
     if (antes.integral())
       mudarCompra(antes, "TROCA_AUTORIZADA", "TROCADO", "RECEBER_TROCA_INTEGRAL");

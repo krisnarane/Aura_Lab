@@ -11,7 +11,7 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** RF0039/RF0040/RF0053, RN0028/RN0037--40: ciclo administrativo do pedido. */
+/** RF0039/RF0040/RF0053, RN0028/RN0037–40: pagamento automático e ciclo administrativo. */
 @Service
 public class CicloPedidoService {
   private final PedidoRepository pedidos;
@@ -52,16 +52,14 @@ public class CicloPedidoService {
   }
 
   @Transactional
-  public PedidoView validar(Long id, ValidacaoPagamentoInput in) {
+  public PedidoView validar(Long id) {
     repo.bloquearFluxo();
     var inicial = exigir(id);
     reservas.sincronizar(inicial.getClienteId());
     var p = exigir(id);
     exigirAtual(p);
     if (!"EM_PROCESSAMENTO".equals(p.getStatus())) {
-      if ("APROVADA".equals(p.getStatus()) && "APROVADO".equals(in.resultadoSimulado()))
-        return view(p);
-      if ("REPROVADA".equals(p.getStatus())) return view(p);
+      if ("APROVADA".equals(p.getStatus()) || "REPROVADA".equals(p.getStatus())) return view(p);
       RegrasCicloVenda.exigirEstado(p.getStatus(), "EM_PROCESSAMENTO");
     }
     var antes = RegistroVenda.pedido(p);
@@ -90,11 +88,7 @@ public class CicloPedidoService {
             || !c.reservadoPara(p.getId(), reservas.agora().toLocalDate())
             || c.getValor().compareTo(parcela.getValor()) != 0) motivo = "CUPOM_INVALIDO";
       } else {
-        String solicitado =
-            in.resultadosPorParcela() == null
-                ? in.resultadoSimulado()
-                : in.resultadosPorParcela().getOrDefault(parcela.getId(), in.resultadoSimulado());
-        String resultado = operadora.validar(parcela.getValor(), solicitado);
+        String resultado = operadora.validar(parcela.getCartaoId(), parcela.getValor());
         repo.resultadoParcela(parcela.getId(), resultado);
         resultados.add(
             Map.of(
@@ -110,7 +104,7 @@ public class CicloPedidoService {
         repo.baixar(item.getProdutoId(), item.getQuantidade(), item.getId(), reservas.agora());
         auditoria.registrarComo(
             p.getClienteId(),
-            "ADMIN_DEMO",
+            "SISTEMA",
             reservas.agora(),
             "BAIXAR_ESTOQUE",
             "ITEM_PEDIDO",
@@ -132,7 +126,7 @@ public class CicloPedidoService {
           cupom.utilizar();
           auditoria.registrarComo(
               p.getClienteId(),
-              "ADMIN_DEMO",
+              "SISTEMA",
               reservas.agora(),
               "CONSUMIR_CUPOM",
               "CUPOM",
@@ -158,7 +152,7 @@ public class CicloPedidoService {
             c.liberar();
             auditoria.registrarComo(
                 p.getClienteId(),
-                "ADMIN_DEMO",
+                "SISTEMA",
                 reservas.agora(),
                 "LIBERAR_CUPOM",
                 "CUPOM",
@@ -174,7 +168,7 @@ public class CicloPedidoService {
     depois.put("resultadoOperadora", resultados);
     auditoria.registrarComo(
         p.getClienteId(),
-        "ADMIN_DEMO",
+        "SISTEMA",
         reservas.agora(),
         "VALIDAR_PAGAMENTO",
         "PEDIDO",

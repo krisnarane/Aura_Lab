@@ -34,11 +34,6 @@ public class CicloVendaController {
     return pedidos.buscar(id);
   }
 
-  @PostMapping("/admin/pedidos/{id}/pagamento/validar")
-  PedidoView validar(@PathVariable Long id, @Valid @RequestBody ValidacaoPagamentoInput in) {
-    return pedidos.validar(id, in);
-  }
-
   @PostMapping("/admin/pedidos/{id}/despacho")
   PedidoView despachar(@PathVariable Long id) {
     return pedidos.despachar(id);
@@ -83,8 +78,8 @@ public class CicloVendaController {
   }
 
   @PostMapping("/admin/trocas/{id}/recebimento")
-  TrocaView receber(@PathVariable Long id, @Valid @RequestBody RecebimentoTrocaInput in) {
-    return trocas.receber(id, in.retornarEstoque());
+  TrocaView receber(@PathVariable Long id) {
+    return trocas.receber(id);
   }
 
   @GetMapping("/clientes/{cliente}/notificacoes")

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** Saída do pedido finalizado (RF0038): status EM_PROCESSAMENTO, totais e composição. */
+/** Saída do pedido: situação atual, totais e composição. */
 public record PedidoView(
     Long id,
     String codigo,

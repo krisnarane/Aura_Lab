@@ -12,7 +12,6 @@ export const vendasService = {
   cupons: (id) => api.cupons(id),
   pedidosAdmin: api.pedidosAdmin,
   pedidoAdmin: api.pedidoAdmin,
-  validarPagamento: api.validarPagamento,
   despachar: api.despachar,
   entregar: api.entregar,
   solicitarTroca: api.solicitarTroca,

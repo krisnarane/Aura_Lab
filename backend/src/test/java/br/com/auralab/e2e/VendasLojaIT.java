@@ -21,7 +21,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
  * com endereço e cartão já cadastrados, compra com novo endereço e cartão incorporados
  * (RF0035/RF0036), pagamento com mais de um cartão respeitando o mínimo (RN0034), cartão abaixo de
  * R$ 10,00 combinado com cupom (RN0035), cupons que superam a compra gerando cupom de troco
- * (RN0036) e pedido finalizado com status EM PROCESSAMENTO (RF0038, RN0033).
+ * (RN0036) e pagamento validado automaticamente após EM PROCESSAMENTO (RF0038, RN0033).
  *
  * <p>Marina Costa (cliente 1, endereço 1 em SP) e o produto demonstrativo 1 (R$ 89,90) vêm da massa
  * reiniciada. Frete SP = R$ 15,00 + R$ 2,00/unidade; para 1 unidade o total é R$ 106,90.
@@ -128,9 +128,9 @@ class VendasLojaIT extends PostgresTest {
     loja.finalizar();
 
     assertThat(loja.temErro()).isFalse();
-    assertThat(loja.statusPedido()).contains("EM PROCESSAMENTO");
+    assertThat(loja.statusPedido()).contains("APROVADA");
     assertThat(jdbc.queryForObject("select status from pedido", String.class))
-        .isEqualTo("EM_PROCESSAMENTO");
+        .isEqualTo("APROVADA");
     assertThat(jdbc.queryForObject("select total from pedido", BigDecimal.class))
         .isEqualByComparingTo(TOTAL);
     assertThat(jdbc.queryForObject("select count(*) from item_carrinho", Integer.class)).isZero();
@@ -157,7 +157,7 @@ class VendasLojaIT extends PostgresTest {
 
     assertThat(loja.temErro()).isFalse();
     assertThat(jdbc.queryForObject("select status from pedido", String.class))
-        .isEqualTo("EM_PROCESSAMENTO");
+        .isEqualTo("APROVADA");
     assertThat(
             jdbc.queryForObject(
                 "select count(*) from endereco where cliente_id=1 and apelido='Trabalho'",
@@ -214,12 +214,32 @@ class VendasLojaIT extends PostgresTest {
 
     assertThat(loja.temErro()).isFalse();
     assertThat(jdbc.queryForObject("select status from pedido", String.class))
-        .isEqualTo("EM_PROCESSAMENTO");
+        .isEqualTo("APROVADA");
     assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
-        .isEqualTo("RESERVADO");
+        .isEqualTo("UTILIZADO");
     validarPeloNavegador("APROVADO");
     assertThat(jdbc.queryForObject("select situacao from cupom where id=?", String.class, cupom))
         .isEqualTo("UTILIZADO");
+  }
+
+  @Test
+  void RN0035_promocionalECartaoAbaixoDe10NaTela() {
+    jdbc.update("update produto set preco=300.00 where id=1");
+    long cartao = inserirCartao();
+    String promocional = inserirCupomPromocional("99.00");
+    loja.entrar(CLIENTE);
+    loja.adicionar(PRODUTO, 1);
+    loja.esperarBadge(1);
+    loja.abrirCheckout();
+    loja.escolherEndereco(ENDERECO);
+    loja.promocional(promocional);
+    loja.calcularResumo();
+    loja.valorCartao(cartao, "3.00");
+    loja.finalizar();
+    assertThat(loja.temErro()).isFalse();
+    assertThat(loja.statusPedido()).contains("APROVADA");
+    assertThat(jdbc.queryForObject("select desconto from pedido", BigDecimal.class))
+        .isEqualByComparingTo("297.00");
   }
 
   @Test
@@ -236,7 +256,7 @@ class VendasLojaIT extends PostgresTest {
     loja.finalizar();
 
     assertThat(loja.temErro()).isFalse();
-    assertThat(loja.texto()).contains("EM PROCESSAMENTO");
+    assertThat(loja.texto()).contains("APROVADA");
     validarPeloNavegador("APROVADO");
     assertThat(
             jdbc.queryForObject(
@@ -260,9 +280,9 @@ class VendasLojaIT extends PostgresTest {
     loja.finalizar();
 
     assertThat(loja.temErro()).isFalse();
-    assertThat(loja.statusPedido()).contains("EM PROCESSAMENTO");
+    assertThat(loja.statusPedido()).contains("APROVADA");
     assertThat(jdbc.queryForObject("select status from pedido", String.class))
-        .isEqualTo("EM_PROCESSAMENTO");
+        .isEqualTo("APROVADA");
     assertThat(jdbc.queryForObject("select desconto from pedido", BigDecimal.class))
         .isEqualByComparingTo("8.99");
   }
@@ -510,7 +530,13 @@ class VendasLojaIT extends PostgresTest {
   }
 
   private long compraPeloNavegador(int quantidade) {
+    return compraPeloNavegador(quantidade, false);
+  }
+
+  private long compraPeloNavegador(int quantidade, boolean reprovar) {
     long cartao = inserirCartao();
+    if (reprovar)
+      jdbc.update("insert into resultado_operadora_cartao(cartao_id,resultado) values(?,'REPROVADO')", cartao);
     loja.entrar(CLIENTE);
     loja.adicionar(PRODUTO, quantidade);
     loja.esperarBadge(quantidade);
@@ -530,9 +556,6 @@ class VendasLojaIT extends PostgresTest {
   private void validarPeloNavegador(String resultado) {
     long id = jdbc.queryForObject("select max(id) from pedido", Long.class);
     loja.abrir("/admin/pedidos/" + id);
-    new org.openqa.selenium.support.ui.Select(aguardar("[name='resultadoSimulado']"))
-        .selectByValue(resultado);
-    clicar("[data-testid='validar-pagamento'] button");
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20)).ignoring(org.openqa.selenium.StaleElementReferenceException.class).until(
             d ->
                 aguardar("[data-testid='detalhe-pedido']")
@@ -556,7 +579,7 @@ class VendasLojaIT extends PostgresTest {
     assertThat(Math.abs((painel.x + painel.width / 2.0) - (titulo.x + titulo.width / 2.0)))
         .isLessThan(2.0);
     assertThat(jdbc.queryForObject("select estoque from produto where id=1", Integer.class))
-        .isEqualTo(25);
+        .isEqualTo(24);
     entregarPeloNavegador(p);
     assertThat(jdbc.queryForObject("select estoque from produto where id=1", Integer.class))
         .isEqualTo(24);
@@ -566,11 +589,20 @@ class VendasLojaIT extends PostgresTest {
 
   @Test
   void RN0038_CT056_pagamentoRecusadoLiberaSemBaixar() {
-    compraPeloNavegador(1);
+    compraPeloNavegador(1, true);
     validarPeloNavegador("REPROVADO");
     assertThat(jdbc.queryForObject("select estoque from produto where id=1", Integer.class))
         .isEqualTo(25);
     assertThat(driver.findElements(By.cssSelector("[data-despachar]")).size()).isZero();
+  }
+
+  @Test
+  void RF0041_RN0043_trocaAntesDaEntregaBloqueadaNaTela() {
+    long pedido = compraPeloNavegador(1);
+    loja.abrir("/perfil/pedidos/" + pedido);
+    aguardar("[data-testid='detalhe-pedido']");
+    assertThat(driver.findElements(By.cssSelector("[data-testid='solicitar-troca']"))).isEmpty();
+    assertThat(jdbc.queryForObject("select count(*) from troca", Integer.class)).isZero();
   }
 
   @Test
@@ -615,8 +647,6 @@ class VendasLojaIT extends PostgresTest {
     aguardar("[data-testid='troca-1']");
     loja.abrir("/admin/trocas");
     clicar("[data-autorizar]");
-    new org.openqa.selenium.support.ui.Select(aguardar("[name='retornarEstoque']"))
-        .selectByValue("true");
     clicar("[data-testid='receber-troca'] button");
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20)).ignoring(org.openqa.selenium.StaleElementReferenceException.class).until(d -> aguardar("[data-testid='troca-1']").getText().contains("TROCADO"));
     assertThat(jdbc.queryForObject("select estoque from produto where id=1", Integer.class))
@@ -648,12 +678,14 @@ class VendasLojaIT extends PostgresTest {
     aguardar("[data-testid='troca-2']");
     loja.abrir("/admin/trocas");
     clicar("[data-autorizar]");
-    new org.openqa.selenium.support.ui.Select(aguardar("[name='retornarEstoque']"))
-        .selectByValue("false");
     clicar("[data-testid='receber-troca'] button");
     new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(20)).ignoring(org.openqa.selenium.StaleElementReferenceException.class).until(d -> aguardar("[data-testid='troca-2']").getText().contains("TROCADO"));
     assertThat(jdbc.queryForObject("select status from pedido where id=?", String.class, segundo))
         .isEqualTo("TROCADO");
+    assertThat(jdbc.queryForObject("select estoque from produto where id=1", Integer.class))
+        .isEqualTo(24);
+    assertThat(jdbc.queryForObject("select count(*) from movimentacao_estoque", Integer.class))
+        .isEqualTo(4);
     assertThat(
             jdbc.queryForObject(
                 "select count(*) from cupom where origem like 'Troca recebida%'", Integer.class))
@@ -698,7 +730,7 @@ class VendasLojaIT extends PostgresTest {
     assertThat(
             jdbc.queryForObject(
                 "select count(*) from cupom where origem like 'Troco%'", Integer.class))
-        .isZero();
+        .isEqualTo(1);
     validarPeloNavegador("APROVADO");
     assertThat(
             jdbc.queryForObject(
