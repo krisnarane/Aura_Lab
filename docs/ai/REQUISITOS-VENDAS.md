@@ -67,14 +67,16 @@ A evidência é o relatório da execução atual, em `backend/target/surefire-re
 | RN0044 | Sacola e reservas | Bloqueio por unidades, última inclusão, aviso; CicloVendaApiTest concorrência/prazo; CT057 |
 | RN0045 | Sacola expirada | Retirada e desbloqueio; CT057; API expiração e aprovação tardia |
 | RN0046 | Perfil após autorização | Notificação persistida; CT058/CT059; API trocas |
-| RNF0011 | Consultas de vendas | ConsultaPerformanceTest até 1s com aquecimento e amostra; CSV performance-vendas |
+| RNF0011 | Consultas de vendas e análise | O DRS exige 1.000 ms; para a análise RF0055, o usuário aceitou meta local de 2.000 ms em `AnaliseVendasPerformanceTest` (aquecimento e 30 amostras HTTP). `ConsultaPerformanceTest` conserva o limite original para as demais consultas. CSV performance-vendas e performance-analise-vendas |
+| RF0055 | Dashboard administrativo | AnaliseVendasApiTest (período, categorias, rateio, status atual, entrega posterior) e AnaliseVendasIT (roteiro funcional) |
+| RNF0043 | Dashboard administrativo | AnaliseVendasIT verifica linhas, legenda, pontos acessíveis e valores mensais em reais |
 | RNF0012 | Todas as escritas | Auditoria transacional; CicloVendaApiTest rollback; auditoria do carrinho e efeitos únicos |
 | RNF0042 | Sacola expirada | Produto, motivo e prazo removidos visíveis; CT057 |
 | RNF0034 | Endereço no checkout e perfil | Adicionar/alterar endereço isoladamente sem editar demais dados do cliente; VendaApiTest novo endereço com/sem incorporação e ClientePerfilIT endereços |
 
 ## Revisão da entrega
 
-Os resultados devem ser lidos nos relatórios atuais. Erros, testes não executados e decisões pendentes impedem declarar conclusão integral. Entradas gerais de estoque, precificação completa, analytics, IA e autenticação ficam em outros incrementos. Não há cancelamento pelo cliente, recusa de troca, reembolso de sete dias ou etapa adicional para gerar cupom.
+Os resultados devem ser lidos nos relatórios atuais. Erros, testes não executados e decisões pendentes impedem declarar conclusão integral. Entradas gerais de estoque, precificação completa, IA e autenticação ficam em outros incrementos. A análise por categoria de RF0055 está descrita abaixo. Não há cancelamento pelo cliente, recusa de troca, reembolso de sete dias ou etapa adicional para gerar cupom.
 
 Carrinhos anteriores sem reserva são conciliados pela última inclusão auditada, preservando seu vencimento. Sem prazo auditável ou com prazo vencido, a massa é preservada como item retirado e exige reinclusão, sem fabricar bloqueio ou baixa anteriores.
 
@@ -98,3 +100,13 @@ V10 cria `resultado_operadora_cartao`, associada ao ID do cartão salvo. O cart�
 Após a autorização, confirmar o recebimento da troca sempre gera crédito e reentrada no estoque, sem opção de não retornar. Chamadas repetidas não duplicam esses efeitos.
 
 O enunciado recebido usa a expressão contraditória "retirar" e "voltam ao carrinho" para itens cujo bloqueio expirou. A decisão adotada é retirada com histórico visível e **reinclusão manual** para criar novo bloqueio; compra fica indisponível quando não houver itens válidos. Esta interpretação precisa de aceite do professor antes de afirmar aderência literal. O enunciado também cita RF/RNF para algumas operações com numeração diferente de `DRS_LES_2_2026.docx`; a matriz acima usa os identificadores desse DRS. Não extrapolar equivalência entre versões sem confirmação.
+
+## Análise mensal por categoria — RF0055/RNF0043/RNF0011
+
+A meta de aceite desta entrega para a consulta gráfica é **2 segundos**, conforme orientação posterior do usuário. O RNF0011 no DRS permanece em **1 segundo**; passar no teste de 2 segundos não comprova, por si só, conformidade com esse limite do DRS. As demais consultas e seus testes mantêm os limites anteriores.
+
+`GET /api/v1/admin/analise-vendas` recebe `inicio`, `fim` (datas inclusivas) e parâmetros repetidos `categorias`. Retorna `meses` em `AAAA-MM` e `series` com código, descrição e valores em reais, inclusive meses sem vendas. Apenas pedidos cujo estado **atual** é `ENTREGUE` entram na consulta. O mês é o da criação do pedido em `America/Sao_Paulo`.
+
+O total histórico do pedido, incluindo desconto e frete, é distribuído proporcionalmente aos subtotais históricos dos itens; se todos forem zero, divide-se igualmente. Cada parcela de item é repartida entre as categorias **atuais** do produto. Centavos restantes são atribuídos em ordem de ID do item e código da categoria. Assim, editar categorias pode reclassificar vendas antigas, sem alterar o total do pedido. A consulta lê o PostgreSQL a cada requisição, sem cache ou `localStorage`. V12 cria índice parcial de pedidos ENTREGUE por data.
+
+O dashboard oferece seleção de `ADMIN_DEMO`/`CLIENTE_DEMO`. A tela bloqueia o perfil cliente e a API retorna 403 para qualquer valor diferente de `ADMIN_DEMO` no cabeçalho `X-Demo-Perfil`. Esse cabeçalho é forjável: demonstra a regra funcional, **não autentica nem protege o acesso real**. A análise antiga e a exportação CSV foram retiradas da rota integrada. A massa de teste funcional cria compras pelo caso de uso de venda com relógio controlado e confirma entrega pelo fluxo administrativo.

@@ -12,6 +12,7 @@ import { escaparHtml as e, formatarMoeda as moeda } from "./utilitarios.js";
 import { camposEndereco } from "./clientesComponentes.js";
 import { prepararFormularios } from "./clientesEventos.js";
 import { header, footer } from "./pages.js";
+import { aplicarDetalhesVisuais } from "./interface.js";
 
 const CHAVE_CLIENTE = "aura-lab-perfil-api-cliente";
 const CHAVE_NOME = "aura-lab-perfil-api-nome";
@@ -84,6 +85,9 @@ const paginaEscolha = (clientes, falha) =>
         `<p>Nenhum cliente ativo. Cadastre um pelo <a href="/admin/clientes?new=1" data-loja-link>painel administrativo</a>.</p>`
   }</div></div></main>${footer()}`;
 
+const arteProduto = (p, classe, cor) => `<div class="${classe}" data-cor-produto="${cor}">${p.imagemUrl ? `<img src="${e(p.imagemUrl)}" alt="${e(p.nome)}" data-ocultar-imagem-com-erro data-testid="imagem-produto">` : ""}<span class="product-mark">aura</span></div>`;
+const categoriasProduto = (p) => (p.categorias || []).map((c) => `<span>${e(c.descricao)}</span>`).join("");
+
 // ---- catálogo ----
 const paginaCatalogo = (nome, produtos, totalItens) =>
   `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container catalog-content"><div class="row g-4"><aside class="col-lg-3"><div class="panel filters"><div class="d-flex justify-content-between"><b>Filtros</b><a href="/" data-loja-link>Limpar</a></div><hr><label><input type="radio" checked> Todos</label><label class="mt-3">Marca<select class="form-select mt-1" data-catalogo-marca><option value="">Todas</option>${[...new Set(produtos.map((p) => p.marca))].map((marca) => `<option>${e(marca)}</option>`).join("")}</select></label></div></aside><section class="col-lg-9"><div class="catalog-search"><label for="search">Encontre seu próximo ritual</label><div class="input-group"><span class="input-group-text">⌕</span><input id="search" class="form-control" data-catalogo-busca placeholder="Buscar por produto ou marca"></div></div><div class="catalog-heading"><p class="muted"><span data-catalogo-total>${produtos.length}</span> produtos encontrados</p><span>Ordenar por <b>Mais relevantes</b></span></div><div class="row g-3" data-catalogo-grid>${
@@ -91,14 +95,14 @@ const paginaCatalogo = (nome, produtos, totalItens) =>
       ? produtos
           .map(
             (p, indice) =>
-              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}"><article class="aura-card" data-testid="produto-${p.id}"><div class="product-art" data-cor-produto="${["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4]}"><span class="product-mark">aura</span></div><div class="card-body"><p class="product-brand">${e(p.marca)}</p><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p class="availability">${p.estoqueDisponivel < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
+              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}"><article class="aura-card" data-testid="produto-${p.id}">${arteProduto(p, "product-art", ["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4])}<div class="card-body"><p class="product-brand">${e(p.marca)}</p><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p>${e(p.descricao || "")}</p><div class="chips">${categoriasProduto(p)}</div><p class="availability">${p.estoqueDisponivel < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
           )
           .join("")
       : '<div class="panel">Nenhum produto disponível no momento.</div>'
   }</div></section></div></div></main>${footer()}`;
 
 const paginaProduto = (nome, p, totalItens) =>
-  `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container"><a href="/" data-loja-link class="back">← Produtos</a><div class="row g-5 mt-1 align-items-center"><div class="col-lg-6"><div class="detail-art" data-cor-produto="#d7a3ae"><span class="product-mark">aura</span></div></div><div class="col-lg-6"><small>${e(p.marca)}</small><h1>${e(p.nome)}</h1><h3>${moeda(p.preco)}</h3><p>Código ${e(p.codigo)} · ${p.estoqueDisponivel} unidade(s) disponíveis.</p><div class="chips"><span>${p.estoqueDisponivel > 0 ? "Disponível" : "Esgotado"}</span></div><div class="product-buy"><label for="product-quantity">Quantidade</label><input id="product-quantity" class="form-control" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}"><button class="btn aura-btn" data-add="${p.id}" data-testid="add-${p.id}" ${p.estoqueDisponivel > 0 ? "" : "disabled"}>Adicionar à sacola</button></div></div></div></div></main>${footer()}`;
+  `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container"><a href="/" data-loja-link class="back">← Produtos</a><div class="row g-5 mt-1 align-items-center"><div class="col-lg-6">${arteProduto(p, "detail-art", "#d7a3ae")}</div><div class="col-lg-6"><small>${e(p.marca)}</small><h1>${e(p.nome)}</h1><h3>${moeda(p.preco)}</h3><p>${e(p.descricao || "")}</p><p>Código ${e(p.codigo)} · ${p.estoqueDisponivel} unidade(s) disponíveis.</p><div class="chips"><span>${p.estoqueDisponivel > 0 ? "Disponível" : "Esgotado"}</span>${categoriasProduto(p)}</div><div class="product-buy"><label for="product-quantity">Quantidade</label><input id="product-quantity" class="form-control" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}"><button class="btn aura-btn" data-add="${p.id}" data-testid="add-${p.id}" ${p.estoqueDisponivel > 0 ? "" : "disabled"}>Adicionar à sacola</button></div></div></div></div></main>${footer()}`;
 
 // ---- carrinho ----
 const paginaCarrinho = (nome, carrinho) => {
@@ -419,6 +423,7 @@ export async function renderizarVendasApi(raiz, navegar, toast) {
       if (rota !== location.href || v !== versao) return;
       const disponiveis = produtos.filter((p) => p.visivel && p.estoqueDisponivel > 0);
       raiz.innerHTML = paginaCatalogo(nome, disponiveis, carrinho.totalUnidades);
+      aplicarDetalhesVisuais(raiz);
       ligarLinks(navegar);
       ligarFiltroCatalogo(raiz);
       ligarAdicao(raiz, navegar, toast, id);
@@ -429,7 +434,9 @@ export async function renderizarVendasApi(raiz, navegar, toast) {
         vendasService.carrinho(id),
       ]);
       if (rota !== location.href || v !== versao) return;
+      if (!produto.ativo || !produto.visivel) { navegar("/"); return; }
       raiz.innerHTML = paginaProduto(nome, produto, carrinho.totalUnidades);
+      aplicarDetalhesVisuais(raiz);
       ligarLinks(navegar);
       ligarAdicao(raiz, navegar, toast, id);
     } else if (caminho === "/sacola") {

@@ -10,7 +10,7 @@ O módulo administrativo de clientes funciona de ponta a ponta em `/admin/client
 
 Ele implementa cadastro, consulta, alteração e inativação de cliente, além de endereços, cartões, alteração isolada de senha, consulta de transações demonstrativas, ranking e auditoria. O Spring Boot também serve o frontend pela mesma origem, na porta 4200 por padrão.
 
-O módulo administrativo de produtos funciona de ponta a ponta em `/admin/produtos` seguindo o mesmo fluxo (`produtosService → produtosApi → ProdutoController`), com cadastro e consulta mínimos e o ciclo de situação completo: inativação (RF0012/RN0015) e **ativação (RF0016/RN0017)** sempre com categoria e justificativa registradas em auditoria. Livro do DRS corresponde a produto da loja.
+O módulo administrativo de produtos funciona de ponta a ponta em `/admin/produtos` seguindo o mesmo fluxo (`produtosService → produtosApi → ProdutoController`), com cadastro completo dos campos do Aura Lab, edição e consulta (RF0011/RF0014/RF0015) e ciclo de situação: inativação (RF0012/RN0015) e ativação (RF0016/RN0017) sempre com categoria e justificativa registradas em auditoria. Catálogo e detalhe da loja exibem imagem, descrição e categorias do banco.
 
 O perfil do cliente da loja (`/perfil/dados`, `/perfil/seguranca`, `/perfil/enderecos` e `/perfil/cartoes`) também está integrado à API via `perfil-api.js` → `clientesService` → `clientesApi`. Como não há autenticação, a sessão da loja escolhe um **cliente real cadastrado no PostgreSQL** (identificador mantido em `localStorage`) e todas as alterações dessas quatro telas persistem no banco com as mesmas validações e auditoria do painel administrativo.
 
@@ -43,8 +43,11 @@ O resumo de frete agora exige um endereço ativo de entrega do perfil ou a UF de
 
 ## Pendências conhecidas
 
-- Completar catálogo/cadastro de livros, entradas de estoque, precificação, analytics, IA e autenticação em incrementos próprios.
+- Modelar campos editoriais exclusivos dos livros do DRS, entradas de estoque, precificação, IA e autenticação em incrementos próprios. A análise RF0055 por categoria já foi integrada no dashboard.
 - Comunicar e validar ambiguidades documentais com o professor antes de afirmar aderência sem ressalvas.
 - Conciliar registros legados manualmente quando houver evidência segura; não fabricar aprovações ou movimentações retroativas.
 - Restringir `CascadeType.ALL` nas associações atuais quando isso puder ser feito com migração e testes de preservação de histórico.
 - Confirmar a versão do DRS quando o enunciado citar `DRS_LES_1_2026`; o arquivo local é `DRS_LES_2_2026.docx`.
+# Incremento RF0055/RNF0043/RNF0011
+
+`/admin/dashboard` consulta o histórico mensal de pedidos ENTREGUE no PostgreSQL via `/api/v1/admin/analise-vendas`. O gráfico de linhas compara categorias atuais dos produtos, com rateio do total histórico do pedido e meses sem vendas preenchidos com zero. A seleção ADMIN_DEMO/CLIENTE_DEMO e o 403 demonstram a restrição funcional; o identificador enviado pelo navegador é forjável e não implementa autenticação. A consulta usa índice da V12 e é medida com 1.000 pedidos em Testcontainers. Ver `REQUISITOS-VENDAS.md` e `OPERACAO-E-TESTES.md`.

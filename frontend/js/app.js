@@ -61,7 +61,6 @@ import {
 } from "./pages.js";
 import { aplicarDetalhesVisuais } from "./interface.js";
 import { inicializarConsultoraAura } from "./consultora-aura.js";
-import { inicializarAnalytics } from "./analytics.js";
 import { ehRotaClientesAdmin, renderizarClientesAdmin } from "./admin-clientes.js";
 import { ehRotaProdutosAdmin, renderizarProdutosAdmin } from "./admin-produtos.js";
 import {
@@ -70,6 +69,7 @@ import {
 } from "./perfil-api.js?v=perfil-abas-20261005";
 import { ehRotaVendasApi, renderizarVendasApi } from "./vendas-api.js";
 import { ehRotaPedidosApi, renderizarPedidosApi } from "./pedidos-api.js";
+import { ehRotaAnaliseVendas, renderizarAnaliseVendas } from "./admin-analise-vendas.js";
 
 const raizAplicacao = document.querySelector("#app");
 
@@ -140,6 +140,10 @@ function renderizar() {
   // Toda navegação redesenha o HTML, reaplica detalhes visuais e religa eventos.
   if (location.pathname === "/cadastro") {
     history.replaceState({}, "", "/perfil/dados");
+  }
+  if (ehRotaAnaliseVendas()) {
+    renderizarAnaliseVendas(raizAplicacao, navegar);
+    return;
   }
   if (ehRotaClientesAdmin()) {
     renderizarClientesAdmin(raizAplicacao, navegar, exibirToast);
@@ -885,7 +889,6 @@ function registrarEventos() {
   });
 
   // Módulos especializados recebem os callbacks necessários sem conhecer o roteador inteiro.
-  inicializarAnalytics(navegar);
   inicializarConsultoraAura({
     exibirToast,
     renderizar,

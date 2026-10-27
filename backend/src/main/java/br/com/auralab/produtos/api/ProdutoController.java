@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Controller REST de produtos (livros no DRS). Apenas delega ao ProdutoService.
  *
- * <p>Cobre RF0011 (cadastro parcial), RF0015 (consulta parcial) e o ciclo RF0012/RN0015
+ * <p>Cobre RF0011, RF0014, RF0015 e o ciclo RF0012/RN0015
  * (inativar) e RF0016/RN0017 (ativar), além das consultas das tabelas de domínio de
  * motivo. Erros seguem o contrato {codigo, mensagem, campos} do ApiExceptionHandler.
  */
@@ -28,8 +28,10 @@ public class ProdutoController {
   List<ProdutoView> listar(
       @RequestParam(required = false) String codigo,
       @RequestParam(required = false) String nome,
+      @RequestParam(required = false) String marca,
+      @RequestParam(required = false) String categoria,
       @RequestParam(required = false) Boolean ativo) {
-    return produtos.listar(codigo, nome, ativo);
+    return produtos.listar(codigo, nome, marca, categoria, ativo);
   }
 
   @GetMapping("/produtos/{id}")
@@ -42,6 +44,9 @@ public class ProdutoController {
     return produtos.categoriasAtivacao();
   }
 
+  @GetMapping("/categorias-produto")
+  List<CategoriaProdutoView> categoriasProduto() { return produtos.categoriasProduto(); }
+
   @GetMapping("/categorias-inativacao-produto")
   List<CategoriaProdutoView> categoriasInativacao() {
     return produtos.categoriasInativacao();
@@ -51,6 +56,11 @@ public class ProdutoController {
   ResponseEntity<ProdutoView> cadastrar(@Valid @RequestBody ProdutoInput in) {
     var v = produtos.cadastrar(in);
     return ResponseEntity.created(URI.create("/api/v1/produtos/" + v.id())).body(v);
+  }
+
+  @PatchMapping("/produtos/{id}")
+  ProdutoView editar(@PathVariable Long id, @Valid @RequestBody ProdutoInput in) {
+    return produtos.editar(id, in);
   }
 
   /** RF0012/RN0015: inativação lógica com categoria e justificativa obrigatórias. */

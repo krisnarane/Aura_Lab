@@ -49,8 +49,7 @@ public abstract class PostgresTest {
     for (String migration :
         java.util.List.of(
             "V2__massa_demonstracao.sql",
-            "V4__historico_demonstrativo.sql",
-            "V6__massa_produtos_demonstracao.sql")) {
+            "V4__historico_demonstrativo.sql")) {
       String sql =
           new String(
               getClass().getResourceAsStream("/db/migration/" + migration).readAllBytes(),
@@ -59,5 +58,13 @@ public abstract class PostgresTest {
     }
     jdbc.execute(
         "update transacao_cliente set status='PAGAMENTO_REALIZADO' where tipo='PEDIDO' and status='APROVADA'");
+    jdbc.execute("insert into produto(nome,marca,descricao,imagem_url,preco,estoque,ativo,visivel,criado_em,atualizado_em) values"
+        + " ('Creme Facial Vitamina C','Aura Derma','Creme facial hidratante com vitamina C.','https://example.com/creme.png',89.90,25,true,true,current_timestamp,current_timestamp),"
+        + " ('Sérum Ácido Hialurônico','Aura Derma','Sérum facial hidratante.','https://example.com/serum.png',129.90,12,true,true,current_timestamp,current_timestamp)");
+    jdbc.execute("insert into produto(nome,marca,descricao,imagem_url,preco,estoque,ativo,visivel,categoria_inativacao,justificativa_inativacao,inativado_em,criado_em,atualizado_em) values"
+        + " ('Protetor Solar FPS 60','Solar Lab','Protetor solar facial FPS 60.','https://example.com/protetor.png',59.90,0,false,false,'FORA_DE_MERCADO','Linha saiu de catálogo após esgotar o último lote.',current_timestamp,current_timestamp,current_timestamp)");
+    jdbc.execute("insert into produto_categoria(produto_id,categoria_codigo) select id,'FACE' from produto");
+    jdbc.execute("insert into produto_categoria(produto_id,categoria_codigo) select id,'SKINCARE' from produto");
+    jdbc.execute("insert into produto_categoria(produto_id,categoria_codigo) select id,'HIDRATANTES' from produto where id in (1,2)");
   }
 }

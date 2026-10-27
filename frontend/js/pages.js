@@ -25,8 +25,6 @@ import {
   exchangeCoupons,
   filterCustomers,
   filterOrders,
-  analyticsCategories,
-  salesAnalysis,
   cardBrands,
   customerRanking,
 } from "./store.js";
@@ -481,61 +479,8 @@ const criarAcoesPedidoAdmin = (item) => {
     : "—";
 };
 
-const CORES_ANALYTICS = ["#b85b78", "#c58a42", "#8f6fa8", "#5e8399", "#bf6f54", "#78966d", "#b07b93"];
-
-function criarDashboard(query) {
-  // O dashboard lê filtros da URL e cai em valores padrão se houver erro.
-  const selectedFromQuery = query
-    .getAll("category")
-    .filter((category) => analyticsCategories.includes(category));
-  const selectedCategories = selectedFromQuery.length
-    ? selectedFromQuery
-    : analyticsCategories;
-  const requestedStart = query.get("start") || "";
-  const requestedEnd = query.get("end") || "";
-  let analysis;
-  let validationError = "";
-  try {
-    analysis = salesAnalysis({
-      startDate: requestedStart,
-      endDate: requestedEnd,
-      categories: selectedCategories,
-    });
-  } catch (error) {
-    validationError = error.message;
-    analysis = salesAnalysis({ categories: selectedCategories });
-  }
-  const values = analysis.series.flatMap((series) => series.values);
-  const max = Math.max(...values, 1);
-
-  // Converte índice e valor de venda em coordenadas do SVG.
-  const x = (index) => 30 + (index * 350) / Math.max(analysis.periods.length - 1, 1);
-  const y = (value) => 150 - (value * 118) / max;
-  const totalSales = values.reduce((sum, value) => sum + value, 0);
-  const seriesSvg = analysis.series
-    .map((series, seriesIndex) => {
-      // Cada categoria vira uma linha com pontos e títulos acessíveis no gráfico.
-      const color = CORES_ANALYTICS[seriesIndex % CORES_ANALYTICS.length];
-      const points = series.values
-        .map((value, index) => `${x(index)},${y(value)}`)
-        .join(" ");
-      const circles = series.values
-        .map(
-          (value, index) =>
-            `<circle cx="${x(index)}" cy="${y(value)}" r="5" style="fill:${color}"><title>${escaparHtml(series.category)} · ${escaparHtml(analysis.periods[index].label)}: ${formatarMoeda(value)}</title></circle>`,
-        )
-        .join("");
-      return `<polyline fill="none" stroke="${color}" stroke-width="3" points="${points}"/>${circles}`;
-    })
-    .join("");
-  const validOrders = state.orders.filter(
-    (item) => !["EM_ABERTO", "CANCELADO"].includes(item.status),
-  );
-  return criarEstruturaAdmin(
-    "Dashboard",
-    "Dashboard",
-    `<div class="metrics"><div>Receita analisada <b>${formatarMoeda(totalSales)}</b><small>categorias e período selecionados</small></div><div>Pedidos ativos <b>${validOrders.length}</b><small>processamento até entregue</small></div><div>Clientes <b>${state.customers.length}</b><small>${state.customers.filter((item) => item.active).length} ativos</small></div><div>Trocas abertas <b>${state.exchanges.filter((item) => !["TROCA_NEGADA", "TROCA_PROCESSADA"].includes(item.status)).length}</b><small>aguardando ação</small></div></div><div class="panel chart-panel"><div><span class="eyebrow">Analytics</span><h2>Análise de vendas por categoria</h2><p class="muted">Filtre o período e compare uma ou mais categorias de produtos de beleza.</p></div><form id="analytics-filter" class="analytics-filter"><label>Data inicial<input class="form-control" type="date" name="start" min="${analysis.minDate}" max="${analysis.maxDate}" value="${escaparHtml(requestedStart || analysis.startDate)}" required></label><label>Data final<input class="form-control" type="date" name="end" min="${analysis.minDate}" max="${analysis.maxDate}" value="${escaparHtml(requestedEnd || analysis.endDate)}" required></label><fieldset><legend>Categorias para comparação</legend><div class="analytics-category-selector">${analyticsCategories.map((category) => `<label><input type="checkbox" name="category" value="${escaparHtml(category)}" ${selectedCategories.includes(category) ? "checked" : ""}> ${escaparHtml(category)}</label>`).join("")}</div></fieldset><div class="analytics-actions"><button class="btn aura-btn">Aplicar filtros</button><button type="button" id="analytics-export" class="btn btn-outline-secondary">Exportar dados</button></div><p id="analytics-filter-feedback" class="text-destructive" ${validationError ? "" : "hidden"}>${escaparHtml(validationError)}</p></form><svg class="sales-chart" viewBox="0 0 420 190" role="img" aria-label="Evolução de vendas por categoria"><line x1="20" y1="155" x2="400" y2="155"/>${seriesSvg}${analysis.periods.map(({ label }, index) => `<text x="${x(index)}" y="178" text-anchor="middle">${analysis.periods.length > 12 && index % 2 ? "" : escaparHtml(label.slice(0, 3))}</text>`).join("")}</svg><div class="chart-legend">${analysis.series.map((series, index) => `<span style="--legend-color:${CORES_ANALYTICS[index % CORES_ANALYTICS.length]}">● ${escaparHtml(series.category)}</span>`).join("")}</div></div>`,
-  );
+function criarDashboard() {
+  return criarEstruturaAdmin("Dashboard", "Dashboard", "<p>Abra a análise integrada de vendas por categoria.</p>");
 }
 
 const criarFormularioClienteAdmin = (item = null) => {

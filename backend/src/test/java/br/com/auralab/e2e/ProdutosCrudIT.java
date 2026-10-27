@@ -8,6 +8,8 @@ import java.nio.file.*;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.*;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import java.time.Duration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
@@ -172,6 +174,9 @@ class ProdutosCrudIT extends PostgresTest {
     var f = page.formulario("form-produto");
     f.campo("nome", "Sabonete Líquido Lavanda")
         .campo("marca", "Aura Body")
+        .campo("descricao", "Limpeza suave para o corpo.")
+        .campo("imagemUrl", "https://example.com/sabonete.png")
+        .selecionar("categorias", "Limpeza Facial")
         .campo("preco", "39.9")
         .campo("estoque", "50");
     f.enviar();
@@ -181,5 +186,46 @@ class ProdutosCrudIT extends PostgresTest {
             jdbc.queryForObject(
                 "select codigo from produto where nome='Sabonete Líquido Lavanda'", String.class))
         .isEqualTo("PRD-000004");
+  }
+
+  @Test
+  void RF0014_RF0015_editarFiltrarEPersistirAposRecarga() {
+    page.abrir("", "tabela-produtos");
+    page.clicar("[data-editar-produto='1']");
+    page.esperar("form-produto");
+    var f = page.formulario("form-produto");
+    f.campo("nome", "Creme Facial Renovado").campo("descricao", "Nova descrição do creme.")
+        .selecionar("categorias", "Face").enviar();
+    page.abrir("?marca=Aura%20Derma&categoria=FACE", "tabela-produtos");
+    assertThat(page.linha(1)).contains("Creme Facial Renovado", "Face");
+    assertThat(jdbc.queryForObject("select descricao from produto where id=1", String.class))
+        .isEqualTo("Nova descrição do creme.");
+  }
+
+  @Test
+  void RF0014_catalogoEDetalheExibemDadosEditadosComArteAlternativa() {
+    page.abrir("", "tabela-produtos");
+    page.clicar("[data-editar-produto='1']");
+    page.esperar("form-produto");
+    var f = page.formulario("form-produto");
+    f.campo("descricao", "Descrição publicada na loja.")
+        .campo("imagemUrl", "https://example.invalid/imagem-quebrada.png")
+        .selecionar("categorias", "Face")
+        .selecionar("categorias", "Skincare")
+        .enviar();
+    driver.get("http://localhost:" + port + "/");
+    var espera = new WebDriverWait(driver, Duration.ofSeconds(20));
+    espera.until(d -> !d.findElements(By.cssSelector("[data-entrar-cliente='1'],[data-testid='produto-1']")).isEmpty());
+    var selecao = driver.findElements(By.cssSelector("[data-entrar-cliente='1']"));
+    if (!selecao.isEmpty()) InteracaoNavegador.clicar(driver, selecao.getFirst());
+    espera.until(d -> !d.findElements(By.cssSelector("[data-testid='produto-1']")).isEmpty());
+    assertThat(driver.findElement(By.cssSelector("[data-testid='produto-1']")).getText())
+        .contains("Descrição publicada na loja.", "Face", "Skincare");
+    espera.until(d -> Boolean.parseBoolean(d.findElement(By.cssSelector("[data-testid='produto-1'] img")).getDomProperty("hidden")));
+    driver.get("http://localhost:" + port + "/produto/1");
+    espera.until(d -> d.findElement(By.tagName("body")).getText().contains("Descrição publicada na loja."));
+    assertThat(driver.findElement(By.tagName("body")).getText()).contains("Face", "Skincare");
+    espera.until(d -> Boolean.parseBoolean(d.findElement(By.cssSelector(".detail-art img")).getDomProperty("hidden")));
+    assertThat(driver.findElement(By.cssSelector(".detail-art .product-mark")).isDisplayed()).isTrue();
   }
 }

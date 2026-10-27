@@ -28,6 +28,7 @@ export function aplicarDetalhesVisuais(raiz = document) {
 
   // Se uma imagem cadastrada quebrar, o card volta para a arte de cor sem deixar ícone quebrado.
   raiz.querySelectorAll("[data-ocultar-imagem-com-erro]").forEach((imagem) => {
+    if (imagem.complete && imagem.naturalWidth === 0) imagem.hidden = true;
     imagem.addEventListener(
       "error",
       () => {

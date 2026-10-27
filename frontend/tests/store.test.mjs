@@ -350,8 +350,8 @@ assert.match(
     "Dashboard",
     new URLSearchParams("start=2026-06-01&end=2026-08-01&category=Blush&category=Bruma"),
   ),
-  /Exportar dados/,
-  "dashboard oferece exportação dos dados filtrados",
+  /Abra a análise integrada de vendas por categoria/,
+  "dashboard antigo não oferece exportação CSV",
 );
 const analysis = store.salesAnalysis({
   startDate: "2026-06-01",

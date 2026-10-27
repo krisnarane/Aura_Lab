@@ -2,6 +2,7 @@ package br.com.auralab.produtos.api.dto;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * Saída de produto com situação, visibilidade e último motivo de ativação/inativação
@@ -22,4 +23,7 @@ public record ProdutoView(
     String categoriaAtivacao,
     String justificativaAtivacao,
     OffsetDateTime ativadoEm,
-    int estoqueDisponivel) {}
+    int estoqueDisponivel,
+    String descricao,
+    String imagemUrl,
+    List<CategoriaProdutoView> categorias) {}

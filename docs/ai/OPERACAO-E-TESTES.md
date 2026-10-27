@@ -24,6 +24,21 @@ O PostgreSQL Docker do projeto usa `127.0.0.1:5433` no Windows e mantém a porta
 
 ## Executar os testes
 
+Para a análise de vendas RF0055/RNF0043/RNF0011, execute a API, o roteiro Selenium e a medição HTTP separadamente (PostgreSQL/Testcontainers e Chrome):
+
+```powershell
+cd backend
+$env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+.\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' '-Dtest=AnaliseVendasApiTest,AnaliseVendasPerformanceTest' test
+.\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' test-compile failsafe:integration-test failsafe:verify '-Dit.test=AnaliseVendasIT' '-Dselenium.headless=true'
+```
+
+`AnaliseVendasPerformanceTest` cria e entrega um pedido pelo fluxo de venda e gera 999 cópias isoladas em SQL para a massa de leitura, distribuídas entre meses. Aquece a consulta quinze vezes e mede 30 respostas HTTP. O CSV fica em `backend/target/evidencias/performance-analise-vendas.csv`. Os cenários funcionais usam compras geradas pelo fluxo de venda com relógio controlado. A apresentação em chamada pode rodar `AnaliseVendasIT` com `-Dselenium.headless=false` para mostrar os sete cenários.
+
+Para a análise RF0055, o aceite local passou a ser **até 2.000 ms por resposta HTTP**. O DRS ainda descreve RNF0011 como até 1.000 ms; não tratar o limite local como alteração do DRS. Os testes de desempenho das demais consultas continuam com seus limites próprios.
+
+Verificação dirigida em 26/10/2026: `AnaliseVendasApiTest` (3), `MigrationPersistenceTest.RF0055_RNF0011_V12_indiceEmBancoNovoEExistente` (1) e `AnaliseVendasPerformanceTest` (1) aprovados em PostgreSQL/Testcontainers. Após ajustar a meta local para 2 segundos, a medição foi repetida com 1.000 pedidos: as 30 amostras HTTP tiveram máximo de **515,63 ms** e média de **77,32 ms** após 15 aquecimentos, conforme o CSV gerado. `AnaliseVendasIT` passou em Chrome headless (um teste com o roteiro de sete cenários). Esses resultados são dirigidos ao incremento; a suíte completa do projeto não foi reexecutada nesta verificação.
+
 Verificação completa em Chrome headless, com relatórios e matriz:
 
 ```powershell

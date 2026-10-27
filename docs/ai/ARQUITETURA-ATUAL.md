@@ -33,11 +33,12 @@ Controllers não acessam repositories diretamente. `ClienteMapper` somente conve
 | `CartaoService` | Listar bandeiras/cartões, adicionar, escolher preferencial e inativar cartão |
 | `TransacaoService` | Consultar lista e detalhe das transações demonstrativas do cliente |
 | `AuditoriaService` | Registrar eventos dentro da transação corrente e consultar o histórico |
-| `ProdutoService` | Cadastrar/listar produtos (mínimos), inativar e ativar produto com categoria e justificativa (RF0012/RF0016); listar categorias de motivo |
+| `ProdutoService` | Cadastrar, editar e filtrar produtos com categorias, descrição e imagem; validar reservas antes de reduzir estoque; inativar e ativar com motivo (RF0012/RF0016) |
 | `AuditoriaProdutoService` | Registrar eventos de produto na transação corrente |
 | `ValidadorCliente` | Normalizações e validações reutilizadas |
 | `CarrinhoService` | Adicionar, alterar quantidade, remover e visualizar itens do carrinho validando estoque (RF0031/RF0032/RN0031) |
 | `VendaService` | Realizar/finalizar compra (RF0033/RF0038), endereço (RF0035), frete (RF0034), composição de pagamento e RN0033–RN0036; gera cupom de troco e reaproveita `EnderecoService`/`CartaoService` para incorporar endereço/cartão novos |
+| `AnaliseVendasService` | RF0055: consulta PostgreSQL de pedidos ENTREGUE, rateio determinístico do total histórico e agrupamento mensal por categoria atual |
 
 Não há `SenhaService`, `BandeiraService`, `AuthService` ou domínio `UsuarioAcesso` no desenho atual.
 
@@ -52,6 +53,7 @@ Cliente 1 ── 0..* AuditoriaCliente
 Produto 0..* ── 1 CategoriaInativacaoProduto (último motivo)
 Produto 0..* ── 1 CategoriaAtivacaoProduto (último motivo)
 Produto 1 ── 0..* AuditoriaProduto
+Produto 0..* ── 1..* CategoriaProduto
 ```
 
 - `Cliente` contém dados pessoais, `senhaHash`, situação e timestamps. O ranking é derivado.
@@ -59,7 +61,7 @@ Produto 1 ── 0..* AuditoriaProduto
 - `Cartao` pertence ao cliente, referencia `Bandeira` e guarda titular, últimos quatro dígitos, preferência e situação.
 - `TransacaoCliente` é projeção persistida dos eventos reais, com origem LEGADO identificada.
 - `AuditoriaCliente` registra contexto do cliente, entidade, identificador, operação, instante, ator e snapshots JSON permitidos.
-- `Produto` contém nome, marca, preço, estoque, situação (`ativo`), visibilidade (`visivel`) e o último motivo de ativação e de inativação (categoria + justificativa + instante). Histórico completo fica em `AuditoriaProduto`; inativar força `visivel = false` e ativar não republica automaticamente.
+- `Produto` contém nome, marca, descrição, URL de imagem externa, preço, estoque, categorias, situação (`ativo`), visibilidade (`visivel`) e o último motivo de ativação e de inativação. `produto_categoria` resolve a relação muitos para muitos. Histórico completo fica em `AuditoriaProduto`; inativar força `visivel = false` e ativar não republica automaticamente.
 
 As figuras canônicas do estado implementado são:
 
@@ -73,6 +75,10 @@ O modelo completo planejado está em `docs/dvp-uml-2026/10-modelo-dominio.puml`.
 ## Persistência e contratos
 
 Flyway V1–V4 cria clientes, endereços, bandeiras, cartões, auditoria e transações demonstrativas. V5 cria produtos, as duas tabelas de domínio de motivo (ativação/inativação) e `auditoria_produto`; V6 traz a massa demonstrativa de produtos. V7 cria as tabelas de vendas (`carrinho`, `item_carrinho`, `cupom`, `pedido`, `item_pedido`, `pagamento_parte`, com triggers de código `PED-`/`CUP-`); V8 carrega a massa demonstrativa de vendas (cartão de Marina e cupons). Migrações aplicadas são imutáveis; mudanças novas entram na próxima versão.
+
+V11 acrescenta `categoria_produto`, `produto_categoria`, `descricao` e `imagem_url`, sem modificar V1–V10. As oito categorias controladas e os dados dos três produtos demonstrativos são semeados pela migração. A API exige ao menos uma categoria e URL HTTP(S); a edição consulta reservas vigentes sob o advisory lock do fluxo de vendas. `item_pedido.preco_unitario` continua sendo o valor histórico gravado na compra.
+
+V12 cria `pedido_analise_entregue_criado`, índice parcial em `(criado_em,id)` para pedidos com `status='ENTREGUE'`. `AnaliseVendasController` valida o perfil demonstrativo via cabeçalho `X-Demo-Perfil`; o serviço valida período/categorias e usa `JdbcTemplate` para carregar pedidos, itens e categorias em uma consulta, agregando em memória. A rota `/admin/dashboard` chama essa API e desenha SVG com tabela acessível. Não há autenticação real nessa demonstração.
 
 O módulo de vendas reutiliza a auditoria de clientes (`AuditoriaService` → `auditoria_cliente`) para RNF0012 e a `RegraNegocioException` compartilhada. O pedido guarda um snapshot do endereço de entrega e das parcelas de pagamento (sem PAN/CVV — apenas bandeira e quatro últimos dígitos na descrição). Entidades de vendas: `Carrinho` 1─* `ItemCarrinho`; `Pedido` 1─* `ItemPedido` e 1─* `PagamentoParte`, com `EnderecoEntrega` embutido; `Cupom` (PROMOCIONAL/TROCA). As coleções de itens e partes de pagamento do pedido usam carregamento em lote para evitar N+1 nas consultas cobertas pelo RNF0011.
 
@@ -88,7 +94,7 @@ No resumo do checkout (RF0034), `VendaService.resumo` exige endereço ativo com 
 | Cartão | `GET/POST /clientes/{id}/cartoes`, `PUT /clientes/{id}/cartoes/{cartaoId}/preferencial`, `PATCH /clientes/{id}/cartoes/{cartaoId}/inativacao` |
 | Consulta vinculada | `GET /clientes/{id}/transacoes`, `GET /clientes/{id}/transacoes/{transacaoId}`, `GET /clientes/{id}/auditoria` |
 | Domínio | `GET /bandeiras` |
-| Produto | `GET/POST /produtos`, `GET /produtos/{id}`, `PATCH /produtos/{id}/inativacao`, `PATCH /produtos/{id}/ativacao` (corpo `{categoria, justificativa}`), `GET /categorias-ativacao-produto`, `GET /categorias-inativacao-produto` |
+| Produto | `GET/POST /produtos`, `GET/PATCH /produtos/{id}`, `PATCH /produtos/{id}/inativacao`, `PATCH /produtos/{id}/ativacao` (corpo `{categoria, justificativa}`), `GET /categorias-produto`, `GET /categorias-ativacao-produto`, `GET /categorias-inativacao-produto` |
 | Carrinho | `GET /clientes/{id}/carrinho`, `POST /clientes/{id}/carrinho/itens`, `PUT /clientes/{id}/carrinho/itens/{itemId}`, `DELETE /clientes/{id}/carrinho/itens/{itemId}`, `POST /clientes/{id}/carrinho/resumo` |
 | Pedido/Cupom | `POST /clientes/{id}/pedidos` (finalizar), `GET /clientes/{id}/pedidos`, `GET /clientes/{id}/pedidos/{pedidoId}`, `GET /clientes/{id}/cupons` |
 

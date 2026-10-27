@@ -40,6 +40,9 @@ export const produtosApi = {
   buscar: (id) => requisitar(`/produtos/${id}`),
   cadastrar: (d) =>
     requisitar("/produtos", { method: "POST", body: JSON.stringify(d) }),
+  editar: (id, d) =>
+    requisitar(`/produtos/${id}`, { method: "PATCH", body: JSON.stringify(d) }),
+  categoriasProduto: () => requisitar("/categorias-produto"),
   inativar: (id, d) =>
     requisitar(`/produtos/${id}/inativacao`, {
       method: "PATCH",

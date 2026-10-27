@@ -14,6 +14,13 @@ try {
     return new Response('[]',{status:200});
   };
   assert.deepEqual(await produtosApi.listar({nome:'vitamina',ativo:false}),[]);
+  globalThis.fetch = async url => {
+    const parsed = new URL(url,'http://localhost');
+    assert.equal(parsed.searchParams.get('marca'),'Aura Derma');
+    assert.equal(parsed.searchParams.get('categoria'),'FACE');
+    return new Response('[]',{status:200});
+  };
+  assert.deepEqual(await produtosApi.listar({marca:'Aura Derma',categoria:'FACE'}),[]);
   let corpo = null;
   globalThis.fetch = async (url, opcoes) => {
     assert.equal(url,'/api/v1/produtos/3/ativacao');
@@ -26,5 +33,17 @@ try {
   assert.equal(ativado.ativo,true);
   globalThis.fetch = async () => new Response(JSON.stringify([{codigo:'RETORNO_AO_MERCADO',descricao:'Retorno ao mercado'}]),{status:200});
   assert.equal((await produtosApi.categoriasAtivacao())[0].codigo,'RETORNO_AO_MERCADO');
+  globalThis.fetch = async (url, opcoes) => {
+    assert.equal(url, '/api/v1/produtos/4');
+    assert.equal(opcoes.method, 'PATCH');
+    assert.deepEqual(JSON.parse(opcoes.body).categorias, ['FACE', 'SKINCARE']);
+    return new Response(JSON.stringify({id:4,categorias:[{codigo:'FACE'},{codigo:'SKINCARE'}]}),{status:200});
+  };
+  assert.equal((await produtosApi.editar(4,{categorias:['FACE','SKINCARE']})).categorias.length,2);
+  globalThis.fetch = async (url) => {
+    assert.equal(url, '/api/v1/categorias-produto');
+    return new Response(JSON.stringify([{codigo:'FACE',descricao:'Face'}]),{status:200});
+  };
+  assert.equal((await produtosApi.categoriasProduto())[0].codigo,'FACE');
   console.log('Adapter de produtos: erros, filtros, motivo de ativação e domínios validados.');
 } finally { globalThis.fetch = originalFetch; }

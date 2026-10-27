@@ -11,6 +11,43 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 class MigrationPersistenceTest {
   @Test
+  void RF0055_RNF0011_V12_indiceEmBancoNovoEExistente() throws Exception {
+    for (String etapa : List.of("novo", "existente")) {
+      try (var pg = new PostgreSQLContainer<>("postgres:17-alpine")) {
+        pg.start();
+        var config = Flyway.configure().dataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+        if (etapa.equals("existente")) config.target("11").load().migrate();
+        Flyway.configure().dataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword()).load().migrate();
+        try (var con = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+            var st = con.createStatement();
+            var rs = st.executeQuery("select indexdef from pg_indexes where indexname='pedido_analise_entregue_criado'")) {
+          assertThat(rs.next()).isTrue();
+          assertThat(rs.getString(1)).contains("criado_em").contains("status").contains("ENTREGUE");
+        }
+      }
+    }
+  }
+  @Test
+  void RF0011_RN0012_RNF0013_migracaoEmBancoNovoEComProdutosDemonstrativos() throws Exception {
+    for (String etapa : java.util.List.of("novo", "existente")) {
+      try (var pg = new PostgreSQLContainer<>("postgres:17-alpine")) {
+        pg.start();
+        var config = Flyway.configure().dataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+        if (etapa.equals("existente")) config.target("10").load().migrate();
+        config.target("11").load().migrate();
+        try (var con = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+            var st = con.createStatement()) {
+          try (var rs = st.executeQuery("select count(*) from categoria_produto")) {
+            rs.next(); assertThat(rs.getInt(1)).isEqualTo(8);
+          }
+          try (var rs = st.executeQuery("select count(*) from produto p join produto_categoria pc on pc.produto_id=p.id where p.descricao is not null and p.imagem_url like 'https://%'")) {
+            rs.next(); assertThat(rs.getInt(1)).isGreaterThanOrEqualTo(3);
+          }
+        }
+      }
+    }
+  }
+  @Test
   void reiniciarPreservaSituacaoEMotivoDeProduto() throws Exception {
     try (var pg = new PostgreSQLContainer<>("postgres:17-alpine")) {
       pg.start();

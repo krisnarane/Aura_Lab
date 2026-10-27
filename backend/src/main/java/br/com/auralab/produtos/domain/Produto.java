@@ -3,6 +3,7 @@ package br.com.auralab.produtos.domain;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.*;
 
 /**
  * Produto da loja (livro no DRS). Situação ({@code ativo}) e visibilidade ({@code
@@ -10,7 +11,7 @@ import java.time.OffsetDateTime;
  * republica automaticamente. Guarda o último motivo de ativação e de inativação; o
  * histórico completo fica em {@code auditoria_produto}.
  *
- * <p>Requisitos: RF0011 (cadastro mínimo), RF0012/RN0015 (inativar com motivo), RF0016/
+ * <p>Requisitos: RF0011/RF0014 (cadastro e edição), RF0012/RN0015 (inativar com motivo), RF0016/
  * RN0017 (ativar com motivo) e RNF0021 (código PRD- único gerado por trigger no banco).
  */
 @Entity
@@ -29,6 +30,16 @@ public class Produto {
 
   @Column(nullable = false, length = 80)
   private String marca;
+
+  @Column(nullable = false, columnDefinition = "text")
+  private String descricao;
+
+  @Column(name = "imagem_url", nullable = false, columnDefinition = "text")
+  private String imagemUrl;
+
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(name = "produto_categoria", joinColumns = @JoinColumn(name = "produto_id"), inverseJoinColumns = @JoinColumn(name = "categoria_codigo"))
+  private Set<CategoriaProduto> categorias = new LinkedHashSet<>();
 
   @Column(nullable = false, precision = 12, scale = 2)
   private BigDecimal preco;
@@ -77,6 +88,24 @@ public class Produto {
     this.criadoEm = OffsetDateTime.now();
     this.atualizadoEm = this.criadoEm;
   }
+
+  public void editar(String nome, String marca, String descricao, String imagemUrl,
+      BigDecimal preco, int estoque, boolean visivel, Set<CategoriaProduto> categorias) {
+    this.nome = nome;
+    this.marca = marca;
+    this.descricao = descricao;
+    this.imagemUrl = imagemUrl;
+    this.preco = preco;
+    this.estoque = estoque;
+    this.visivel = visivel;
+    this.categorias.clear();
+    this.categorias.addAll(categorias);
+    this.atualizadoEm = OffsetDateTime.now();
+  }
+
+  public String getDescricao() { return descricao; }
+  public String getImagemUrl() { return imagemUrl; }
+  public Set<CategoriaProduto> getCategorias() { return categorias; }
 
   /** RF0012/RN0015: inativação lógica com motivo obrigatório; também oculta o produto. */
   public void inativar(String categoria, String justificativa) {

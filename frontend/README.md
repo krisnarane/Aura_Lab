@@ -34,6 +34,7 @@ Rotas principais: `/`, `/produto/:id`, `/sacola`, `/checkout/endereco`, `/checko
 - `js/app.js`: rotas, renderização e ligação dos eventos.
 - `js/api.js`: adaptador HTTP opcional da futura API REST da Consultora Aura.
 - `js/consultora-aura.js`: recomendação local por regras.
-- `js/analytics.js`: interação e acessibilidade do gráfico.
+- `js/admin-analise-vendas.js`: consulta HTTP e gráfico de linhas integrado do dashboard administrativo (RF0055/RNF0043).
+- `js/analytics.js`: módulo histórico do protótipo, sem uso na rota integrada.
 - `js/utilitarios.js`: funções puras de data, moeda, identificadores e segurança de HTML.
 - `assets/css/`: variáveis, base, componentes e estilos específicos de páginas.
