@@ -45,5 +45,20 @@ try {
     return new Response(JSON.stringify([{codigo:'FACE',descricao:'Face'}]),{status:200});
   };
   assert.equal((await produtosApi.categoriasProduto())[0].codigo,'FACE');
+  const chamadas = [];
+  globalThis.fetch = async (url, opcoes = {}) => {
+    chamadas.push([url, opcoes.method || 'GET', opcoes.body && JSON.parse(opcoes.body)]);
+    return new Response(url.endsWith('inativacao-automatica') ? '[1]' : '[]', {status:200});
+  };
+  await produtosApi.gruposPrecificacao();
+  await produtosApi.entradas(1);
+  await produtosApi.registrarEntrada(1, {quantidade:2,valorCusto:10,dataEntrada:'2026-10-12'});
+  await produtosApi.inativacaoAutomatica();
+  assert.deepEqual(chamadas.map(c => c.slice(0, 2)), [
+    ['/api/v1/grupos-precificacao','GET'],
+    ['/api/v1/produtos/1/entradas-estoque','GET'],
+    ['/api/v1/produtos/1/entradas-estoque','POST'],
+    ['/api/v1/produtos/inativacao-automatica','POST']]);
+  assert.equal(chamadas[2][2].quantidade, 2);
   console.log('Adapter de produtos: erros, filtros, motivo de ativação e domínios validados.');
 } finally { globalThis.fetch = originalFetch; }

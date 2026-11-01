@@ -266,9 +266,23 @@ public class CicloVendaRepository {
     jdbc.update("update pagamento_parte set resultado_validacao=? where id=?", resultado, parcela);
   }
 
-  public List<Map<String, Object>> pedidoIds(String codigo, Long cliente, String status) {
+  public List<Long> pedidoIds(String codigo, Long cliente, String status) {
     return jdbc.queryForList(
-        "select p.id,p.cliente_id from pedido p where (?::text is null or p.codigo=?) and (?::bigint is null or p.cliente_id=?) and (?::text is null or p.status=?) order by p.criado_em desc",
+        "select p.id from pedido p where (?::text is null or p.codigo=?) and (?::bigint is null or p.cliente_id=?) and (?::text is null or p.status=?) order by p.criado_em desc",
+        Long.class,
+        codigo,
+        codigo,
+        cliente,
+        cliente,
+        status,
+        status);
+  }
+
+  /** Clientes alcançados pelo filtro, para conciliar as reservas antes de montar a lista. */
+  public List<Long> clientesDosPedidos(String codigo, Long cliente, String status) {
+    return jdbc.queryForList(
+        "select distinct p.cliente_id from pedido p where (?::text is null or p.codigo=?) and (?::bigint is null or p.cliente_id=?) and (?::text is null or p.status=?) order by p.cliente_id",
+        Long.class,
         codigo,
         codigo,
         cliente,

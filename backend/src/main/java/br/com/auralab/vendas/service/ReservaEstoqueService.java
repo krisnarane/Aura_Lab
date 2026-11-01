@@ -44,13 +44,24 @@ public class ReservaEstoqueService {
     return Math.toIntExact(prazo.toMinutes());
   }
 
+  /**
+   * Concilia as reservas do cliente dentro da transação corrente (RN0032/RN0044/RN0045): expira
+   * prazos, ajusta quantidades, retira itens sem disponibilidade e reprova pedidos vencidos.
+   *
+   * <p><b>Contrato de persistência.</b> A conciliação grava por JDBC em tabelas que também são
+   * mapeadas por JPA ({@code carrinho}, {@code item_carrinho}, {@code pedido}, {@code cupom} e
+   * {@code transacao_cliente}). Por isso o método descarrega as alterações pendentes antes de ler
+   * e, <b>somente quando realmente alterou uma dessas tabelas</b>, limpa o contexto de
+   * persistência para que nenhuma camada siga com entidades desatualizadas. A consequência é parte
+   * do contrato, e não um efeito oculto: entidades carregadas <b>antes</b> desta chamada podem
+   * ficar desanexadas e defasadas. Carregue as entidades da operação <b>depois</b> de sincronizar.
+   */
   @Transactional
   public void sincronizar(Long cliente) {
     repo.bloquearFluxo();
     em.flush();
-    em.clear();
     OffsetDateTime agora = agora();
-    conciliarCarrinhoLegado(cliente,agora);
+    boolean invalidarContexto = conciliarCarrinhoLegado(cliente, agora);
     Set<Long> pedidosExpirados = new HashSet<>();
     for (var r : repo.reservas(cliente)) {
       Long reserva = id(r, "id"), item = id(r, "item_carrinho_id"), pedido = id(r, "pedido_id");
@@ -59,6 +70,7 @@ public class ReservaEstoqueService {
       if (!fim.isAfter(agora)) {
         if (pedido != null) {
           if (pedidosExpirados.add(pedido)) {
+            invalidarContexto = true;
             repo.encerrarPedido(pedido, "EXPIRADA");
             repo.reprovarExpirado(pedido);
             var p = repo.pedido(pedido);
@@ -88,6 +100,7 @@ public class ReservaEstoqueService {
                 "A reserva do pedido " + p.get("codigo") + " expirou; a compra foi reprovada.");
           }
         } else if (item != null) {
+          invalidarContexto = true;
           repo.encerrarReserva(reserva, "EXPIRADA");
           repo.retirarItem(
               item,
@@ -131,6 +144,7 @@ public class ReservaEstoqueService {
                 ? repo.disponivel(id(r, "produto_id"), item, agora)
                 : 0;
         if (disponivel < quantidade) {
+          invalidarContexto = true;
           if (disponivel == 0) {
             repo.encerrarReserva(reserva, "LIBERADA");
             repo.retirarItem(
@@ -169,7 +183,7 @@ public class ReservaEstoqueService {
         }
       }
     }
-    em.clear();
+    if (invalidarContexto) em.clear();
   }
 
   @Transactional
@@ -177,7 +191,9 @@ public class ReservaEstoqueService {
     for (Long cliente : repo.clientesComReservas()) sincronizar(cliente);
   }
 
-  private void conciliarCarrinhoLegado(Long cliente,OffsetDateTime agora) {
+  /** Devolve {@code true} quando alterou tabelas mapeadas por JPA (ver contrato de sincronizar). */
+  private boolean conciliarCarrinhoLegado(Long cliente, OffsetDateTime agora) {
+    boolean alterou = false;
     for(var item:repo.itensLegadosSemReserva(cliente)) {
       var inclusao=tempo(item,"ultima_inclusao");
       var vencimento=inclusao==null?null:inclusao.plus(prazo);
@@ -189,6 +205,7 @@ public class ReservaEstoqueService {
           Map.of("produtoId",produto,"quantidade",quantidade,"reservaPersistida",false),
           Map.of("produtoId",produto,"quantidade",quantidade,"venceEm",vencimento.toString()));
       } else {
+        alterou = true;
         String motivo=inclusao==null?"REINCLUSAO_NECESSARIA":"PRAZO_EXPIRADO";
         repo.retirarItem(itemId,cart,produto,(String)item.get("nome"),quantidade,motivo,prazo.toMinutes(),agora);
         repo.tocarCarrinho(cart,agora);
@@ -197,6 +214,7 @@ public class ReservaEstoqueService {
         notificar(cliente,"carrinho-legado-"+itemId,"REINCLUSAO_NECESSARIA",item.get("nome")+" foi preservado na lista de itens retirados. Inclua novamente para comprar; motivo: "+motivo+".");
       }
     }
+    return alterou;
   }
 
   public int disponivel(Long produto, Long item) {

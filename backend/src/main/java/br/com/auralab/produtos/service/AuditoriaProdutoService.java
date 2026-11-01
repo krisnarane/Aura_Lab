@@ -28,4 +28,11 @@ public class AuditoriaProdutoService {
       Map<String, Object> depois) {
     repo.saveAndFlush(new AuditoriaProduto(produto, operacao, entidade, id, antes, depois));
   }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void registrarComo(Long produto, String operacao, String entidade, Long id,
+      Map<String, Object> antes, Map<String, Object> depois, String ator,
+      java.time.OffsetDateTime instante) {
+    repo.saveAndFlush(new AuditoriaProduto(produto, operacao, entidade, id, antes, depois, ator, instante));
+  }
 }

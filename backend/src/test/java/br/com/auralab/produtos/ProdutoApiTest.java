@@ -26,7 +26,7 @@ class ProdutoApiTest extends br.com.auralab.PostgresTest {
    """;
   private static final String CADASTRO =
       """
-   {"nome":"Máscara Capilar Argila","marca":"Aura Hair","descricao":"Máscara nutritiva para cabelo.","imagemUrl":"https://example.com/mascara.png","categorias":["HIDRATANTES"],"preco":49.90,"estoque":30,"visivel":true}
+   {"nome":"Máscara Capilar Argila","marca":"Aura Hair","descricao":"Máscara nutritiva para cabelo.","imagemUrl":"https://example.com/mascara.png","categorias":["HIDRATANTES"],"grupoPrecificacao":"PADRAO","preco":49.90,"estoque":30,"visivel":true}
    """;
 
   @Test
@@ -166,6 +166,26 @@ class ProdutoApiTest extends br.com.auralab.PostgresTest {
             .param("categoria", "FACE").param("ativo", "true").param("nome", "sérum"))
         .andExpect(status().isOk()).andExpect(jsonPath("$[0].codigo").value("PRD-000002"))
         .andExpect(jsonPath("$[1]").doesNotExist());
+  }
+
+  @Test void RF0015_filtrosCompletosEGrupoObrigatorio() throws Exception {
+    mvc.perform(get("/api/v1/produtos").param("descricao", "hidratante")
+        .param("grupoPrecificacao", "PADRAO").param("precoMin", "80")
+        .param("precoMax", "100").param("estoqueMin", "20")
+        .param("estoqueMax", "30").param("visivel", "true"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$[0].codigo").value("PRD-000001"))
+        .andExpect(jsonPath("$[1]").doesNotExist());
+    mvc.perform(get("/api/v1/produtos").param("custoMin", "1"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+    jdbc.update("update produto set grupo_precificacao_codigo='PREMIUM', valor_custo=20 where id=2");
+    mvc.perform(get("/api/v1/produtos").param("grupoPrecificacao", "PREMIUM")
+        .param("custoMin", "19.99").param("custoMax", "20.01")
+        .param("visivel", "true"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$[0].codigo").value("PRD-000002"))
+        .andExpect(jsonPath("$[1]").doesNotExist());
+    mvc.perform(post("/api/v1/produtos").contentType(MediaType.APPLICATION_JSON)
+        .content(CADASTRO.replace(",\"grupoPrecificacao\":\"PADRAO\"", "")))
+        .andExpect(status().isBadRequest()).andExpect(jsonPath("$.campos.grupoPrecificacao").exists());
   }
 
   @Test

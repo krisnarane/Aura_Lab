@@ -10,10 +10,24 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** RF0055: histórico mensal baseado no total histórico de pedidos atualmente ENTREGUE. */
+/**
+ * RF0055: histórico mensal de vendas por categoria, a partir do total histórico dos pedidos.
+ *
+ * <p>RN0074: entram no cálculo apenas as compras efetivadas e não devolvidas — APROVADA, EM
+ * TRANSPORTE e ENTREGUE. Ficam fora EM_PROCESSAMENTO (pagamento ainda não validado), REPROVADA e os
+ * estados de troca (EM_TROCA, TROCA_AUTORIZADA e TROCADO), em que a compra deixou de ser receita.
+ */
 @Service
 public class AnaliseVendasService {
   private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
+
+  /** RN0074: fonte única da lista; o índice parcial da V13 repete exatamente estes valores. */
+  static final List<String> STATUS_CONTABILIZAVEIS = List.of("APROVADA", "EM_TRANSPORTE", "ENTREGUE");
+
+  // Interpolado como literal (e não como parâmetro) para o planejador poder usar o índice parcial.
+  private static final String STATUS_EM_SQL =
+      STATUS_CONTABILIZAVEIS.stream().map(s -> "'" + s + "'").collect(java.util.stream.Collectors.joining(","));
+
   private final JdbcTemplate jdbc;
 
   public AnaliseVendasService(JdbcTemplate jdbc) { this.jdbc = jdbc; }
@@ -35,10 +49,25 @@ public class AnaliseVendasService {
     Pedido(OffsetDateTime criadoEm, BigDecimal total) { this.criadoEm = criadoEm; this.total = total; }
   }
 
+  /** RN0072: o período é medido em meses cobertos, a mesma granularidade do agrupamento (RN0071). */
+  static final int MINIMO_MESES = 1;
+
+  static final int MAXIMO_MESES = 24;
+
+  static int mesesCobertos(LocalDate inicio, LocalDate fim) {
+    return (int) java.time.temporal.ChronoUnit.MONTHS.between(YearMonth.from(inicio), YearMonth.from(fim)) + 1;
+  }
+
   @Transactional(readOnly = true)
   public Resultado consultar(LocalDate inicio, LocalDate fim, List<String> categorias) {
     if (inicio == null || fim == null || fim.isBefore(inicio) || fim.isAfter(LocalDate.MAX.minusDays(1)))
       throw new RegraNegocioException("PERIODO_INVALIDO", "Informe um período válido, com início anterior ou igual ao fim.");
+    // RN0072: o mínimo de um mês é consequência de fim >= inicio, pois meses parciais contam como um.
+    int mesesDoPeriodo = mesesCobertos(inicio, fim);
+    if (mesesDoPeriodo < MINIMO_MESES || mesesDoPeriodo > MAXIMO_MESES)
+      throw new RegraNegocioException(
+          "PERIODO_INVALIDO",
+          "O período de análise deve cobrir de " + MINIMO_MESES + " a " + MAXIMO_MESES + " meses.");
     if (categorias == null || categorias.isEmpty() || categorias.stream().anyMatch(c -> c == null || c.isBlank()))
       throw new RegraNegocioException("CATEGORIAS_PRODUTO_INVALIDAS", "Selecione ao menos uma categoria.");
     var selecionadas = new LinkedHashSet<String>();
@@ -69,10 +98,10 @@ public class AnaliseVendasService {
         from pedido p
         join item_pedido i on i.pedido_id = p.id
         left join produto_categoria pc on pc.produto_id = i.produto_id
-       where p.status = 'ENTREGUE' and p.criado_em >= ? and p.criado_em < ?
+       where p.status in (%s) and p.criado_em >= ? and p.criado_em < ?
        group by p.id, i.id
        order by p.id, i.id
-      """, rs -> {
+      """.formatted(STATUS_EM_SQL), rs -> {
         var linha = ler(rs);
         if (pedidoAtualId[0] != linha.pedidoId()) {
           if (pedidoAtual[0] != null) acumular(pedidoAtual[0], inicioMes, meses.size(), acumulado);

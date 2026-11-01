@@ -2,7 +2,7 @@
 
 Mapeamento entre requisitos do DRS (`DRS_LES_2_2026.docx`), casos de teste implementados e os comandos para executá-los. Os comandos partem do princípio de que o terminal está dentro de `backend/` e que o **Docker Desktop está em execução** (os testes usam PostgreSQL real via Testcontainers).
 
-Produto: `ProdutoApiTest` cobre RF0011/RF0014/RF0015, RN0012, RNF0012/RNF0021 (cadastro, edição, categorias, filtros, reserva de estoque e auditoria). `MigrationPersistenceTest.RF0011_RN0012_RNF0013_migracaoEmBancoNovoEComProdutosDemonstrativos` valida a V11 em PostgreSQL. `ProdutosCrudIT.RF0014_RF0015_editarFiltrarEPersistirAposRecarga` valida edição e filtro após recarga; `RF0014_catalogoEDetalheExibemDadosEditadosComArteAlternativa` verifica a loja e a imagem quebrada; o cenário RF0011 existente valida cadastro.
+Produto: `ProdutoApiTest` cobre RF0011/RF0014/RF0015, RN0012, RNF0012/RNF0021 (cadastro, edição, categorias, filtros, reserva de estoque e auditoria). `EntradaEstoqueApiTest` cobre RF0051/RF0052/RN0061/RN0062/RNF0064; `GrupoPrecificacaoTest` verifica o cálculo puro; `InativacaoAutomaticaApiTest` cobre RF0013/RN0016 e idempotência. `ProdutosCrudIT` cobre cadastro com grupo, entrada e filtro pela tela. `MigrationPersistenceTest` valida o backfill da V13 e o índice RN0074 da V14 em PostgreSQL.
 
 ---
 
@@ -238,8 +238,12 @@ Resultados só podem ser marcados como aprovados após consultar os relatórios 
 
 | IDs | Cenário | Evidência automatizada |
 | --- | --- | --- |
-| RF0055 | Uma categoria, período inclusivo, mês vazio, mudança de datas e entrega refletida na consulta seguinte | `AnaliseVendasApiTest.RF0055_RNF0043_valorMensalEstadoAtualMesVazioEAtualizacaoAposEntrega`; `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
+| RF0055 / RN0074 | Uma categoria, período inclusivo, mês vazio, mudança de datas; compra APROVADA já contabilizada e REPROVADA excluída | `AnaliseVendasApiTest.RF0055_RNF0043_RN0073_valorMensalMesVazioEMudancaDePeriodo`; `AnaliseVendasApiTest.RN0074_apenasAprovadaEmTransporteEEntregueEntramNoCalculo`; `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
 | RF0055 | Comparação de categorias, rateio do total histórico e reclassificação pela categoria atual | `AnaliseVendasApiTest.RF0055_rateioMultiplasCategoriasIncluiFreteECentavos` |
 | RF0055 | Datas, categorias e perfil inválidos | `AnaliseVendasApiTest.RF0055_datasCategoriasEPerfilInvalidos`; `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
 | RNF0043 | Linhas, legenda, mês/ano, reais e descrição acessível dos pontos | `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
+| RN0072 / RNF0045 | Limites de 1 e 24 meses; 25 rejeitado; legenda abaixo do gráfico | `AnaliseVendasApiTest.RN0072_periodoDeveCobrirDeUmAVinteEQuatroMeses`; `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
+| RF0015 | Descrição, grupo, faixas de preço/custo/estoque, situação e visibilidade combinados | `ProdutoApiTest.RF0015_filtrosCompletosEGrupoObrigatorio`; `ProdutosCrudIT.RF0051_RF0052_RF0015_entradaEstoqueEConsultaPelaTela` |
+| RF0051/RF0052/RN0061/RN0062/RNF0064 | Entrada válida soma estoque, recalcula preço e audita; inválidas preservam estado | `EntradaEstoqueApiTest`; `GrupoPrecificacaoTest`; `ProdutosCrudIT.RF0051_RF0052_RF0015_entradaEstoqueEConsultaPelaTela` |
+| RF0013/RN0016 | Elegibilidade, ator SISTEMA e idempotência | `InativacaoAutomaticaApiTest` |
 | RNF0011 / meta local RF0055 | 1.000 pedidos (um pelo fluxo e 999 cópias de carga), quinze aquecimentos, 30 respostas HTTP até 2.000 ms; o DRS ainda exige 1.000 ms | `AnaliseVendasPerformanceTest.RF0055_RNF0011_consultaMilPedidosAteDoisSegundos`; `target/evidencias/performance-analise-vendas.csv` |

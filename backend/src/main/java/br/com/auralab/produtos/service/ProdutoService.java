@@ -20,6 +20,7 @@ public class ProdutoService {
   private final CategoriaInativacaoProdutoRepository categoriasInativacao;
   private final CategoriaAtivacaoProdutoRepository categoriasAtivacao;
   private final CategoriaProdutoRepository categoriasProduto;
+  private final GrupoPrecificacaoRepository grupos;
   private final AuditoriaProdutoService auditoria;
   private final br.com.auralab.vendas.repository.CicloVendaRepository ciclo;
   private final java.time.Clock clock;
@@ -30,6 +31,7 @@ public class ProdutoService {
       CategoriaInativacaoProdutoRepository ci,
       CategoriaAtivacaoProdutoRepository ca,
       CategoriaProdutoRepository cp,
+      GrupoPrecificacaoRepository grupos,
       AuditoriaProdutoService a,
       br.com.auralab.vendas.repository.CicloVendaRepository ciclo,
       java.time.Clock clock) {
@@ -37,6 +39,7 @@ public class ProdutoService {
     categoriasInativacao = ci;
     categoriasAtivacao = ca;
     categoriasProduto = cp;
+    this.grupos = grupos;
     auditoria = a;
     this.ciclo = ciclo;
     this.clock = clock;
@@ -44,16 +47,10 @@ public class ProdutoService {
 
   /** RF0015: código exato, nome parcial (`%`/`_` literais) e situação, combináveis. */
   @Transactional(readOnly = true)
-  public List<ProdutoView> listar(String codigo, String nome, String marca, String categoria, Boolean ativo) {
+  public List<ProdutoView> listar(FiltroProduto filtro) {
     var reservadas = ciclo.reservasPorProduto(java.time.OffsetDateTime.now(clock));
-    String trecho =
-        nome == null || nome.isBlank()
-            ? null
-            : "%" + escaparLike(nome.trim().toLowerCase(Locale.ROOT)) + "%";
     return repo
-        .filtrar(codigo == null || codigo.isBlank() ? null : codigo.trim(), trecho,
-            marca == null || marca.isBlank() ? null : "%" + escaparLike(marca.trim().toLowerCase(Locale.ROOT)) + "%",
-            categoria == null || categoria.isBlank() ? null : categoria.trim(), ativo)
+        .findAll(ProdutoSpecifications.filtrar(filtro), org.springframework.data.domain.Sort.by("nome", "id"))
         .stream()
         .map(p -> view(p, reservadas.getOrDefault(p.getId(), 0)))
         .toList();
@@ -67,11 +64,12 @@ public class ProdutoService {
   @Transactional
   public ProdutoView cadastrar(ProdutoInput in) {
     var categorias = validarCategorias(in.categorias());
+    var grupo = validarGrupo(in.grupoPrecificacao());
     String imagem = validarImagem(in.imagemUrl());
     Produto p =
         new Produto(in.nome().trim(), in.marca().trim(), in.preco(), in.estoque(), in.visivel());
     p.editar(in.nome().trim(), in.marca().trim(), in.descricao().trim(), imagem,
-        in.preco(), in.estoque(), in.visivel(), categorias);
+        in.preco(), in.estoque(), in.visivel(), categorias, grupo);
     repo.saveAndFlush(p);
     em.refresh(p);
     auditoria.registrar(
@@ -86,13 +84,14 @@ public class ProdutoService {
     if (!p.isAtivo() && in.visivel())
       throw new RegraNegocioException("VISIBILIDADE_PRODUTO_INATIVO", "Ative o produto antes de publicá-lo.");
     var categorias = validarCategorias(in.categorias());
+    var grupo = validarGrupo(in.grupoPrecificacao());
     String imagem = validarImagem(in.imagemUrl());
     int reservadas = ciclo.reservasPorProduto(java.time.OffsetDateTime.now(clock)).getOrDefault(id, 0);
     if (in.estoque() < reservadas)
       throw new RegraNegocioException("ESTOQUE_INSUFICIENTE", "Estoque menor que as unidades reservadas.");
     Map<String, Object> antes = RegistroProduto.cadastro(p);
     p.editar(in.nome().trim(), in.marca().trim(), in.descricao().trim(), imagem,
-        in.preco(), in.estoque(), in.visivel(), categorias);
+        in.preco(), in.estoque(), in.visivel(), categorias, grupo);
     auditoria.registrar(id, "EDITAR_PRODUTO", "PRODUTO", id, antes, RegistroProduto.cadastro(p));
     return view(p);
   }
@@ -104,6 +103,17 @@ public class ProdutoService {
     var categorias = categoriasProduto.findAllById(unicos);
     if (categorias.size() != unicos.size()) throw categoriasCadastroInvalidas();
     return new LinkedHashSet<>(categorias);
+  }
+
+  private br.com.auralab.produtos.domain.GrupoPrecificacao validarGrupo(String codigo) {
+    return grupos.findById(codigo.trim()).orElseThrow(() ->
+        new RegraNegocioException("GRUPO_PRECIFICACAO_INVALIDO", "Grupo de precificação não cadastrado."));
+  }
+
+  @Transactional(readOnly = true)
+  public List<GrupoPrecificacaoView> gruposPrecificacao() {
+    return grupos.findAll().stream().map(g -> new GrupoPrecificacaoView(g.getCodigo(),
+        g.getDescricao(), g.getPercentualMargem())).toList();
   }
 
   private RegraNegocioException categoriasCadastroInvalidas() {
@@ -194,10 +204,6 @@ public class ProdutoService {
         .toList();
   }
 
-  private static String escaparLike(String valor) {
-    return valor.replace("!", "!!").replace("%", "!%").replace("_", "!_");
-  }
-
   private RegraNegocioException categoriaInvalida(String operacao) {
     return new RegraNegocioException(
         "CATEGORIA_PRODUTO_INVALIDA",
@@ -233,6 +239,9 @@ public class ProdutoService {
         Math.max(0, p.getEstoque() - reservadas),
         p.getDescricao(), p.getImagemUrl(),
         p.getCategorias().stream().map(c -> new CategoriaProdutoView(c.getCodigo(), c.getDescricao()))
-            .sorted(java.util.Comparator.comparing(CategoriaProdutoView::descricao)).toList());
+            .sorted(java.util.Comparator.comparing(CategoriaProdutoView::descricao)).toList(),
+        new GrupoPrecificacaoView(p.getGrupoPrecificacao().getCodigo(),
+            p.getGrupoPrecificacao().getDescricao(), p.getGrupoPrecificacao().getPercentualMargem()),
+        p.getValorCusto());
   }
 }

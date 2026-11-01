@@ -236,19 +236,16 @@ public class VendaService {
     return montarLista(lista);
   }
 
+  /**
+   * As duas consultas têm finalidades distintas e não podem ser reduzidas a uma: a conciliação pode
+   * reprovar pedidos com reserva vencida, então os clientes são descobertos antes de sincronizar e
+   * os identificadores dos pedidos são lidos depois, para que o filtro por situação reflita o
+   * estado resultante da conciliação.
+   */
   @Transactional
   public List<PedidoView> listarAdministrativos(String codigo, Long cliente, String status) {
-    var selecionados = ciclo.pedidoIds(codigo, cliente, status);
-    for (Long c :
-        selecionados.stream()
-            .map(r -> CicloVendaRepository.id(r, "cliente_id"))
-            .distinct()
-            .toList()) reservas.sincronizar(c);
-    var ids =
-        ciclo.pedidoIds(codigo, cliente, status).stream()
-            .map(r -> CicloVendaRepository.id(r, "id"))
-            .toList();
-    var lista = pedidos.findAllById(ids);
+    for (Long c : ciclo.clientesDosPedidos(codigo, cliente, status)) reservas.sincronizar(c);
+    var lista = pedidos.findAllById(ciclo.pedidoIds(codigo, cliente, status));
     lista.sort(Comparator.comparing(Pedido::getCriadoEm).reversed());
     return montarLista(lista);
   }

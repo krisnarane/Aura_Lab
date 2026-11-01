@@ -40,11 +40,19 @@ class AnaliseVendasIT extends PostgresTest {
   @AfterEach void fechar() { if (driver != null) driver.quit(); }
 
   private long comprar(long produto) throws Exception {
+    return comprar(produto, null);
+  }
+
+  /** {@code resultadoOperadora} nulo usa o padrão APROVADO da operadora simulada. */
+  private long comprar(long produto, String resultadoOperadora) throws Exception {
     mvc.perform(post("/api/v1/clientes/1/carrinho/itens").contentType(MediaType.APPLICATION_JSON)
         .content(json.writeValueAsString(Map.of("produtoId", produto, "quantidade", 1))))
         .andExpect(status().isCreated());
     long cartao = jdbc.queryForObject("insert into cartao(cliente_id,bandeira_id,titular,ultimos_quatro,preferencial,ativo) "
         + "values(1,1,'MARINA COSTA','1111',false,true) returning id", Long.class);
+    if (resultadoOperadora != null)
+      jdbc.update("insert into resultado_operadora_cartao(cartao_id,resultado) values (?,?)",
+          cartao, resultadoOperadora);
     var resumo = json.readTree(mvc.perform(post("/api/v1/clientes/1/carrinho/resumo")
         .contentType(MediaType.APPLICATION_JSON).content("{\"enderecoId\":1}"))
         .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
@@ -77,9 +85,10 @@ class AnaliseVendasIT extends PostgresTest {
     var comeco = form.findElement(By.name("inicio"));
     var termino = form.findElement(By.name("fim"));
     ((JavascriptExecutor) driver).executeScript("arguments[0].value=arguments[2];arguments[1].value=arguments[3]", comeco, termino, inicio, fim);
-    // Select múltiplo controlado explicitamente para a demonstração.
-    ((JavascriptExecutor) driver).executeScript("for(const o of arguments[0].options)o.selected=arguments[1].includes(o.value)",
-        form.findElement(By.name("categorias")), Arrays.asList(categorias));
+    // Caixas de seleção das categorias controladas explicitamente para a demonstração.
+    ((JavascriptExecutor) driver).executeScript(
+        "for(const c of arguments[0].querySelectorAll('input[name=\"categorias\"]'))c.checked=arguments[1].includes(c.value)",
+        form, Arrays.asList(categorias));
     var anterior = driver.findElements(By.cssSelector("[data-testid='tabela-vendas']"));
     form.findElement(By.cssSelector("button[type=submit]")).click();
     if (!anterior.isEmpty()) new WebDriverWait(driver, Duration.ofSeconds(15))
@@ -94,7 +103,8 @@ class AnaliseVendasIT extends PostgresTest {
     long outubro = comprar(1);
     entregar(outubro);
     relogio.avancar(Duration.ofDays(31));
-    long novembro = comprar(2); // APROVADA: não entra antes da entrega.
+    // RN0074: a compra reprovada pela operadora não é contabilizada no gráfico.
+    comprar(2, "REPROVADO");
     var options = new ChromeOptions();
     if (Boolean.parseBoolean(System.getProperty("selenium.headless", "true"))) options.addArguments("--headless=new");
     options.addArguments("--window-size=1440,1200", "--lang=pt-BR");
@@ -108,7 +118,15 @@ class AnaliseVendasIT extends PostgresTest {
     consultar("2026-10-01", "2026-11-30", "FACE", "SKINCARE");
     assertThat(esperar("[data-testid='serie-SKINCARE']")).isNotNull();
     assertThat(esperar("[data-testid='valor-SKINCARE-2026-11']").getText()).contains("0,00");
-    entregar(novembro);
+    // RNF0043: uma linha por categoria selecionada. RNF0045: legenda com nome e cor, embaixo.
+    assertThat(driver.findElements(By.cssSelector("[data-testid='serie-FACE'] polyline"))).isNotEmpty();
+    assertThat(driver.findElements(By.cssSelector("[data-testid='serie-SKINCARE'] polyline"))).isNotEmpty();
+    var legenda = esperar("[data-testid='legenda-vendas']");
+    assertThat(legenda.getText()).contains("Face", "Skincare");
+    assertThat(legenda.getLocation().getY())
+        .as("RNF0045: legenda abaixo do gráfico")
+        .isGreaterThan(esperar("[data-testid='grafico-vendas']").getLocation().getY());
+    long novembro = comprar(2);
     consultar("2026-10-01", "2026-11-30", "FACE", "SKINCARE");
     assertThat(esperar("[data-testid='valor-SKINCARE-2026-11']").getText().replaceAll("[\\s\\u00a0]", ""))
         .isEqualTo(moeda(novembro));

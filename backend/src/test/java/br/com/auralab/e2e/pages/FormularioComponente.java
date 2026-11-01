@@ -43,6 +43,26 @@ public class FormularioComponente {
     return this;
   }
 
+  /**
+   * Marca uma caixa de seleção do grupo pelo texto visível, preservando as demais — mesma
+   * semântica aditiva de {@link #selecionar(String, String)} em um select múltiplo.
+   */
+  public FormularioComponente marcarCaixa(String nome, String texto) {
+    var opcao =
+        form()
+            .findElements(By.cssSelector("label:has(input[name='" + nome + "'])"))
+            .stream()
+            .filter(l -> texto.equals(l.getText().trim()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "Grupo " + nome + " não oferece a opção " + texto));
+    var caixa = opcao.findElement(By.cssSelector("input[name='" + nome + "']"));
+    if (!caixa.isSelected()) clicar(caixa);
+    return this;
+  }
+
   public String valor(String nome) {
     return form().findElement(By.name(nome)).getDomProperty("value");
   }

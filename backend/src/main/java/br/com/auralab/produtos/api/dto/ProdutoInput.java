@@ -13,4 +13,5 @@ public record ProdutoInput(
     @NotNull Boolean visivel,
     @NotBlank String descricao,
     @NotBlank String imagemUrl,
-    @NotEmpty List<@NotBlank String> categorias) {}
+    @NotEmpty List<@NotBlank String> categorias,
+    @NotBlank String grupoPrecificacao) {}

@@ -19,6 +19,8 @@ public final class RegistroProduto {
     m.put("imagemUrl", p.getImagemUrl());
     m.put("categorias", p.getCategorias().stream().map(c -> c.getCodigo()).sorted().toList());
     m.put("preco", p.getPreco());
+    m.put("grupoPrecificacao", p.getGrupoPrecificacao().getCodigo());
+    m.put("valorCusto", p.getValorCusto());
     m.put("estoque", p.getEstoque());
     m.put("ativo", p.isAtivo());
     m.put("visivel", p.isVisivel());

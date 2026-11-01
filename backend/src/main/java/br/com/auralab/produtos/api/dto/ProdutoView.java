@@ -26,4 +26,6 @@ public record ProdutoView(
     int estoqueDisponivel,
     String descricao,
     String imagemUrl,
-    List<CategoriaProdutoView> categorias) {}
+    List<CategoriaProdutoView> categorias,
+    GrupoPrecificacaoView grupoPrecificacao,
+    BigDecimal valorCusto) {}

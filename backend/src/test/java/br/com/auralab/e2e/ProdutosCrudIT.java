@@ -176,9 +176,11 @@ class ProdutosCrudIT extends PostgresTest {
         .campo("marca", "Aura Body")
         .campo("descricao", "Limpeza suave para o corpo.")
         .campo("imagemUrl", "https://example.com/sabonete.png")
-        .selecionar("categorias", "Limpeza Facial")
+        .marcarCaixa("categorias", "Limpeza Facial")
         .campo("preco", "39.9")
         .campo("estoque", "50");
+    new org.openqa.selenium.support.ui.Select(driver.findElement(By.name("grupoPrecificacao")))
+        .selectByValue("PADRAO");
     f.enviar();
     page.esperar("tabela-produtos");
     assertThat(page.texto()).contains("Sabonete Líquido Lavanda", "PRD-000004");
@@ -189,13 +191,27 @@ class ProdutosCrudIT extends PostgresTest {
   }
 
   @Test
+  void RF0051_RF0052_RF0015_entradaEstoqueEConsultaPelaTela() {
+    page.abrir("?entradas=1", "form-entrada");
+    var f = page.formulario("form-entrada");
+    f.campo("quantidade", "5").campo("valorCusto", "33.33")
+        .campo("dataEntrada", "2026-10-12").enviar();
+    page.esperar("historico-entradas");
+    assertThat(jdbc.queryForObject("select estoque from produto where id=1", Integer.class)).isEqualTo(30);
+    assertThat(jdbc.queryForObject("select preco from produto where id=1", java.math.BigDecimal.class))
+        .isEqualByComparingTo("50.00");
+    page.abrir("?grupoPrecificacao=PADRAO&precoMin=50&precoMax=50", "tabela-produtos");
+    assertThat(page.linha(1)).contains("Creme Facial Vitamina C", "Padrão");
+  }
+
+  @Test
   void RF0014_RF0015_editarFiltrarEPersistirAposRecarga() {
     page.abrir("", "tabela-produtos");
     page.clicar("[data-editar-produto='1']");
     page.esperar("form-produto");
     var f = page.formulario("form-produto");
     f.campo("nome", "Creme Facial Renovado").campo("descricao", "Nova descrição do creme.")
-        .selecionar("categorias", "Face").enviar();
+        .marcarCaixa("categorias", "Face").enviar();
     page.abrir("?marca=Aura%20Derma&categoria=FACE", "tabela-produtos");
     assertThat(page.linha(1)).contains("Creme Facial Renovado", "Face");
     assertThat(jdbc.queryForObject("select descricao from produto where id=1", String.class))
@@ -210,8 +226,8 @@ class ProdutosCrudIT extends PostgresTest {
     var f = page.formulario("form-produto");
     f.campo("descricao", "Descrição publicada na loja.")
         .campo("imagemUrl", "https://example.invalid/imagem-quebrada.png")
-        .selecionar("categorias", "Face")
-        .selecionar("categorias", "Skincare")
+        .marcarCaixa("categorias", "Face")
+        .marcarCaixa("categorias", "Skincare")
         .enviar();
     driver.get("http://localhost:" + port + "/");
     var espera = new WebDriverWait(driver, Duration.ofSeconds(20));

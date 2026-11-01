@@ -1,6 +1,6 @@
 # Estado atual e limites do Aura Lab
 
-**Atualizado em 12/10/2026.**
+**Atualizado em 01/11/2026.**
 
 ## Implementado e integrado
 
@@ -43,11 +43,11 @@ O resumo de frete agora exige um endereço ativo de entrega do perfil ou a UF de
 
 ## Pendências conhecidas
 
-- Modelar campos editoriais exclusivos dos livros do DRS, entradas de estoque, precificação, IA e autenticação em incrementos próprios. A análise RF0055 por categoria já foi integrada no dashboard.
+- Modelar campos editoriais exclusivos dos livros do DRS, RN0051 (maior custo entre custos diferentes), RN0014 (autorização para margem), IA, autenticação e RF0058 em incrementos próprios. Entrada em estoque, cálculo por grupo e inativação automática já estão integrados; a análise RF0055 por categoria usa RN0072/RN0074 e a legenda RNF0045.
 - Comunicar e validar ambiguidades documentais com o professor antes de afirmar aderência sem ressalvas.
 - Conciliar registros legados manualmente quando houver evidência segura; não fabricar aprovações ou movimentações retroativas.
 - Restringir `CascadeType.ALL` nas associações atuais quando isso puder ser feito com migração e testes de preservação de histórico.
 - Confirmar a versão do DRS quando o enunciado citar `DRS_LES_1_2026`; o arquivo local é `DRS_LES_2_2026.docx`.
 # Incremento RF0055/RNF0043/RNF0011
 
-`/admin/dashboard` consulta o histórico mensal de pedidos ENTREGUE no PostgreSQL via `/api/v1/admin/analise-vendas`. O gráfico de linhas compara categorias atuais dos produtos, com rateio do total histórico do pedido e meses sem vendas preenchidos com zero. A seleção ADMIN_DEMO/CLIENTE_DEMO e o 403 demonstram a restrição funcional; o identificador enviado pelo navegador é forjável e não implementa autenticação. A consulta usa índice da V12 e é medida com 1.000 pedidos em Testcontainers. Ver `REQUISITOS-VENDAS.md` e `OPERACAO-E-TESTES.md`.
+`/admin/dashboard` consulta o histórico mensal de pedidos APROVADA, EM_TRANSPORTE e ENTREGUE no PostgreSQL via `/api/v1/admin/analise-vendas`. O gráfico de linhas compara categorias atuais dos produtos, com rateio do total histórico do pedido e meses sem vendas preenchidos com zero. A seleção ADMIN_DEMO/CLIENTE_DEMO e o 403 demonstram a restrição funcional; o identificador enviado pelo navegador é forjável e não implementa autenticação. A consulta usa o índice da V14 e é medida com 1.000 pedidos em Testcontainers. Ver `REQUISITOS-VENDAS.md` e `OPERACAO-E-TESTES.md`.

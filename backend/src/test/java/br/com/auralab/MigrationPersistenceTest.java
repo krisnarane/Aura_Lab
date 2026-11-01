@@ -11,18 +11,25 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 class MigrationPersistenceTest {
   @Test
-  void RF0055_RNF0011_V12_indiceEmBancoNovoEExistente() throws Exception {
+  void RF0055_RN0074_RNF0011_V13_V14_indiceEGrupoEmBancoNovoEExistente() throws Exception {
     for (String etapa : List.of("novo", "existente")) {
       try (var pg = new PostgreSQLContainer<>("postgres:17-alpine")) {
         pg.start();
         var config = Flyway.configure().dataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
-        if (etapa.equals("existente")) config.target("11").load().migrate();
+        if (etapa.equals("existente")) config.target("12").load().migrate();
         Flyway.configure().dataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword()).load().migrate();
         try (var con = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
             var st = con.createStatement();
-            var rs = st.executeQuery("select indexdef from pg_indexes where indexname='pedido_analise_entregue_criado'")) {
+            var rs = st.executeQuery("select indexdef from pg_indexes where indexname='pedido_analise_contabilizavel_criado'")) {
           assertThat(rs.next()).isTrue();
-          assertThat(rs.getString(1)).contains("criado_em").contains("status").contains("ENTREGUE");
+          assertThat(rs.getString(1)).contains("criado_em").contains("APROVADA")
+              .contains("EM_TRANSPORTE").contains("ENTREGUE");
+        }
+        try (var con = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
+            var st = con.createStatement();
+            var rs = st.executeQuery("select count(*) from produto where grupo_precificacao_codigo='PADRAO'")) {
+          assertThat(rs.next()).isTrue();
+          assertThat(rs.getInt(1)).isGreaterThanOrEqualTo(3);
         }
       }
     }

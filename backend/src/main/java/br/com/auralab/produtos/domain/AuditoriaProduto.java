@@ -45,14 +45,19 @@ public class AuditoriaProduto {
       Long entidadeId,
       Map<String, Object> antes,
       Map<String, Object> depois) {
+    this(produtoId, operacao, entidade, entidadeId, antes, depois, "ADMIN_DEMO", OffsetDateTime.now());
+  }
+
+  public AuditoriaProduto(Long produtoId, String operacao, String entidade, Long entidadeId,
+      Map<String, Object> antes, Map<String, Object> depois, String ator, OffsetDateTime instante) {
     this.produtoId = produtoId;
     this.operacao = operacao;
     this.entidade = entidade;
     this.entidadeId = entidadeId;
     this.dadosAnteriores = antes;
     this.dadosNovos = depois;
-    this.ator = "ADMIN_DEMO";
-    this.ocorridaEm = OffsetDateTime.now();
+    this.ator = ator;
+    this.ocorridaEm = instante;
     this.alteracoes = operacao + " — " + entidade + " #" + entidadeId;
   }
 

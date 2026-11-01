@@ -8,5 +8,7 @@ spring:
 server:
   port: 0
 aura:
+  produtos:
+    agendamento-inativacao-ativo: false
   vendas:
     agendamento-ativo: false

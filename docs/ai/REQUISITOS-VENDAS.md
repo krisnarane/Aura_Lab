@@ -1,6 +1,6 @@
 # Gestão de vendas conforme o DRS
 
-Fonte normativa: `docs/DRS_LES_2_2026.docx`. Atualização: 12/10/2026. Os textos do DRS são requisitos; as interpretações abaixo são decisões de implementação aprovadas pelo usuário. Comunicação e validação pelo professor permanecem pendentes.
+Fonte normativa: `docs/DRS_LES_2_2026.docx`. Atualização: 01/11/2026. Os textos do DRS são requisitos; as interpretações abaixo são decisões de implementação aprovadas pelo usuário. Comunicação e validação pelo professor permanecem pendentes.
 
 ## Estados e responsabilidades
 
@@ -68,7 +68,7 @@ A evidência é o relatório da execução atual, em `backend/target/surefire-re
 | RN0045 | Sacola expirada | Retirada e desbloqueio; CT057; API expiração e aprovação tardia |
 | RN0046 | Perfil após autorização | Notificação persistida; CT058/CT059; API trocas |
 | RNF0011 | Consultas de vendas e análise | O DRS exige 1.000 ms; para a análise RF0055, o usuário aceitou meta local de 2.000 ms em `AnaliseVendasPerformanceTest` (aquecimento e 30 amostras HTTP). `ConsultaPerformanceTest` conserva o limite original para as demais consultas. CSV performance-vendas e performance-analise-vendas |
-| RF0055 | Dashboard administrativo | AnaliseVendasApiTest (período, categorias, rateio, status atual, entrega posterior) e AnaliseVendasIT (roteiro funcional) |
+| RF0055/RN0072/RN0074/RNF0045 | Dashboard administrativo | AnaliseVendasApiTest (limites do período, categorias, rateio e status contabilizáveis) e AnaliseVendasIT (linhas, legenda abaixo e compra reprovada) |
 | RNF0043 | Dashboard administrativo | AnaliseVendasIT verifica linhas, legenda, pontos acessíveis e valores mensais em reais |
 | RNF0012 | Todas as escritas | Auditoria transacional; CicloVendaApiTest rollback; auditoria do carrinho e efeitos únicos |
 | RNF0042 | Sacola expirada | Produto, motivo e prazo removidos visíveis; CT057 |
@@ -76,7 +76,7 @@ A evidência é o relatório da execução atual, em `backend/target/surefire-re
 
 ## Revisão da entrega
 
-Os resultados devem ser lidos nos relatórios atuais. Erros, testes não executados e decisões pendentes impedem declarar conclusão integral. Entradas gerais de estoque, precificação completa, IA e autenticação ficam em outros incrementos. A análise por categoria de RF0055 está descrita abaixo. Não há cancelamento pelo cliente, recusa de troca, reembolso de sete dias ou etapa adicional para gerar cupom.
+Os resultados devem ser lidos nos relatórios atuais. Erros, testes não executados e decisões pendentes impedem declarar conclusão integral. Entradas de estoque e cálculo por grupo estão no módulo de produtos; RN0051, RN0014, IA e autenticação ficam em outros incrementos. A análise por categoria de RF0055 está descrita abaixo. Não há cancelamento pelo cliente, recusa de troca, reembolso de sete dias ou etapa adicional para gerar cupom.
 
 Carrinhos anteriores sem reserva são conciliados pela última inclusão auditada, preservando seu vencimento. Sem prazo auditável ou com prazo vencido, a massa é preservada como item retirado e exige reinclusão, sem fabricar bloqueio ou baixa anteriores.
 
@@ -97,6 +97,8 @@ RF0034/RF0037: o frontend recalcula frete, desconto e total pela API ao selecion
 
 V10 cria `resultado_operadora_cartao`, associada ao ID do cartão salvo. O cartão demonstrativo final 1111 tem resultado APROVADO; o final 2222, REPROVADO. Cartões sem linha de configuração, inclusive novos não incorporados, são aprovados por padrão. A tabela não armazena PAN ou CVV. O checkout registra EM_PROCESSAMENTO na auditoria e valida o pagamento na mesma transação, retornando APROVADA ou REPROVADA; não há ação administrativa para escolher o resultado. Todas as parcelas precisam ser aprovadas. Apenas pedidos aprovados baixam estoque, consomem cupons e geram troco; reprovação libera reservas e cupons. O administrador atua a partir do despacho.
 
+Uma validação pode encontrar mais de uma violação ao mesmo tempo. O motivo gravado em `pedido.motivo_resultado` segue a precedência declarada em `MotivoReprovacao`: RESERVA_EXPIRADA, RESERVA_INVALIDA, CUPOM_INVALIDO, OPERADORA_INDISPONIVEL e OPERADORA_RECUSOU, da causa mais estrutural para a mais específica do meio de pagamento. A escolha não depende da ordem em que as checagens aparecem no código e é coberta por `MotivoReprovacaoTest`. RESERVA_EXPIRADA continua sendo o motivo que encerra as reservas como EXPIRADA; os demais as liberam.
+
 Após a autorização, confirmar o recebimento da troca sempre gera crédito e reentrada no estoque, sem opção de não retornar. Chamadas repetidas não duplicam esses efeitos.
 
 O enunciado recebido usa a expressão contraditória "retirar" e "voltam ao carrinho" para itens cujo bloqueio expirou. A decisão adotada é retirada com histórico visível e **reinclusão manual** para criar novo bloqueio; compra fica indisponível quando não houver itens válidos. Esta interpretação precisa de aceite do professor antes de afirmar aderência literal. O enunciado também cita RF/RNF para algumas operações com numeração diferente de `DRS_LES_2_2026.docx`; a matriz acima usa os identificadores desse DRS. Não extrapolar equivalência entre versões sem confirmação.
@@ -105,8 +107,8 @@ O enunciado recebido usa a expressão contraditória "retirar" e "voltam ao carr
 
 A meta de aceite desta entrega para a consulta gráfica é **2 segundos**, conforme orientação posterior do usuário. O RNF0011 no DRS permanece em **1 segundo**; passar no teste de 2 segundos não comprova, por si só, conformidade com esse limite do DRS. As demais consultas e seus testes mantêm os limites anteriores.
 
-`GET /api/v1/admin/analise-vendas` recebe `inicio`, `fim` (datas inclusivas) e parâmetros repetidos `categorias`. Retorna `meses` em `AAAA-MM` e `series` com código, descrição e valores em reais, inclusive meses sem vendas. Apenas pedidos cujo estado **atual** é `ENTREGUE` entram na consulta. O mês é o da criação do pedido em `America/Sao_Paulo`.
+`GET /api/v1/admin/analise-vendas` recebe `inicio`, `fim` (datas inclusivas) e parâmetros repetidos `categorias`. RN0072 admite de 1 a 24 meses cobertos, contando os meses extremos inclusive. Retorna `meses` em `AAAA-MM` e `series` com código, descrição e valores em reais, inclusive meses sem vendas. RN0074 contabiliza apenas pedidos cujo estado **atual** é `APROVADA`, `EM_TRANSPORTE` ou `ENTREGUE`; exclui `EM_PROCESSAMENTO`, `REPROVADA`, `EM_TROCA`, `TROCA_AUTORIZADA` e `TROCADO`. O mês é o da criação do pedido em `America/Sao_Paulo`. RNF0045 põe a legenda com nome e cor abaixo do gráfico.
 
-O total histórico do pedido, incluindo desconto e frete, é distribuído proporcionalmente aos subtotais históricos dos itens; se todos forem zero, divide-se igualmente. Cada parcela de item é repartida entre as categorias **atuais** do produto. Centavos restantes são atribuídos em ordem de ID do item e código da categoria. Assim, editar categorias pode reclassificar vendas antigas, sem alterar o total do pedido. A consulta lê o PostgreSQL a cada requisição, sem cache ou `localStorage`. V12 cria índice parcial de pedidos ENTREGUE por data.
+O total histórico do pedido, incluindo desconto e frete, é distribuído proporcionalmente aos subtotais históricos dos itens; se todos forem zero, divide-se igualmente. Cada parcela de item é repartida entre as categorias **atuais** do produto. Centavos restantes são atribuídos em ordem de ID do item e código da categoria. Assim, editar categorias pode reclassificar vendas antigas, sem alterar o total do pedido. A consulta lê o PostgreSQL a cada requisição, sem cache ou `localStorage`. V14 substitui o índice parcial da V12 pelos três status contabilizáveis.
 
 O dashboard oferece seleção de `ADMIN_DEMO`/`CLIENTE_DEMO`. A tela bloqueia o perfil cliente e a API retorna 403 para qualquer valor diferente de `ADMIN_DEMO` no cabeçalho `X-Demo-Perfil`. Esse cabeçalho é forjável: demonstra a regra funcional, **não autentica nem protege o acesso real**. A análise antiga e a exportação CSV foram retiradas da rota integrada. A massa de teste funcional cria compras pelo caso de uso de venda com relógio controlado e confirma entrega pelo fluxo administrativo.

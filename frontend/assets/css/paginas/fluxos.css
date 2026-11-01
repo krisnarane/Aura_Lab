@@ -154,6 +154,46 @@
   font-weight: 700;
 }
 
+/* Caixas de seleção de categorias: variante compacta em formato de pílula. */
+.choice-grid.compact {
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 8px;
+}
+.choice-grid.compact .choice-card {
+  border-radius: 99px;
+  gap: 9px;
+  padding: 9px 15px;
+}
+.choice-grid.compact .choice-card b {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.choice-grid.compact .choice-card:has(input:checked) {
+  background: var(--pink);
+  border-color: var(--rose);
+}
+.choice-grid.compact .choice-card:has(input:focus-visible) {
+  outline: 2px solid var(--rose-dark);
+  outline-offset: 2px;
+}
+
+/* Agrupador do campo de categorias; neutraliza o reset de fieldset/legend do Bootstrap. */
+.campo-categorias {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+.campo-categorias legend {
+  color: #69545c;
+  float: none;
+  font-size: 0.82rem;
+  margin: 0;
+  width: auto;
+}
+
 /* Bloco para cadastro de novo endereço em checkout ou perfil. */
 .new-address-fields {
   background: #fffafa;

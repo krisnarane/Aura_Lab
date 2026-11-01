@@ -2,6 +2,8 @@ package br.com.auralab.produtos.api;
 
 import br.com.auralab.produtos.api.dto.*;
 import br.com.auralab.produtos.service.ProdutoService;
+import br.com.auralab.produtos.service.EntradaEstoqueService;
+import br.com.auralab.produtos.service.InativacaoAutomaticaProdutos;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.*;
@@ -19,19 +21,19 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1")
 public class ProdutoController {
   private final ProdutoService produtos;
+  private final EntradaEstoqueService entradas;
+  private final InativacaoAutomaticaProdutos inativacaoAutomatica;
 
-  public ProdutoController(ProdutoService p) {
+  public ProdutoController(ProdutoService p, EntradaEstoqueService entradas,
+      InativacaoAutomaticaProdutos inativacaoAutomatica) {
     produtos = p;
+    this.entradas = entradas;
+    this.inativacaoAutomatica = inativacaoAutomatica;
   }
 
   @GetMapping("/produtos")
-  List<ProdutoView> listar(
-      @RequestParam(required = false) String codigo,
-      @RequestParam(required = false) String nome,
-      @RequestParam(required = false) String marca,
-      @RequestParam(required = false) String categoria,
-      @RequestParam(required = false) Boolean ativo) {
-    return produtos.listar(codigo, nome, marca, categoria, ativo);
+  List<ProdutoView> listar(@ModelAttribute FiltroProduto filtro) {
+    return produtos.listar(filtro);
   }
 
   @GetMapping("/produtos/{id}")
@@ -46,6 +48,22 @@ public class ProdutoController {
 
   @GetMapping("/categorias-produto")
   List<CategoriaProdutoView> categoriasProduto() { return produtos.categoriasProduto(); }
+
+  @GetMapping("/grupos-precificacao")
+  List<GrupoPrecificacaoView> gruposPrecificacao() { return produtos.gruposPrecificacao(); }
+
+  @PostMapping("/produtos/inativacao-automatica")
+  List<Long> inativacaoAutomatica() { return inativacaoAutomatica.executar(); }
+
+  @GetMapping("/produtos/{id}/entradas-estoque")
+  List<EntradaEstoqueView> entradas(@PathVariable Long id) { return entradas.listar(id); }
+
+  @PostMapping("/produtos/{id}/entradas-estoque")
+  ResponseEntity<EntradaEstoqueView> registrarEntrada(@PathVariable Long id,
+      @RequestBody EntradaEstoqueInput in) {
+    var v = entradas.registrar(id, in);
+    return ResponseEntity.created(URI.create("/api/v1/produtos/" + id + "/entradas-estoque/" + v.id())).body(v);
+  }
 
   @GetMapping("/categorias-inativacao-produto")
   List<CategoriaProdutoView> categoriasInativacao() {

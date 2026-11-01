@@ -1,5 +1,6 @@
 import { criarNavegacaoAdmin } from "./adminLayout.js";
 import { escaparHtml as e, formatarMoeda } from "./utilitarios.js";
+import { caixasCategorias, categoriasMarcadas } from "./categoriasSelecao.js";
 
 export const ehRotaAnaliseVendas = () => location.pathname === "/admin/dashboard";
 const CORES = ["#9f365c", "#167c80", "#8764aa", "#bc6c25", "#4064ad", "#60904a", "#b94778", "#555a77"];
@@ -9,6 +10,23 @@ let perfil = "ADMIN_DEMO";
 let filtros = null;
 
 const layout = (conteudo) => `<main class="admin clientes-admin"><div>${criarNavegacaoAdmin("Dashboard", "data-api-link")}<section class="admin-main"><div class="admin-topbar"><div><span class="eyebrow">Administração</span><h1>Histórico de vendas por categoria</h1></div></div><div class="panel" data-testid="seletor-perfil"><strong>Perfil demonstrativo</strong> <button type="button" class="btn ${perfil === "ADMIN_DEMO" ? "aura-btn" : "btn-outline-secondary"}" data-perfil="ADMIN_DEMO">ADMIN_DEMO</button> <button type="button" class="btn ${perfil === "CLIENTE_DEMO" ? "aura-btn" : "btn-outline-secondary"}" data-perfil="CLIENTE_DEMO">CLIENTE_DEMO</button></div>${conteudo}</section></div></main>`;
+
+// RN0072: mede o período em meses cobertos, igual ao agrupamento mensal do RN0071.
+const MINIMO_MESES = 1;
+const MAXIMO_MESES = 24;
+function mesesCobertos(inicio, fim) {
+  const [anoInicio, mesInicio] = inicio.split("-").map(Number);
+  const [anoFim, mesFim] = fim.split("-").map(Number);
+  return (anoFim - anoInicio) * 12 + (mesFim - mesInicio) + 1;
+}
+function periodoInvalido(inicio, fim) {
+  if (!inicio || !fim) return "Informe a data de início e a data de fim.";
+  if (fim < inicio) return "A data de fim não pode ser anterior à data de início.";
+  const meses = mesesCobertos(inicio, fim);
+  return meses < MINIMO_MESES || meses > MAXIMO_MESES
+    ? `O período de análise deve cobrir de ${MINIMO_MESES} a ${MAXIMO_MESES} meses.`
+    : null;
+}
 
 async function buscar(url, options = {}) {
   const res = await fetch(url, options);
@@ -36,7 +54,8 @@ function desenhar(resultado) {
   const grafico = `<div style="overflow-x:auto"><svg data-testid="grafico-vendas" role="img" aria-label="Gráfico de linhas do histórico mensal de vendas por categoria" viewBox="0 0 ${largura} ${altura}" style="min-width:${largura}px;width:100%;height:320px">${[0, .25, .5, .75, 1].map(t => `<line x1="50" x2="${largura - 25}" y1="${y(max*t)}" y2="${y(max*t)}" stroke="#ddd"/><text x="2" y="${y(max*t) + 4}" font-size="11">${e(formatarMoeda(max*t))}</text>`).join("")}${linhas}${meses.map((m, i) => `<text x="${x(i)}" y="300" text-anchor="middle" font-size="12">${rotulo(m)}</text>`).join("")}</svg></div>`;
   const legenda = `<div data-testid="legenda-vendas" style="display:flex;gap:16px;flex-wrap:wrap">${series.map((s, i) => `<span><span aria-hidden="true" style="display:inline-block;width:12px;height:12px;background:${CORES[i % CORES.length]};border-radius:50%"></span> ${e(s.descricao)}</span>`).join("")}</div>`;
   const tabela = `<table class="table" data-testid="tabela-vendas"><caption>Valores mensais em reais por categoria</caption><thead><tr><th>Mês/ano</th>${series.map(s => `<th>${e(s.descricao)}</th>`).join("")}</tr></thead><tbody>${meses.map((m, i) => `<tr><th>${rotulo(m)}</th>${series.map(s => `<td data-testid="valor-${e(s.categoria)}-${m}">${e(formatarMoeda(s.valores[i]))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-  return `<div class="panel mt-3">${legenda}${grafico}<div class="table-responsive">${tabela}</div></div>`;
+  // RNF0045: a legenda identifica nome e cor de cada categoria na parte inferior do gráfico.
+  return `<div class="panel mt-3">${grafico}${legenda}<div class="table-responsive">${tabela}</div></div>`;
 }
 
 export async function renderizarAnaliseVendas(raiz, navegar) {
@@ -56,8 +75,10 @@ export async function renderizarAnaliseVendas(raiz, navegar) {
       ev.preventDefault();
       const form = ev.currentTarget;
       filtros = { inicio: form.elements.inicio.value, fim: form.elements.fim.value,
-        categorias: [...form.elements.categorias.selectedOptions].map(o => o.value) };
-      if (!filtros.categorias.length) { raiz.querySelector("#analise-resultado").innerHTML = '<div role="alert">Selecione ao menos uma categoria.</div>'; return; }
+        categorias: categoriasMarcadas(form) };
+      const aviso = periodoInvalido(filtros.inicio, filtros.fim)
+        || (filtros.categorias.length ? null : "Selecione ao menos uma categoria.");
+      if (aviso) { raiz.querySelector("#analise-resultado").innerHTML = `<div role="alert" data-testid="aviso-filtros">${e(aviso)}</div>`; return; }
       await consultar();
     });
   };
@@ -69,7 +90,7 @@ export async function renderizarAnaliseVendas(raiz, navegar) {
     const categorias = await buscar("/api/v1/categorias-produto");
     if (atual !== versao) return;
     if (!filtros.categorias.length) filtros.categorias = categorias.map(c => c.codigo);
-    aplicar(`<form class="panel mt-3" id="analise-form" data-testid="filtros-analise"><div class="row g-3"><div class="col-md-3"><label>Data de início<input class="form-control" type="date" name="inicio" value="${e(filtros.inicio)}" required></label></div><div class="col-md-3"><label>Data de fim<input class="form-control" type="date" name="fim" value="${e(filtros.fim)}" required></label></div><div class="col-md-4"><label>Categorias<select class="form-select" name="categorias" multiple size="8" required>${categorias.map(c => `<option value="${e(c.codigo)}" ${filtros.categorias.includes(c.codigo) ? "selected" : ""}>${e(c.descricao)}</option>`).join("")}</select></label></div><div class="col-md-2"><button class="btn aura-btn" type="submit">Consultar</button></div></div></form><div id="analise-resultado" aria-live="polite"></div>`);
+    aplicar(`<form class="panel mt-3" id="analise-form" data-testid="filtros-analise"><div class="row g-3"><div class="col-md-4"><label>Data de início<input class="form-control" type="date" name="inicio" value="${e(filtros.inicio)}" required></label></div><div class="col-md-4"><label>Data de fim<input class="form-control" type="date" name="fim" value="${e(filtros.fim)}" required></label></div><div class="col-md-4 d-flex align-items-end"><button class="btn aura-btn" type="submit">Consultar</button></div><div class="col-12">${caixasCategorias(categorias, filtros.categorias, { legenda: "Categorias comparadas" })}</div></div></form><div id="analise-resultado" aria-live="polite"></div>`);
     await consultar();
   } catch (erro) { aplicar(`<div class="alert alert-danger mt-3" role="alert">${e(erro.message)}</div>`); }
 

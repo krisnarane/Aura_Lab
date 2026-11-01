@@ -4,7 +4,9 @@ export function prepararFormularios(raiz) {
     form.noValidate = true;
     form.querySelectorAll("input,select,textarea").forEach((c) => {
       const id = `${form.dataset.testid || "form"}-${c.name}`;
-      c.id = id;
+      // Grupos de caixas de seleção compartilham o nome e já trazem id próprio: não sobrescreve,
+      // senão vários campos ficariam com o mesmo identificador.
+      c.id ||= id;
       c.dataset.testid ||= id;
       if (!c.closest("label"))
         c.setAttribute("aria-label", c.placeholder || c.name);
@@ -43,10 +45,12 @@ export async function executar(form, acao, toast, apos) {
     );
     for (const [nome, mensagem] of Object.entries(err.campos || {})) {
       const normal = nome.replace("enderecoResidencial.", "endereco_");
-      const campo =
+      const encontrado =
         form.elements.namedItem(normal) ||
         form.elements.namedItem(`endereco_${nome}`) ||
         (nome === "senha" ? form.elements.namedItem("novaSenha") : null);
+      // Campos com nome repetido (caixas de seleção) devolvem uma lista: marca a primeira.
+      const campo = encontrado?.setAttribute ? encontrado : encontrado?.[0];
       if (campo) {
         const id = `${campo.id}-erro`;
         campo.setAttribute("aria-invalid", "true");

@@ -44,6 +44,13 @@ public class Produto {
   @Column(nullable = false, precision = 12, scale = 2)
   private BigDecimal preco;
 
+  @ManyToOne(optional = false)
+  @JoinColumn(name = "grupo_precificacao_codigo", nullable = false)
+  private GrupoPrecificacao grupoPrecificacao;
+
+  @Column(name = "valor_custo", precision = 12, scale = 2)
+  private BigDecimal valorCusto;
+
   @Column(nullable = false)
   private int estoque;
 
@@ -90,7 +97,8 @@ public class Produto {
   }
 
   public void editar(String nome, String marca, String descricao, String imagemUrl,
-      BigDecimal preco, int estoque, boolean visivel, Set<CategoriaProduto> categorias) {
+      BigDecimal preco, int estoque, boolean visivel, Set<CategoriaProduto> categorias,
+      GrupoPrecificacao grupoPrecificacao) {
     this.nome = nome;
     this.marca = marca;
     this.descricao = descricao;
@@ -100,7 +108,16 @@ public class Produto {
     this.visivel = visivel;
     this.categorias.clear();
     this.categorias.addAll(categorias);
+    this.grupoPrecificacao = grupoPrecificacao;
     this.atualizadoEm = OffsetDateTime.now();
+  }
+
+  /** RF0051/RF0052: soma as unidades e recalcula pelo grupo vigente. */
+  public void registrarEntrada(int quantidade, BigDecimal custo, OffsetDateTime instante) {
+    this.estoque = Math.addExact(this.estoque, quantidade);
+    this.valorCusto = custo;
+    this.preco = grupoPrecificacao.precoDeVenda(custo);
+    this.atualizadoEm = instante;
   }
 
   public String getDescricao() { return descricao; }
@@ -109,11 +126,15 @@ public class Produto {
 
   /** RF0012/RN0015: inativação lógica com motivo obrigatório; também oculta o produto. */
   public void inativar(String categoria, String justificativa) {
+    inativar(categoria, justificativa, OffsetDateTime.now());
+  }
+
+  public void inativar(String categoria, String justificativa, OffsetDateTime instante) {
     this.ativo = false;
     this.visivel = false;
     this.categoriaInativacao = categoria;
     this.justificativaInativacao = justificativa;
-    this.inativadoEm = OffsetDateTime.now();
+    this.inativadoEm = instante;
     this.atualizadoEm = this.inativadoEm;
   }
 
@@ -145,6 +166,9 @@ public class Produto {
   public BigDecimal getPreco() {
     return preco;
   }
+
+  public GrupoPrecificacao getGrupoPrecificacao() { return grupoPrecificacao; }
+  public BigDecimal getValorCusto() { return valorCusto; }
 
   public int getEstoque() {
     return estoque;

@@ -66,6 +66,10 @@ public class RegraNegocioException extends RuntimeException {
           case "CATEGORIA_PRODUTO_INVALIDA" -> "categoria";
           case "CATEGORIAS_PRODUTO_INVALIDAS" -> "categorias";
           case "IMAGEM_URL_INVALIDA" -> "imagemUrl";
+          case "GRUPO_PRECIFICACAO_INVALIDO" -> "grupoPrecificacao";
+          case "QUANTIDADE_ENTRADA_INVALIDA" -> "quantidade";
+          case "VALOR_CUSTO_INVALIDO" -> "valorCusto";
+          case "DATA_ENTRADA_OBRIGATORIA" -> "dataEntrada";
           case "VISIBILIDADE_PRODUTO_INATIVO" -> "visivel";
           case "CONFIRMACAO_SENHA" -> "confirmacaoSenha";
           case "SENHA_FRACA", "SENHA_LONGA" -> "senha";

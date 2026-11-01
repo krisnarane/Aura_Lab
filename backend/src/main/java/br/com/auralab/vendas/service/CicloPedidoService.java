@@ -54,8 +54,9 @@ public class CicloPedidoService {
   @Transactional
   public PedidoView validar(Long id) {
     repo.bloquearFluxo();
-    var inicial = exigir(id);
-    reservas.sincronizar(inicial.getClienteId());
+    // A conciliação invalida o contexto de persistência (ver ReservaEstoqueService#sincronizar),
+    // por isso o cliente vem de uma projeção e o pedido é carregado uma única vez, depois dela.
+    reservas.sincronizar(clienteDoPedido(id));
     var p = exigir(id);
     exigirAtual(p);
     if (!"EM_PROCESSAMENTO".equals(p.getStatus())) {
@@ -63,20 +64,24 @@ public class CicloPedidoService {
       RegrasCicloVenda.exigirEstado(p.getStatus(), "EM_PROCESSAMENTO");
     }
     var antes = RegistroVenda.pedido(p);
-    String motivo = null;
+    // Todas as violações são coletadas; qual delas vira o motivo registrado é decidido pela
+    // precedência declarada em MotivoReprovacao, não pela ordem das checagens abaixo.
+    Set<MotivoReprovacao> violacoes = EnumSet.noneOf(MotivoReprovacao.class);
     var rs = repo.reservasPedido(id);
+    if (rs.stream().anyMatch(r -> !tempo(r, "vence_em").isAfter(reservas.agora())))
+      violacoes.add(MotivoReprovacao.RESERVA_EXPIRADA);
     if (rs.size() != p.getItens().size()
         || rs.stream()
             .anyMatch(
                 r ->
-                    !tempo(r, "vence_em").isAfter(reservas.agora())
-                        || qtd(r, "estoque") < qtd(r, "quantidade")
+                    qtd(r, "estoque") < qtd(r, "quantidade")
                         || !Boolean.TRUE.equals(r.get("ativo"))
-                        || !Boolean.TRUE.equals(r.get("visivel")))) motivo = "RESERVA_INVALIDA";
+                        || !Boolean.TRUE.equals(r.get("visivel"))))
+      violacoes.add(MotivoReprovacao.RESERVA_INVALIDA);
     if (p.getCupomPromocionalId() != null) {
       var promo = cupons.findById(p.getCupomPromocionalId()).orElse(null);
       if (promo == null || !promo.isPromocional() || (promo.getClienteId()!=null && !promo.getClienteId().equals(p.getClienteId())) || !promo.valido(reservas.agora().toLocalDate()))
-        motivo = "CUPOM_INVALIDO";
+        violacoes.add(MotivoReprovacao.CUPOM_INVALIDO);
     }
     List<Map<String, Object>> resultados = new ArrayList<>();
     for (var parcela : p.getPartes()) {
@@ -86,7 +91,8 @@ public class CicloPedidoService {
             || !c.isTroca()
             || !p.getClienteId().equals(c.getClienteId())
             || !c.reservadoPara(p.getId(), reservas.agora().toLocalDate())
-            || c.getValor().compareTo(parcela.getValor()) != 0) motivo = "CUPOM_INVALIDO";
+            || c.getValor().compareTo(parcela.getValor()) != 0)
+          violacoes.add(MotivoReprovacao.CUPOM_INVALIDO);
       } else {
         String resultado = operadora.validar(parcela.getCartaoId(), parcela.getValor());
         repo.resultadoParcela(parcela.getId(), resultado);
@@ -94,11 +100,15 @@ public class CicloPedidoService {
             Map.of(
                 "parcelaId", parcela.getId(), "resultado", resultado, "valor", parcela.getValor()));
         if (!"APROVADO".equals(resultado))
-          motivo = "FALHA".equals(resultado) ? "OPERADORA_INDISPONIVEL" : "OPERADORA_RECUSOU";
+          violacoes.add(
+              "FALHA".equals(resultado)
+                  ? MotivoReprovacao.OPERADORA_INDISPONIVEL
+                  : MotivoReprovacao.OPERADORA_RECUSOU);
       }
     }
-    if(rs.stream().anyMatch(r -> !tempo(r,"vence_em").isAfter(reservas.agora()))) motivo="RESERVA_EXPIRADA";
-    boolean aprovado = motivo == null;
+    MotivoReprovacao reprovacao = MotivoReprovacao.prioritario(violacoes).orElse(null);
+    String motivo = reprovacao == null ? null : reprovacao.name();
+    boolean aprovado = reprovacao == null;
     if (aprovado) {
       for (var item : p.getItens()) {
         repo.baixar(item.getProdutoId(), item.getQuantidade(), item.getId(), reservas.agora());
@@ -144,7 +154,8 @@ public class CicloPedidoService {
         registrarCupom(p.getClienteId(), c);
       }
     } else {
-      repo.encerrarPedido(id, "RESERVA_EXPIRADA".equals(motivo) ? "EXPIRADA" : "LIBERADA");
+      repo.encerrarPedido(
+          id, reprovacao == MotivoReprovacao.RESERVA_EXPIRADA ? "EXPIRADA" : "LIBERADA");
       for (var parcela : p.getPartes())
         if (parcela.getCupomId() != null) {
           var c = cupons.findById(parcela.getCupomId()).orElse(null);
@@ -258,6 +269,13 @@ public class CicloPedidoService {
   public Pedido exigir(Long id) {
     return pedidos
         .findById(id)
+        .orElseThrow(
+            () -> new RegraNegocioException("PEDIDO_NAO_ENCONTRADO", "Pedido não encontrado."));
+  }
+
+  private Long clienteDoPedido(Long id) {
+    return pedidos
+        .clienteIdDoPedido(id)
         .orElseThrow(
             () -> new RegraNegocioException("PEDIDO_NAO_ENCONTRADO", "Pedido não encontrado."));
   }
