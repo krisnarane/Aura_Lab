@@ -2,6 +2,7 @@ package br.com.auralab.clientes.api;
 
 import br.com.auralab.clientes.api.dto.ErroView;
 import br.com.auralab.clientes.service.RegraNegocioException;
+import br.com.auralab.ia.service.IaIndisponivelException;
 import java.util.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
@@ -15,6 +16,11 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestControllerAdvice
 public class ApiExceptionHandler {
+  @ExceptionHandler(IaIndisponivelException.class)
+  ResponseEntity<ErroView> ia(IaIndisponivelException e) {
+    return ResponseEntity.status(503)
+        .body(new ErroView("IA_INDISPONIVEL", e.getMessage(), Map.of()));
+  }
   @ExceptionHandler(RegraNegocioException.class)
   ResponseEntity<ErroView> regra(RegraNegocioException e) {
     return ResponseEntity.status(e.getStatus())

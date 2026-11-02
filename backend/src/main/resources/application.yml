@@ -11,3 +11,9 @@ spring:
     enabled: true
 server:
   port: ${PORT:4200}
+aura:
+  ia:
+    projeto: ${GOOGLE_CLOUD_PROJECT:}
+    timeout-ms: ${AURA_IA_TIMEOUT_MS:20000}
+    max-question-chars: ${AURA_IA_MAX_QUESTION_CHARS:1000}
+    max-output-tokens: ${AURA_IA_MAX_OUTPUT_TOKENS:512}

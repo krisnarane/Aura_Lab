@@ -1,5 +1,53 @@
 # Execução, testes e apresentação
 
+## RNF0044 — preparar e operar a Consultora Aura
+
+Use um banco de **demonstração**, não uma base com clientes reais. O script de preparo é idempotente pelos e-mails e nomes de produto, cria dois clientes fictícios com preferências distintas e finaliza quatro compras pelo checkout HTTP. Na raiz do projeto, com Docker e backend ligados:
+
+```powershell
+docker compose up -d
+cd backend
+.\mvnw.cmd spring-boot:run
+# Em outro PowerShell, na raiz:
+$env:AURA_IA_DEMO = 'SIM'
+python tools/ia/preparar_demo.py
+```
+
+Configure faturamento, API Vertex AI, Cloud Storage, permissões para criar tuning jobs e ler/gravar no bucket no projeto Google Cloud. Use credenciais padrão da aplicação no computador (`gcloud auth application-default login`) ou identidade de serviço no ambiente de execução; não coloque chave no Git ou no frontend. Instale `python -m pip install -r tools/ia/requirements.txt`. Em PowerShell, `./tools/ia/carregar-ambiente.ps1` carrega projeto, região de novos jobs, modelo base para novos jobs, bucket e DSN local em uma chamada; `./tools/ia/carregar-ambiente.ps1 -IniciarSite` também inicia PostgreSQL e backend. Confirme o nome do bucket no script. O backend lê o projeto da variável e a região de atendimento do próprio endpoint, além de `AURA_IA_TIMEOUT_MS`, `AURA_IA_MAX_QUESTION_CHARS` e `AURA_IA_MAX_OUTPUT_TOKENS` opcionais. O endpoint ajustado ativo é lido da tabela `ia_modelo`. O job Console da primeira versão usou Gemini 3.1 Flash-Lite, embora o plano inicial previsse 2.5.
+
+```powershell
+$env:AURA_IA_DB_DSN = 'postgresql://aura:aura@127.0.0.1:5433/aura_lab'
+$env:AURA_IA_DEMO = 'SIM'
+python tools/ia/pipeline.py exportar --saida backend/target/evidencias/ia-v1
+python tools/ia/pipeline.py treinar --dados backend/target/evidencias/ia-v1 --versao aura-v1
+```
+
+O comando de treino cobra recursos do Google Cloud e ativa a versão no banco apenas depois de job concluído e resposta JSON válida em uma pergunta de verificação. Com `aura-v1` ativo, acesse `/perfil/dados`, selecione Ana ou Bia Demo IA, veja `/perfil/preferencias` e abra `/consultora`. Faça perguntas de busca e de dúvidas, registre votos **Útil** e **Não útil**. Para cada resposta negativa, consulte seu ID na tabela `ia_avaliacao` e registre uma correção revisada:
+
+Se o primeiro job foi criado pelo **Console**, não execute `treinar` novamente. Após o status `Succeeded`, ative o job existente sem novo ajuste: `python tools/ia/pipeline.py ativar-job --dados dados/ia/primeiro-treino --versao aura-v1 --job 'projects/NUMERO/locations/us-central1/tuningJobs/ID'`. O comando verifica estado, endpoint, JSON de resposta e hashes antes de trocar a versão ativa.
+
+```powershell
+python tools/ia/pipeline.py revisar --resposta-id 123 --texto 'Resposta corrigida com base no catálogo.'
+python tools/ia/pipeline.py exportar --saida backend/target/evidencias/ia-v2 --final
+python tools/ia/pipeline.py treinar --dados backend/target/evidencias/ia-v2 --versao aura-v2
+```
+
+Cada exportação relê todas as compras aprovadas e avaliações atuais, então incorpora dados novos sem perder os exemplos anteriores. Confira `treino.jsonl`, `validacao.jsonl` e `manifesto.json` antes do treino; o manifesto traz origens, contagens, datas e hash. A exportação elimina exemplos iguais e separa por produto/interação para impedir sobreposição entre treino e validação. Os prompts sintéticos de vendas são variados por pergunta, mas devem ser revisados pelo grupo para evitar respostas artificiais; a quantidade de exemplos, sozinha, não demonstra qualidade do modelo.
+
+Na apresentação, mostre `select versao,job_nome,endpoint,ativo from ia_modelo order by id;` e `select resposta_id,util,motivo,atualizada_em from ia_avaliacao order by atualizada_em desc;`, além dos dois históricos e preferências. A versão em uso aparece em cada resposta do chat. É necessário levar o job real concluído e testar o endpoint antes da aula. O teste automatizado usa um gerador simulado e não comprova a conexão com a nuvem. [Documentação oficial de ajuste supervisionado e endpoints](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/tuning/supervised-tuning/use).
+
+Verificação real em 02/11/2026: o job `projects/871048686403/locations/us-central1/tuningJobs/8502433884703555584` estava em `JOB_STATE_SUCCEEDED`; o modelo base retornado foi `gemini-3.1-flash-lite`. A ativação executou uma pergunta de validação e gravou `aura-v1` ativa com endpoint `projects/871048686403/locations/us/endpoints/9096180531753648128`. Com backend local e ADC, chamadas HTTP ao chat dos clientes Ana Demo IA (ID 5) e Bia Demo IA (ID 6) retornaram respostas distintas, versão `aura-v1` e produtos correspondentes às categorias de cada uma. A consulta das conversas confirmou persistência das duas perguntas e respostas. Os votos ainda devem ser testados na interface durante a apresentação.
+
+```powershell
+cd backend
+$env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+.\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' '-Dtest=IaApiTest' test
+cd ../frontend
+npm test
+```
+
+Verificação dirigida em 01/11/2026: `IaApiTest` passou com quatro testes PostgreSQL/Testcontainers; `ConsultoraIT` passou com um cenário Chrome headless; `npm test`, compilação Java, compilação Python e `git diff --check` passaram. A massa local inicial continha nove compras aprovadas e nenhum feedback. O ambiente não tinha `gcloud`, projeto, bucket ou ADC configurados; o tuning real e a chamada remota não foram executados. `spotless:check` acusa violações já existentes em dezenas de arquivos não envolvidos neste incremento, portanto não foi aplicado globalmente.
+
 ## Pré-requisitos
 
 - Java 21.

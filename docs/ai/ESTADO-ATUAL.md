@@ -20,6 +20,8 @@ O administrador despacha APROVADA para EM_TRANSPORTE e confirma ENTREGUE. O clie
 
 Tecnologias atuais: Java 21, Spring Boot 3.5.5, Maven Wrapper, Spring MVC, Bean Validation, JPA/Hibernate, PostgreSQL 17, Flyway, HTML/CSS/Bootstrap/JavaScript, Selenium WebDriver e JUnit 5.
 
+A consultora RNF0044 em `/consultora` e `/perfil/preferencias` usa V15 no PostgreSQL para preferências, mensagens, votos e versões de modelo. O chat exige um endpoint Gemini ajustado ativo; sem ele, informa indisponibilidade. A preparação local cria clientes e compras fictícios, e o exportador gera JSONL cumulativo. A execução real de tuning e a prova de respostas do endpoint dependem da configuração Google Cloud. Ver [REQUISITOS-IA.md](REQUISITOS-IA.md).
+
 O resumo de frete agora exige um endereço ativo de entrega do perfil ou a UF de um novo endereço para estimativa; não calcula a faixa de demais estados por ausência de endereço. Foram adicionados cenários Selenium rastreados a CT026, CT032, CT035, CT038, CT039, CT041, CT042 e CT053 nas classes existentes `ProdutosCrudIT` e `VendasLojaIT`. A relação e os comandos estão em `docs/crud-admin/CASOS-DE-TESTE.md`; resultados dependem da execução e dos relatórios atuais.
 
 ## Decisões de escopo vigentes

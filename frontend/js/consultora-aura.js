@@ -1,124 +1,82 @@
-/**
- * Controla a conversa da Consultora Aura e sua recomendação local por regras.
- * A consultora apenas recomenda itens do catálogo; nunca altera preço ou regra transacional.
- */
-import { add, product } from "./store.js";
-import { escaparHtml, formatarMoeda } from "./utilitarios.js";
-import { aplicarDetalhesVisuais } from "./interface.js";
+/** Consultora integrada ao PostgreSQL e ao Gemini ajustado. RNF0044. */
+import { consultoraApi } from "./consultoraApi.js";
+import { escaparHtml as e, formatarMoeda as moeda } from "./utilitarios.js";
+import { header, footer } from "./pages.js";
 
-const REGRAS_RECOMENDACAO = [
-  { termos: ["oleosa", "brilho"], idsProdutos: [2, 6] },
-  { termos: ["sensível", "hidratação"], idsProdutos: [2, 6] },
-  { termos: ["base", "mista", "cobertura"], idsProdutos: [1, 3] },
-  { termos: ["olhos", "máscara"], idsProdutos: [4, 7] },
-  { termos: ["lábios", "batom"], idsProdutos: [5, 8] },
-];
+const CLIENTE = "aura-lab-perfil-api-cliente";
+const NOME = "aura-lab-perfil-api-nome";
+let versao = 0;
 
-function criarCartaoRecomendacao(idProduto) {
-  // Busca o produto pelo id e transforma seus dados em um card reutilizável no chat.
-  const produto = product(idProduto);
-  if (!produto) return "";
+const mensagemHtml = (m, produtos = []) => `<div class="chat-message ${m.papel === "USER" ? "user-message" : "aura-message"}">
+  <b>${m.papel === "USER" ? "Você" : "Aura"}</b><p>${e(m.texto)}</p>
+  ${m.papel === "ASSISTANT" ? `<div class="chat-recommendations">${produtos.map((p) =>
+    `<article class="aura-card chat-card"><div class="card-body"><b>${e(p.nome)}</b><p>${e(p.descricao)}</p><strong>${moeda(p.preco)}</strong> <a href="/produto/${p.id}" data-chat-link>Ver produto</a></div></article>`).join("")}</div>
+    <div class="d-flex gap-2 mt-2"><button type="button" class="btn btn-sm ${m.util === true ? "aura-btn" : "btn-outline-secondary"}" data-avaliar="${m.id}" data-util="true">Útil</button>
+    <button type="button" class="btn btn-sm ${m.util === false ? "aura-btn" : "btn-outline-secondary"}" data-avaliar="${m.id}" data-util="false">Não útil</button></div>
+    ${m.modeloVersao ? `<small class="muted">Modelo ${e(m.modeloVersao)}</small>` : ""}` : ""}</div>`;
 
-  // A imagem é opcional; quando não existe, a arte colorida do produto continua aparecendo.
-  const imagem = produto.image
-    ? `<img src="${escaparHtml(produto.image)}" alt="${escaparHtml(produto.name)}" data-ocultar-imagem-com-erro>`
-    : "";
-
-  return `<article class="aura-card chat-card" data-product-card="${escaparHtml(produto.id)}">
-    <div class="product-art" data-cor-produto="${escaparHtml(produto.art || "#b65d78")}">
-      ${imagem}<span class="product-mark">aura</span>
-    </div>
-    <div class="card-body">
-      <small>${escaparHtml(produto.brand)}</small>
-      <b>${escaparHtml(produto.name)}</b>
-      <div class="d-flex align-items-center">
-        <b>${formatarMoeda(produto.price)}</b>
-        <button class="btn btn-outline-secondary ms-auto" data-add-chat="${escaparHtml(produto.id)}">Adicionar</button>
-      </div>
-    </div>
-  </article>`;
-}
-
-function responderConsultoraAura(exibirToast, renderizar) {
-  // Captura o texto digitado e a área onde novas mensagens serão inseridas.
-  const campoMensagem = document.querySelector("#advisor-message");
-  const areaMensagens = document.querySelector("#aura-chat-messages");
-  const mensagem = campoMensagem?.value.trim();
-  if (!mensagem || !areaMensagens) return;
-
-  // Procura a primeira regra que contenha algum termo citado pela cliente.
-  const mensagemNormalizada = mensagem.toLowerCase();
-  const regra = REGRAS_RECOMENDACAO.find((item) =>
-    item.termos.some((termo) => mensagemNormalizada.includes(termo)),
-  );
-
-  // Sempre registra a pergunta antes de mostrar a resposta da consultora.
-  areaMensagens.insertAdjacentHTML(
-    "beforeend",
-    `<div class="chat-message user-message"><b>Você</b><p>${escaparHtml(mensagem)}</p></div>`,
-  );
-
-  if (regra) {
-    // Quando há regra compatível, a resposta cita os produtos e exibe botões de compra.
-    const nomesProdutos = regra.idsProdutos
-      .map((idProduto) => product(idProduto)?.name)
-      .filter(Boolean)
-      .join(" e ");
-    const resposta = `Eu recomendaria ${nomesProdutos}. Posso adaptar pelo acabamento que você prefere.`;
-    areaMensagens.insertAdjacentHTML(
-      "beforeend",
-      `<div class="chat-message aura-message"><b>Aura</b><p>${escaparHtml(resposta)}</p></div>`,
-    );
-
-    const cartoes = regra.idsProdutos.map(criarCartaoRecomendacao).join("");
-    areaMensagens.insertAdjacentHTML(
-      "beforeend",
-      `<div class="chat-message aura-message"><div class="chat-recommendations">${cartoes}</div></div>`,
-    );
-    aplicarDetalhesVisuais(areaMensagens);
-
-    const botoesRecentes = Array.from(
-      areaMensagens.querySelectorAll("[data-add-chat]"),
-    ).slice(-regra.idsProdutos.length);
-
-    // Os botões recém-criados precisam receber eventos depois da inserção do HTML.
-    botoesRecentes.forEach((botao) =>
-      botao.addEventListener("click", () => {
-        const foiAdicionado = add(botao.dataset.addChat, 1);
-        exibirToast(
-          foiAdicionado
-            ? "Produto reservado por 20 minutos."
-            : "Quantidade indisponível.",
-          foiAdicionado ? "info" : "error",
-        );
-        if (foiAdicionado) renderizar();
-      }),
-    );
-  } else {
-    // Sem uma regra clara, a consultora pede mais contexto em vez de inventar produto.
-    const resposta =
-      "Conte seu tipo de pele, objetivo ou acabamento desejado para eu recomendar melhor.";
-    areaMensagens.insertAdjacentHTML(
-      "beforeend",
-      `<div class="chat-message aura-message"><b>Aura</b><p>${escaparHtml(resposta)}</p></div>`,
-    );
+export async function renderizarConsultoraAura(raiz, navegar, toast) {
+  const atual = ++versao;
+  const cliente = localStorage.getItem(CLIENTE);
+  const nome = localStorage.getItem(NOME);
+  if (!cliente) {
+    navegar("/perfil/dados");
+    return;
   }
-
-  // Limpa o campo e rola o chat para a última mensagem.
-  campoMensagem.value = "";
-  areaMensagens.scrollTop = areaMensagens.scrollHeight;
+  raiz.innerHTML = `${header({clienteNome:nome})}<main class="page"><div class="container aura-container page-top"><section class="advisor chat-advisor"><span class="eyebrow">RNF0044</span><h1>Consultora Aura</h1><p>Encontre produtos de acordo com suas compras e preferências. <a href="/perfil/preferencias" data-chat-link>Editar preferências</a></p><div id="aura-chat-messages" class="aura-chat" aria-live="polite"></div><form id="chat-form" class="chat-composer"><input id="advisor-message" class="form-control" maxlength="1000" required placeholder="Pergunte sobre um produto ou peça uma recomendação"><button class="btn aura-btn">Enviar</button></form></section></div></main>${footer()}`;
+  ligarLinks(raiz, navegar);
+  const area = raiz.querySelector("#aura-chat-messages");
+  let conversa = null;
+  try {
+    const conversas = await consultoraApi.conversas(cliente);
+    if (atual !== versao || location.pathname !== "/consultora") return;
+    if (conversas.length) {
+      conversa = conversas[0].id;
+      const mensagens = await consultoraApi.mensagens(cliente, conversa);
+      if (atual !== versao || location.pathname !== "/consultora") return;
+      for (const m of mensagens) area.insertAdjacentHTML("beforeend", mensagemHtml(m));
+      const ids = [...new Set(mensagens.flatMap((m) => m.produtosIds || []))];
+      if (ids.length) {
+        const catalogo = await Promise.all(ids.map((id) => fetch(`/api/v1/produtos/${id}`).then((r) => r.ok ? r.json() : null).catch(() => null)));
+        if (atual !== versao || location.pathname !== "/consultora") return;
+        area.innerHTML = mensagens.map((m) => mensagemHtml(m, catalogo.filter((p) => p && m.produtosIds?.includes(p.id) && p.ativo && p.visivel))).join("");
+      }
+    } else area.innerHTML = `<div class="chat-message aura-message"><b>Aura</b><p>Olá! Como posso ajudar na escolha de um produto?</p></div>`;
+  } catch (erro) { toast(erro.message, "error"); }
+  ligarLinks(raiz, navegar);
+  raiz.querySelector("#chat-form")?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    const campo = form.querySelector("#advisor-message");
+    const texto = campo.value.trim();
+    if (!texto) return;
+    form.querySelector("button").disabled = true;
+    try {
+      const resposta = await consultoraApi.enviar(cliente, conversa, texto);
+      conversa = resposta.conversaId;
+      area.insertAdjacentHTML("beforeend", mensagemHtml({ papel: "USER", texto }));
+      area.insertAdjacentHTML("beforeend", mensagemHtml(resposta.mensagem, resposta.produtos));
+      campo.value = "";
+      area.scrollTop = area.scrollHeight;
+      ligarLinks(raiz, navegar);
+    } catch (erro) { toast(erro.message, "error"); }
+    finally { form.querySelector("button").disabled = false; }
+  });
+  area.addEventListener("click", async (ev) => {
+    const botao = ev.target.closest("[data-avaliar]");
+    if (!botao) return;
+    const util = botao.dataset.util === "true";
+    const motivo = util ? null : (window.prompt("O que não ajudou? (opcional)", "") ?? "").slice(0, 300);
+    try {
+      await consultoraApi.avaliar(cliente, botao.dataset.avaliar, util, motivo);
+      botao.parentElement.querySelectorAll("button").forEach((b) => b.className = `btn btn-sm ${b === botao ? "aura-btn" : "btn-outline-secondary"}`);
+      toast("Avaliação registrada.");
+    } catch (erro) { toast(erro.message, "error"); }
+  });
 }
 
-export function inicializarConsultoraAura({ exibirToast, renderizar }) {
-  // Centraliza o envio para clique no botão e tecla Enter usarem a mesma lógica.
-  const responder = () => responderConsultoraAura(exibirToast, renderizar);
-  document.querySelector("#advisor-send")?.addEventListener("click", responder);
-  document
-    .querySelector("#advisor-message")
-    ?.addEventListener("keydown", (evento) => {
-      if (evento.key === "Enter") {
-        evento.preventDefault();
-        responder();
-      }
-    });
+function ligarLinks(raiz, navegar) {
+  raiz.querySelectorAll("[data-chat-link],[data-link]").forEach((a) => a.onclick = (ev) => {
+    ev.preventDefault(); navegar(a.getAttribute("href"));
+  });
 }

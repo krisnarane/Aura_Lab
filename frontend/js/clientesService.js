@@ -16,4 +16,6 @@ export const clientesService = {
   transacoes: (id) => api.transacoes(id),
   auditoria: (id) => api.auditoria(id),
   bandeiras: () => api.bandeiras(),
+  preferencias: (id) => api.preferencias(id),
+  salvarPreferencias: (id, categorias) => api.salvarPreferencias(id, categorias),
 };

@@ -21,7 +21,9 @@ public class RegraNegocioException extends RuntimeException {
           "PEDIDO_NAO_ENCONTRADO",
           "CUPOM_NAO_ENCONTRADO",
           "TROCA_NAO_ENCONTRADA",
-          "ITEM_PEDIDO_NAO_ENCONTRADO");
+          "ITEM_PEDIDO_NAO_ENCONTRADO",
+          "IA_CONVERSA_NAO_ENCONTRADA",
+          "IA_RESPOSTA_NAO_ENCONTRADA");
   private static final Set<String> CONFLITOS =
       Set.of(
           "CLIENTE_DUPLICADO",

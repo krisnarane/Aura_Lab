@@ -1,5 +1,9 @@
 # Arquitetura e modelo implementados
 
+## Incremento RNF0044
+
+`/perfil/preferencias` usa `clientesService.js`/`clientesApi.js`; `/consultora` usa `consultoraApi.js`. Ambos chegam a `IaController` → `IaService` → `IaRepository` (JDBC/PostgreSQL V15). `IaService` monta o contexto com compras aprovadas e candidatos visíveis, chama `GeradorIa`/`GeminiGerador` no servidor e grava pergunta, resposta, versão e auditoria apenas depois de uma resposta válida. `cliente_preferencia` liga cliente e categoria; `ia_conversa` liga cliente a mensagens; `ia_avaliacao` permite um voto atual por resposta; `ia_modelo` registra o job e o endpoint ativo. O script `tools/ia/pipeline.py` é a ferramenta manual de exportação, revisão e nova versão. Consulte [REQUISITOS-IA.md](REQUISITOS-IA.md) para o limite entre código pronto e execução remota.
+
 ## Fluxo e padrões
 
 ```text

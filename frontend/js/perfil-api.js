@@ -1,6 +1,7 @@
 /** Perfil do cliente integrado à API real: dados, senha, endereços e cartões persistidos no PostgreSQL. */
 import { clientesService as service } from "./clientesService.js";
 import { vendasService } from "./vendasService.js";
+import { produtosService } from "./produtosService.js";
 import { escaparHtml as e, formatarMoeda as moeda } from "./utilitarios.js";
 import {
   status,
@@ -21,6 +22,7 @@ export const ehRotaPerfilApi = () =>
     "/perfil/seguranca",
     "/perfil/enderecos",
     "/perfil/cartoes",
+    "/perfil/preferencias",
     "/perfil/pedidos",
     "/perfil/cupons",
   ].includes(location.pathname);
@@ -62,6 +64,7 @@ const NAVEGACAO_PERFIL = [
   ["Segurança", "/perfil/seguranca", "seguranca"],
   ["Endereços", "/perfil/enderecos", "enderecos"],
   ["Cartões", "/perfil/cartoes", "cartoes"],
+  ["Preferências", "/perfil/preferencias", "preferencias"],
   ["Pedidos", "/perfil/pedidos", "pedidos"],
   ["Cupons", "/perfil/cupons", "cupons"],
 ];
@@ -111,6 +114,11 @@ const paginaSeguranca = (c) =>
     "Segurança",
     `<form id="perfil-senha-form" class="panel form-stack" data-testid="form-senha"><h2>Alterar senha</h2><p class="muted small">A nova senha é gravada com BCrypt e precisa ter pelo menos 8 caracteres, letra maiúscula, minúscula e caractere especial.</p><label>Nova senha<input data-testid="nova-senha" class="form-control" type="password" name="novaSenha" required></label><label>Confirmar nova senha<input data-testid="confirmacao-senha" class="form-control" type="password" name="confirmacaoSenha" required></label><button class="btn aura-btn" ${c.ativo ? "" : "disabled"}>Atualizar senha</button></form>`,
   );
+
+const paginaPreferencias = (categorias, selecionadas) =>
+  layoutPerfil("preferencias", "Minhas preferências",
+    `<form id="perfil-preferencias-form" class="panel form-stack"><h2>Assuntos que você gosta</h2><p>Selecione de uma a cinco categorias para personalizar a Consultora Aura.</p><div class="row g-2">${categorias.map((c) =>
+      `<label class="col-sm-6"><input type="checkbox" name="categoria" value="${e(c.codigo)}" ${selecionadas.includes(c.codigo) ? "checked" : ""}> ${e(c.descricao)}</label>`).join("")}</div><button class="btn aura-btn">Salvar preferências</button></form>`);
 
 const finalidades = (x) =>
   [x.cobranca ? "Cobrança" : "", x.entrega ? "Entrega" : ""]
@@ -247,6 +255,16 @@ function ligarEventos(raiz, navegar, toast, cliente) {
       );
     });
 
+  raiz.querySelector("#perfil-preferencias-form")?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const categorias = [...ev.currentTarget.querySelectorAll('input[name="categoria"]:checked')]
+      .map((campo) => campo.value);
+    try {
+      await service.salvarPreferencias(id, categorias);
+      toast("Preferências salvas.");
+    } catch (erro) { toast(erro.message, "error"); }
+  });
+
   const formEndereco = raiz.querySelector("#perfil-endereco-form");
   formEndereco?.addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -365,6 +383,7 @@ export async function renderizarPerfilApi(raiz, navegar, toast) {
     cadastrados = [],
     falha = null,
     totalItens = null;
+  let categorias = [], preferencias = [];
 
   if (id) {
     try {
@@ -378,6 +397,11 @@ export async function renderizarPerfilApi(raiz, navegar, toast) {
     if (cliente?.ativo) totalItens = (await vendasService.carrinho(id)).totalUnidades;
     if (cliente && location.pathname === "/perfil/cartoes")
       bandeiras = await service.bandeiras();
+    if (cliente && location.pathname === "/perfil/preferencias") {
+      [categorias, preferencias] = await Promise.all([
+        produtosService.categoriasProduto(), service.preferencias(id),
+      ]);
+    }
     if (cliente && location.pathname === "/perfil/pedidos")
       pedidos = await vendasService.pedidos(id);
     if (cliente && location.pathname === "/perfil/cupons")
@@ -406,6 +430,8 @@ export async function renderizarPerfilApi(raiz, navegar, toast) {
         ? paginaEnderecos(cliente)
         : caminho === "/perfil/cartoes"
           ? paginaCartoes(cliente, bandeiras)
+          : caminho === "/perfil/preferencias"
+            ? paginaPreferencias(categorias, preferencias)
           : caminho === "/perfil/pedidos"
             ? paginaPedidos(pedidos)
             : caminho === "/perfil/cupons"

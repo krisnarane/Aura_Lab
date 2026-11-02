@@ -60,7 +60,7 @@ import {
   notFound as criarPaginaNaoEncontrada,
 } from "./pages.js";
 import { aplicarDetalhesVisuais } from "./interface.js";
-import { inicializarConsultoraAura } from "./consultora-aura.js";
+import { renderizarConsultoraAura } from "./consultora-aura.js";
 import { ehRotaClientesAdmin, renderizarClientesAdmin } from "./admin-clientes.js";
 import { ehRotaProdutosAdmin, renderizarProdutosAdmin } from "./admin-produtos.js";
 import {
@@ -155,6 +155,10 @@ function renderizar() {
   }
   if (ehRotaPedidosApi()) {
     renderizarPedidosApi(raizAplicacao, navegar, exibirToast);
+    return;
+  }
+  if (location.pathname === "/consultora") {
+    renderizarConsultoraAura(raizAplicacao, navegar, exibirToast);
     return;
   }
   if (ehRotaPerfilApi()) {
@@ -889,10 +893,6 @@ function registrarEventos() {
   });
 
   // Módulos especializados recebem os callbacks necessários sem conhecer o roteador inteiro.
-  inicializarConsultoraAura({
-    exibirToast,
-    renderizar,
-  });
 }
 
 window.addEventListener("popstate", renderizar);

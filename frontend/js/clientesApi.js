@@ -75,4 +75,8 @@ export const clientesApi = {
   transacoes: (id) => requisitar(`/clientes/${id}/transacoes`),
   auditoria: (id) => requisitar(`/clientes/${id}/auditoria`),
   bandeiras: () => requisitar("/bandeiras"),
+  preferencias: (id) => requisitar(`/clientes/${id}/preferencias`),
+  salvarPreferencias: (id, categorias) => requisitar(`/clientes/${id}/preferencias`, {
+    method: "PUT", body: JSON.stringify({ categorias }),
+  }),
 };
