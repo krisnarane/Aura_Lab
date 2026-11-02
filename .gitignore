@@ -10,3 +10,7 @@ docs/*
 !docs/revisao-vendas/
 !docs/revisao-vendas/*.docx
 backend/target/
+__pycache__/
+*.pyc
+/tools/ia/
+/dados/ia/primeiro-treino/
