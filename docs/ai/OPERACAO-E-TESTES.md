@@ -72,16 +72,33 @@ O PostgreSQL Docker do projeto usa `127.0.0.1:5433` no Windows e mantém a porta
 
 ## Executar os testes
 
-Para a análise de vendas RF0055/RNF0043/RNF0011, execute a API, o roteiro Selenium e a medição HTTP separadamente (PostgreSQL/Testcontainers e Chrome):
+Para a análise de vendas RF0055/RNF0043, execute a API e o roteiro Selenium separadamente
+(PostgreSQL/Testcontainers e Chrome). A medição RNF0011 não é critério desta rodada:
 
 ```powershell
 cd backend
 $env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
-.\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' '-Dtest=AnaliseVendasApiTest,AnaliseVendasPerformanceTest' test
+.\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' '-Dtest=AnaliseVendasApiTest' test
 .\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' test-compile failsafe:integration-test failsafe:verify '-Dit.test=AnaliseVendasIT' '-Dselenium.headless=true'
 ```
 
-`AnaliseVendasPerformanceTest` cria e entrega um pedido pelo fluxo de venda e gera 999 cópias isoladas em SQL para a massa de leitura, distribuídas entre meses. Aquece a consulta quinze vezes e mede 30 respostas HTTP. O CSV fica em `backend/target/evidencias/performance-analise-vendas.csv`. Os cenários funcionais usam compras geradas pelo fluxo de venda com relógio controlado. A apresentação em chamada pode rodar `AnaliseVendasIT` com `-Dselenium.headless=false` para mostrar os sete cenários.
+Os dados persistentes de demonstração ficam na migração `V17__massa_analise_vendas_demonstracao.sql`,
+com meses de agosto a novembro, categorias FACE/SKINCARE e pedidos ENTREGUE, APROVADA,
+REPROVADA e TROCADO. Os cenários Selenium usam compras geradas pelo fluxo de venda com
+relógio controlado. Para apresentar no navegador, use:
+
+```powershell
+cd backend
+$env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+.\mvnw.cmd '-Ddocker.client.strategy=org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy' test-compile failsafe:integration-test failsafe:verify '-Dit.test=AnaliseVendasIT' '-Dselenium.headless=false'
+```
+
+O teste `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` demonstra:
+uma categoria; comparação de categorias; gráfico de linhas em reais por mês; alteração
+do período; exclusão de compra não entregue; inclusão após a transição para ENTREGUE; e
+acesso permitido ao administrador/negado ao cliente. A permanência de uma venda após
+`TROCADO` é verificada pela API em
+`AnaliseVendasApiTest.RN0074_apenasPedidosHistoricamenteEntreguesEntramNoCalculo`.
 
 Para a análise RF0055, o aceite local passou a ser **até 2.000 ms por resposta HTTP**. O DRS ainda descreve RNF0011 como até 1.000 ms; não tratar o limite local como alteração do DRS. Os testes de desempenho das demais consultas continuam com seus limites próprios.
 

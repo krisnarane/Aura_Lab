@@ -130,6 +130,16 @@ export function catalog(query) {
   const unique = (fn) => [
     ...new Set(visible.map(fn).filter((value) => value && value !== "—")),
   ];
+  const categories = [
+    "Face",
+    "Maquiagem",
+    "Olhos",
+    "Lábios",
+    "Skincare",
+    "Hidratantes",
+    "Bruma",
+    "Limpeza Facial",
+  ];
 
   // Cria selects de filtro usando valores presentes no próprio catálogo.
   const options = (key, values, label) =>
@@ -147,7 +157,7 @@ export function catalog(query) {
 
   // O retorno é uma string HTML; os eventos serão ligados depois em app.js.
   return criarLayoutCliente(
-    `<main class="page"><div class="container aura-container catalog-content"><div class="row g-4"><aside class="col-lg-3"><div class="panel filters"><div class="d-flex justify-content-between"><b>Filtros</b><a href="/" data-link>Limpar</a></div><hr>${["Todos", "Face", "Olhos", "Lábios", "Skincare"].map((value) => `<label><input type="radio" name="cat" value="${value}" ${value === category ? "checked" : ""}> ${value}</label>`).join("")}${options(
+    `<main class="page"><div class="container aura-container catalog-content"><div class="row g-4"><aside class="col-lg-3"><div class="panel filters"><div class="d-flex justify-content-between"><b>Filtros</b><a href="/" data-link>Limpar</a></div><hr>${["Todos", ...categories].map((value) => `<label><input type="radio" name="cat" value="${escaparHtml(value)}" ${value === category ? "checked" : ""}> ${escaparHtml(value)}</label>`).join("")}${options(
       "brand",
       unique((item) => item.brand),
       "Marca",

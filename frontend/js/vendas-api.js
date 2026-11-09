@@ -89,17 +89,28 @@ const arteProduto = (p, classe, cor) => `<div class="${classe}" data-cor-produto
 const categoriasProduto = (p) => (p.categorias || []).map((c) => `<span>${e(c.descricao)}</span>`).join("");
 
 // ---- catálogo ----
-const paginaCatalogo = (nome, produtos, totalItens) =>
-  `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container catalog-content"><div class="row g-4"><aside class="col-lg-3"><div class="panel filters"><div class="d-flex justify-content-between"><b>Filtros</b><a href="/" data-loja-link>Limpar</a></div><hr><label><input type="radio" checked> Todos</label><label class="mt-3">Marca<select class="form-select mt-1" data-catalogo-marca><option value="">Todas</option>${[...new Set(produtos.map((p) => p.marca))].map((marca) => `<option>${e(marca)}</option>`).join("")}</select></label></div></aside><section class="col-lg-9"><div class="catalog-search"><label for="search">Encontre seu próximo ritual</label><div class="input-group"><span class="input-group-text">⌕</span><input id="search" class="form-control" data-catalogo-busca placeholder="Buscar por produto ou marca"></div></div><div class="catalog-heading"><p class="muted"><span data-catalogo-total>${produtos.length}</span> produtos encontrados</p><span>Ordenar por <b>Mais relevantes</b></span></div><div class="row g-3" data-catalogo-grid>${
+const paginaCatalogo = (nome, produtos, totalItens) => {
+  const categorias = [
+    ...new Set(
+      produtos.flatMap((p) => (p.categorias || []).map((c) => c.descricao)),
+    ),
+  ];
+  return `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container catalog-content"><div class="row g-4"><aside class="col-lg-3"><div class="panel filters"><div class="d-flex justify-content-between"><b>Filtros</b><a href="/" data-loja-link>Limpar</a></div><hr><label><input type="radio" name="catalogo-categoria" data-catalogo-categoria value="" checked> Todos</label>${categorias
+    .map(
+      (categoria) =>
+        `<label><input type="radio" name="catalogo-categoria" data-catalogo-categoria value="${e(categoria)}"> ${e(categoria)}</label>`,
+    )
+    .join("")}<label class="mt-3">Marca<select class="form-select mt-1" data-catalogo-marca><option value="">Todas</option>${[...new Set(produtos.map((p) => p.marca))].map((marca) => `<option>${e(marca)}</option>`).join("")}</select></label></div></aside><section class="col-lg-9"><div class="catalog-search"><label for="search">Encontre seu próximo ritual</label><div class="input-group"><span class="input-group-text">⌕</span><input id="search" class="form-control" data-catalogo-busca placeholder="Buscar por produto ou marca"></div></div><div class="catalog-heading"><p class="muted"><span data-catalogo-total>${produtos.length}</span> produtos encontrados</p><span>Ordenar por <b>Mais relevantes</b></span></div><div class="row g-3" data-catalogo-grid>${
     produtos.length
       ? produtos
           .map(
             (p, indice) =>
-              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}"><article class="aura-card" data-testid="produto-${p.id}">${arteProduto(p, "product-art", ["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4])}<div class="card-body"><p class="product-brand">${e(p.marca)}</p><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p>${e(p.descricao || "")}</p><div class="chips">${categoriasProduto(p)}</div><p class="availability">${p.estoqueDisponivel < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
+              `<div class="col-sm-6 col-xl-4" data-catalogo-produto data-nome="${e(p.nome.toLowerCase())}" data-marca="${e(p.marca)}" data-categorias="${e((p.categorias || []).map((c) => c.descricao.toLowerCase()).join("|"))}"><article class="aura-card" data-testid="produto-${p.id}">${arteProduto(p, "product-art", ["#d7a3ae", "#b7c9bc", "#cab7d9", "#e1c29d"][indice % 4])}<div class="card-body"><p class="product-brand">${e(p.marca)}</p><a class="product-link" href="/produto/${p.id}" data-loja-link>${e(p.nome)}</a><p>${e(p.descricao || "")}</p><div class="chips">${categoriasProduto(p)}</div><p class="availability">${p.estoqueDisponivel < 8 ? "Poucas unidades" : "Disponível"}</p><div class="d-flex align-items-center gap-2"><b>${moeda(p.preco)}</b><input class="form-control ms-auto" style="max-width:70px" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}" aria-label="Quantidade de ${e(p.nome)}"><button class="round" data-add="${p.id}" data-testid="add-${p.id}" aria-label="Adicionar ${e(p.nome)}">＋</button></div></div></article></div>`,
           )
           .join("")
       : '<div class="panel">Nenhum produto disponível no momento.</div>'
   }</div></section></div></div></main>${footer()}`;
+};
 
 const paginaProduto = (nome, p, totalItens) =>
   `${cabecalho(nome, totalItens)}<main class="page"><div class="container aura-container"><a href="/" data-loja-link class="back">← Produtos</a><div class="row g-5 mt-1 align-items-center"><div class="col-lg-6">${arteProduto(p, "detail-art", "#d7a3ae")}</div><div class="col-lg-6"><small>${e(p.marca)}</small><h1>${e(p.nome)}</h1><h3>${moeda(p.preco)}</h3><p>${e(p.descricao || "")}</p><p>Código ${e(p.codigo)} · ${p.estoqueDisponivel} unidade(s) disponíveis.</p><div class="chips"><span>${p.estoqueDisponivel > 0 ? "Disponível" : "Esgotado"}</span>${categoriasProduto(p)}</div><div class="product-buy"><label for="product-quantity">Quantidade</label><input id="product-quantity" class="form-control" type="number" min="1" max="${p.estoqueDisponivel}" value="1" data-testid="qtd-${p.id}"><button class="btn aura-btn" data-add="${p.id}" data-testid="add-${p.id}" ${p.estoqueDisponivel > 0 ? "" : "disabled"}>Adicionar à sacola</button></div></div></div></div></main>${footer()}`;
@@ -315,14 +326,22 @@ async function acao(botao, fn, toast, apos) {
 function ligarFiltroCatalogo(raiz) {
   const busca = raiz.querySelector("[data-catalogo-busca]");
   const marca = raiz.querySelector("[data-catalogo-marca]");
+  const categorias = [...raiz.querySelectorAll("[data-catalogo-categoria]")];
   const aplicar = () => {
     const termo = (busca?.value || "").trim().toLowerCase();
     const marcaSelecionada = marca?.value || "";
+    const categoriaSelecionada = (
+      raiz.querySelector("[data-catalogo-categoria]:checked")?.value || ""
+    ).toLowerCase();
     let visiveis = 0;
     raiz.querySelectorAll("[data-catalogo-produto]").forEach((item) => {
       const mostrar =
         (!termo || item.dataset.nome.includes(termo)) &&
-        (!marcaSelecionada || item.dataset.marca === marcaSelecionada);
+        (!marcaSelecionada || item.dataset.marca === marcaSelecionada) &&
+        (!categoriaSelecionada ||
+          (item.dataset.categorias || "")
+            .split("|")
+            .includes(categoriaSelecionada));
       item.classList.toggle("d-none", !mostrar);
       if (mostrar) visiveis += 1;
     });
@@ -331,6 +350,7 @@ function ligarFiltroCatalogo(raiz) {
   };
   busca?.addEventListener("input", aplicar);
   marca?.addEventListener("change", aplicar);
+  categorias.forEach((radio) => radio.addEventListener("change", aplicar));
 }
 
 function ligarAdicao(raiz, navegar, toast, clienteId) {

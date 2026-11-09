@@ -44,7 +44,7 @@ Controllers não acessam repositories diretamente. `ClienteMapper` somente conve
 | `ValidadorCliente` | Normalizações e validações reutilizadas |
 | `CarrinhoService` | Adicionar, alterar quantidade, remover e visualizar itens do carrinho validando estoque (RF0031/RF0032/RN0031) |
 | `VendaService` | Realizar/finalizar compra (RF0033/RF0038), endereço (RF0035), frete (RF0034), composição de pagamento e RN0033–RN0036; gera cupom de troco e reaproveita `EnderecoService`/`CartaoService` para incorporar endereço/cartão novos |
-| `AnaliseVendasService` | RF0055/RN0072/RN0074: consulta PostgreSQL dos três status contabilizáveis, período de até 24 meses, rateio determinístico e agrupamento mensal |
+| `AnaliseVendasService` | RF0055/RN0072/RN0074: consulta PostgreSQL de pedidos historicamente entregues, período de até 24 meses, rateio determinístico e agrupamento mensal |
 
 Não há `SenhaService`, `BandeiraService`, `AuthService` ou domínio `UsuarioAcesso` no desenho atual.
 
@@ -87,7 +87,9 @@ V11 acrescenta `categoria_produto`, `produto_categoria`, `descricao` e `imagem_u
 
 V12 cria `pedido_analise_entregue_criado`, índice parcial em `(criado_em,id)` para pedidos com `status='ENTREGUE'`. `AnaliseVendasController` valida o perfil demonstrativo via cabeçalho `X-Demo-Perfil`; o serviço valida período/categorias e usa `JdbcTemplate` para carregar pedidos, itens e categorias em uma consulta, agregando em memória. A rota `/admin/dashboard` chama essa API e desenha SVG com tabela acessível. Não há autenticação real nessa demonstração.
 
-V14 substitui o índice parcial da V12 por `pedido_analise_contabilizavel_criado`, para `APROVADA`, `EM_TRANSPORTE` e `ENTREGUE`. A V13 cria `grupo_precificacao` e `entrada_estoque`, com restrições de quantidade/custo/data. O job de inativação usa o mesmo bloqueio global de vendas e é desativado no perfil de teste.
+V14 substitui o índice parcial da V12 por `pedido_analise_contabilizavel_criado`, para `APROVADA`, `EM_TRANSPORTE` e `ENTREGUE`; esse índice legado é removido pela V16. A V13 cria `grupo_precificacao` e `entrada_estoque`, com restrições de quantidade/custo/data. O job de inativação usa o mesmo bloqueio global de vendas e é desativado no perfil de teste.
+
+V16 acrescenta `pedido.entregue_em`, preenchido na transição administrativa para `ENTREGUE` e preservado nas transições de troca. O backfill usa somente status atual `ENTREGUE` ou auditoria de pedido que comprove a passagem por `ENTREGUE`; não infere entrega de outros estados. A consulta RF0055 usa `entregue_em is not null`, o que mantém no histórico pedidos posteriormente `TROCADO`, e usa o índice parcial `pedido_analise_entrega_criado`.
 
 O módulo de vendas reutiliza a auditoria de clientes (`AuditoriaService` → `auditoria_cliente`) para RNF0012 e a `RegraNegocioException` compartilhada. O pedido guarda um snapshot do endereço de entrega e das parcelas de pagamento (sem PAN/CVV — apenas bandeira e quatro últimos dígitos na descrição). Entidades de vendas: `Carrinho` 1─* `ItemCarrinho`; `Pedido` 1─* `ItemPedido` e 1─* `PagamentoParte`, com `EnderecoEntrega` embutido; `Cupom` (PROMOCIONAL/TROCA). As coleções de itens e partes de pagamento do pedido usam carregamento em lote para evitar N+1 nas consultas cobertas pelo RNF0011.
 

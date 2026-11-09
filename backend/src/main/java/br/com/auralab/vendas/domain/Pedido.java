@@ -74,6 +74,9 @@ public class Pedido {
   @Column(name = "criado_em", nullable = false)
   private OffsetDateTime criadoEm;
 
+  @Column(name = "entregue_em")
+  private OffsetDateTime entregueEm;
+
   @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("id")
   @BatchSize(size = 100)
@@ -156,6 +159,10 @@ public class Pedido {
     status = novo;
   }
 
+  public void marcarEntregue(OffsetDateTime instante) {
+    if (entregueEm == null) entregueEm = instante;
+  }
+
   public Long getId() {
     return id;
   }
@@ -206,6 +213,10 @@ public class Pedido {
 
   public OffsetDateTime getCriadoEm() {
     return criadoEm;
+  }
+
+  public OffsetDateTime getEntregueEm() {
+    return entregueEm;
   }
 
   public List<ItemPedido> getItens() {

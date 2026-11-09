@@ -353,6 +353,10 @@ assert.match(
   /Abra a análise integrada de vendas por categoria/,
   "dashboard antigo não oferece exportação CSV",
 );
+const catalogo = pages.catalog(new URLSearchParams());
+for (const categoria of ["Face", "Maquiagem", "Olhos", "Lábios", "Skincare", "Hidratantes", "Bruma", "Limpeza Facial"]) {
+  assert.match(catalogo, new RegExp(`value="${categoria}"`), `catálogo exibe a categoria ${categoria}`);
+}
 const analysis = store.salesAnalysis({
   startDate: "2026-06-01",
   endDate: "2026-08-31",

@@ -126,7 +126,12 @@ class AnaliseVendasIT extends PostgresTest {
     assertThat(legenda.getLocation().getY())
         .as("RNF0045: legenda abaixo do gráfico")
         .isGreaterThan(esperar("[data-testid='grafico-vendas']").getLocation().getY());
+    // RF0055: antes da entrega, a compra APROVADA ainda não entra no histórico.
     long novembro = comprar(2);
+    consultar("2026-10-01", "2026-11-30", "FACE", "SKINCARE");
+    assertThat(esperar("[data-testid='valor-SKINCARE-2026-11']").getText()).contains("0,00");
+    // Após a transição para ENTREGUE, a consulta seguinte passa a contabilizar a compra.
+    entregar(novembro);
     consultar("2026-10-01", "2026-11-30", "FACE", "SKINCARE");
     assertThat(esperar("[data-testid='valor-SKINCARE-2026-11']").getText().replaceAll("[\\s\\u00a0]", ""))
         .isEqualTo(moeda(novembro));

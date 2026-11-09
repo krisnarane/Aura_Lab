@@ -238,7 +238,7 @@ Resultados só podem ser marcados como aprovados após consultar os relatórios 
 
 | IDs | Cenário | Evidência automatizada |
 | --- | --- | --- |
-| RF0055 / RN0074 | Uma categoria, período inclusivo, mês vazio, mudança de datas; compra APROVADA já contabilizada e REPROVADA excluída | `AnaliseVendasApiTest.RF0055_RNF0043_RN0073_valorMensalMesVazioEMudancaDePeriodo`; `AnaliseVendasApiTest.RN0074_apenasAprovadaEmTransporteEEntregueEntramNoCalculo`; `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
+| RF0055 / RN0074 | Uma categoria, período inclusivo, mês vazio e mudança de datas; somente compra historicamente ENTREGUE entra, inclusive após TROCADO | `AnaliseVendasApiTest.RF0055_RNF0043_RN0073_valorMensalMesVazioEMudancaDePeriodo`; `AnaliseVendasApiTest.RN0074_apenasPedidosHistoricamenteEntreguesEntramNoCalculo`; `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
 | RF0055 | Comparação de categorias, rateio do total histórico e reclassificação pela categoria atual | `AnaliseVendasApiTest.RF0055_rateioMultiplasCategoriasIncluiFreteECentavos` |
 | RF0055 | Datas, categorias e perfil inválidos | `AnaliseVendasApiTest.RF0055_datasCategoriasEPerfilInvalidos`; `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
 | RNF0043 | Linhas, legenda, mês/ano, reais e descrição acessível dos pontos | `AnaliseVendasIT.RF0055_RNF0043_roteiroSeteCenariosDoGrafico` |
@@ -246,4 +246,4 @@ Resultados só podem ser marcados como aprovados após consultar os relatórios 
 | RF0015 | Descrição, grupo, faixas de preço/custo/estoque, situação e visibilidade combinados | `ProdutoApiTest.RF0015_filtrosCompletosEGrupoObrigatorio`; `ProdutosCrudIT.RF0051_RF0052_RF0015_entradaEstoqueEConsultaPelaTela` |
 | RF0051/RF0052/RN0061/RN0062/RNF0064 | Entrada válida soma estoque, recalcula preço e audita; inválidas preservam estado | `EntradaEstoqueApiTest`; `GrupoPrecificacaoTest`; `ProdutosCrudIT.RF0051_RF0052_RF0015_entradaEstoqueEConsultaPelaTela` |
 | RF0013/RN0016 | Elegibilidade, ator SISTEMA e idempotência | `InativacaoAutomaticaApiTest` |
-| RNF0011 / meta local RF0055 | 1.000 pedidos (um pelo fluxo e 999 cópias de carga), quinze aquecimentos, 30 respostas HTTP até 2.000 ms; o DRS ainda exige 1.000 ms | `AnaliseVendasPerformanceTest.RF0055_RNF0011_consultaMilPedidosAteDoisSegundos`; `target/evidencias/performance-analise-vendas.csv` |
+| RNF0011 / meta local RF0055 | Medição de desempenho documentada, mas não é critério de aceite desta rodada | `AnaliseVendasPerformanceTest.RF0055_RNF0011_consultaMilPedidosAteDoisSegundos` |

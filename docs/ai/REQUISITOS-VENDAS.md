@@ -18,6 +18,16 @@ Finalizar registra EM_PROCESSAMENTO e valida todas as formas na mesma operação
 
 Nenhuma comunicação ao professor foi enviada por esta implementação. O grupo deve apresentar os itens 2–6 e registrar a resposta antes de declarar aderência sem ressalvas.
 
+## Análise de vendas por categoria (RF0055/RNF0043)
+
+`GET /api/v1/admin/analise-vendas` recebe `inicio`, `fim` e uma ou mais categorias.
+O gráfico mensal considera o total do pedido rateado entre os itens/categorias. A regra desta
+entrega é histórica: a venda passa a ser contabilizável quando o pedido atinge `ENTREGUE` e
+continua contabilizável se uma troca integral alterar o status atual para `EM_TROCA`,
+`TROCA_AUTORIZADA` ou `TROCADO`. Pedidos que nunca chegaram a `ENTREGUE`, inclusive
+`APROVADA`, `EM_TRANSPORTE` e `REPROVADA`, ficam fora. O gráfico é acessível somente ao
+perfil demonstrativo `ADMIN_DEMO`; autenticação real permanece fora desta etapa.
+
 ## Persistência e legado
 
 V1–V8 permanecem intactas. V9 identifica pedidos preexistentes como LEGADO e somente leitura. Não infere pagamento, recompõe cupom utilizado nem fabrica baixa de estoque. Cupom preexistente conserva situação/valor. Transações demonstrativas ficam identificadas com origem LEGADO; eventos reais possuem referência única à entidade de origem. Ranking soma apenas PEDIDO aprovado real e pedidos pagos do legado identificado, sem duplicar PAGAMENTO ou CUPOM. A serialização global usa lock transacional PostgreSQL; é uma decisão acadêmica que deve ser reavaliada se o volume de escrita crescer.
@@ -68,7 +78,7 @@ A evidência é o relatório da execução atual, em `backend/target/surefire-re
 | RN0045 | Sacola expirada | Retirada e desbloqueio; CT057; API expiração e aprovação tardia |
 | RN0046 | Perfil após autorização | Notificação persistida; CT058/CT059; API trocas |
 | RNF0011 | Consultas de vendas e análise | O DRS exige 1.000 ms; para a análise RF0055, o usuário aceitou meta local de 2.000 ms em `AnaliseVendasPerformanceTest` (aquecimento e 30 amostras HTTP). `ConsultaPerformanceTest` conserva o limite original para as demais consultas. CSV performance-vendas e performance-analise-vendas |
-| RF0055/RN0072/RN0074/RNF0045 | Dashboard administrativo | AnaliseVendasApiTest (limites do período, categorias, rateio e status contabilizáveis) e AnaliseVendasIT (linhas, legenda abaixo e compra reprovada) |
+| RF0055/RN0072/RN0074/RNF0045 | Dashboard administrativo | AnaliseVendasApiTest (limites do período, categorias, rateio e entrega histórica) e AnaliseVendasIT (linhas, legenda abaixo e atualização após entrega) |
 | RNF0043 | Dashboard administrativo | AnaliseVendasIT verifica linhas, legenda, pontos acessíveis e valores mensais em reais |
 | RNF0012 | Todas as escritas | Auditoria transacional; CicloVendaApiTest rollback; auditoria do carrinho e efeitos únicos |
 | RNF0042 | Sacola expirada | Produto, motivo e prazo removidos visíveis; CT057 |
@@ -109,6 +119,6 @@ A meta de aceite desta entrega para a consulta gráfica é **2 segundos**, confo
 
 `GET /api/v1/admin/analise-vendas` recebe `inicio`, `fim` (datas inclusivas) e parâmetros repetidos `categorias`. RN0072 admite de 1 a 24 meses cobertos, contando os meses extremos inclusive. Retorna `meses` em `AAAA-MM` e `series` com código, descrição e valores em reais, inclusive meses sem vendas. RN0074 contabiliza apenas pedidos cujo estado **atual** é `APROVADA`, `EM_TRANSPORTE` ou `ENTREGUE`; exclui `EM_PROCESSAMENTO`, `REPROVADA`, `EM_TROCA`, `TROCA_AUTORIZADA` e `TROCADO`. O mês é o da criação do pedido em `America/Sao_Paulo`. RNF0045 põe a legenda com nome e cor abaixo do gráfico.
 
-O total histórico do pedido, incluindo desconto e frete, é distribuído proporcionalmente aos subtotais históricos dos itens; se todos forem zero, divide-se igualmente. Cada parcela de item é repartida entre as categorias **atuais** do produto. Centavos restantes são atribuídos em ordem de ID do item e código da categoria. Assim, editar categorias pode reclassificar vendas antigas, sem alterar o total do pedido. A consulta lê o PostgreSQL a cada requisição, sem cache ou `localStorage`. V14 substitui o índice parcial da V12 pelos três status contabilizáveis.
+O total histórico do pedido, incluindo desconto e frete, é distribuído proporcionalmente aos subtotais históricos dos itens; se todos forem zero, divide-se igualmente. Cada parcela de item é repartida entre as categorias **atuais** do produto. Centavos restantes são atribuídos em ordem de ID do item e código da categoria. Assim, editar categorias pode reclassificar vendas antigas, sem alterar o total do pedido. A consulta lê o PostgreSQL a cada requisição, sem cache ou `localStorage`; a V16 usa `entregue_em` para preservar vendas após troca.
 
 O dashboard oferece seleção de `ADMIN_DEMO`/`CLIENTE_DEMO`. A tela bloqueia o perfil cliente e a API retorna 403 para qualquer valor diferente de `ADMIN_DEMO` no cabeçalho `X-Demo-Perfil`. Esse cabeçalho é forjável: demonstra a regra funcional, **não autentica nem protege o acesso real**. A análise antiga e a exportação CSV foram retiradas da rota integrada. A massa de teste funcional cria compras pelo caso de uso de venda com relógio controlado e confirma entrega pelo fluxo administrativo.

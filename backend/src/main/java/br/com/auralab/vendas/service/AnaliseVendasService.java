@@ -11,22 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * RF0055: histórico mensal de vendas por categoria, a partir do total histórico dos pedidos.
+ * RF0055: histórico mensal de vendas por categoria, a partir do total histórico dos pedidos
+ * que já atingiram ENTREGUE.
  *
- * <p>RN0074: entram no cálculo apenas as compras efetivadas e não devolvidas — APROVADA, EM
- * TRANSPORTE e ENTREGUE. Ficam fora EM_PROCESSAMENTO (pagamento ainda não validado), REPROVADA e os
- * estados de troca (EM_TROCA, TROCA_AUTORIZADA e TROCADO), em que a compra deixou de ser receita.
+ * <p>RN0074: entra no cálculo a compra que atingiu ENTREGUE. O marcador histórico permanece quando
+ * uma troca integral muda o status corrente para EM_TROCA, TROCA_AUTORIZADA ou TROCADO.
  */
 @Service
 public class AnaliseVendasService {
   private static final ZoneId FUSO = ZoneId.of("America/Sao_Paulo");
-
-  /** RN0074: fonte única da lista; o índice parcial da V13 repete exatamente estes valores. */
-  static final List<String> STATUS_CONTABILIZAVEIS = List.of("APROVADA", "EM_TRANSPORTE", "ENTREGUE");
-
-  // Interpolado como literal (e não como parâmetro) para o planejador poder usar o índice parcial.
-  private static final String STATUS_EM_SQL =
-      STATUS_CONTABILIZAVEIS.stream().map(s -> "'" + s + "'").collect(java.util.stream.Collectors.joining(","));
 
   private final JdbcTemplate jdbc;
 
@@ -98,10 +91,10 @@ public class AnaliseVendasService {
         from pedido p
         join item_pedido i on i.pedido_id = p.id
         left join produto_categoria pc on pc.produto_id = i.produto_id
-       where p.status in (%s) and p.criado_em >= ? and p.criado_em < ?
+       where p.entregue_em is not null and p.criado_em >= ? and p.criado_em < ?
        group by p.id, i.id
        order by p.id, i.id
-      """.formatted(STATUS_EM_SQL), rs -> {
+      """, rs -> {
         var linha = ler(rs);
         if (pedidoAtualId[0] != linha.pedidoId()) {
           if (pedidoAtual[0] != null) acumular(pedidoAtual[0], inicioMes, meses.size(), acumulado);

@@ -207,7 +207,26 @@ public class CicloPedidoService {
 
   @Transactional
   public PedidoView entregar(Long id) {
-    return transicionar(id, "EM_TRANSPORTE", "ENTREGUE", "CONFIRMAR_ENTREGA");
+    repo.bloquearFluxo();
+    var p = exigir(id);
+    exigirAtual(p);
+    if ("ENTREGUE".equals(p.getStatus())) return view(p);
+    RegrasCicloVenda.exigirEstado(p.getStatus(), "EM_TRANSPORTE");
+    var antes = RegistroVenda.pedido(p);
+    p.transicionar("EM_TRANSPORTE", "ENTREGUE");
+    p.marcarEntregue(reservas.agora());
+    pedidos.flush();
+    auditoria.registrarComo(
+        p.getClienteId(),
+        "ADMIN_DEMO",
+        reservas.agora(),
+        "CONFIRMAR_ENTREGA",
+        "PEDIDO",
+        id,
+        antes,
+        RegistroVenda.pedido(p));
+    registrarPedido(p);
+    return view(p);
   }
 
   private PedidoView transicionar(Long id, String de, String para, String operacao) {

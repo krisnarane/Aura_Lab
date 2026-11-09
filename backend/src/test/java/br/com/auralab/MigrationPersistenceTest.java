@@ -20,10 +20,9 @@ class MigrationPersistenceTest {
         Flyway.configure().dataSource(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword()).load().migrate();
         try (var con = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
             var st = con.createStatement();
-            var rs = st.executeQuery("select indexdef from pg_indexes where indexname='pedido_analise_contabilizavel_criado'")) {
+            var rs = st.executeQuery("select indexdef from pg_indexes where indexname='pedido_analise_entrega_criado'")) {
           assertThat(rs.next()).isTrue();
-          assertThat(rs.getString(1)).contains("criado_em").contains("APROVADA")
-              .contains("EM_TRANSPORTE").contains("ENTREGUE");
+          assertThat(rs.getString(1)).contains("criado_em").contains("entregue_em");
         }
         try (var con = DriverManager.getConnection(pg.getJdbcUrl(), pg.getUsername(), pg.getPassword());
             var st = con.createStatement();

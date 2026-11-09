@@ -58,7 +58,7 @@ import {
   advisorChat as criarChatConsultora,
   adminPage as criarPaginaAdmin,
   notFound as criarPaginaNaoEncontrada,
-} from "./pages.js";
+} from "./pages.js?v=catalogo-filtros-20261109";
 import { aplicarDetalhesVisuais } from "./interface.js";
 import { renderizarConsultoraAura } from "./consultora-aura.js";
 import { ehRotaClientesAdmin, renderizarClientesAdmin } from "./admin-clientes.js";
@@ -67,7 +67,7 @@ import {
   ehRotaPerfilApi,
   renderizarPerfilApi,
 } from "./perfil-api.js?v=perfil-abas-20261005";
-import { ehRotaVendasApi, renderizarVendasApi } from "./vendas-api.js";
+import { ehRotaVendasApi, renderizarVendasApi } from "./vendas-api.js?v=catalogo-filtros-20261109";
 import { ehRotaPedidosApi, renderizarPedidosApi } from "./pedidos-api.js";
 import { ehRotaAnaliseVendas, renderizarAnaliseVendas } from "./admin-analise-vendas.js";
 
